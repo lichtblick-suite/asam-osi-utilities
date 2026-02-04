@@ -134,7 +134,7 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
-        run: brew install cmake protobuf lz4 zstd googletest doxygen
+        run: brew install cmake protobuf lz4 zstd googletest doxygen graphviz
 
       - name: Configure CMake
         run: cmake -B build

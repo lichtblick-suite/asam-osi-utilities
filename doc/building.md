@@ -4,7 +4,7 @@ This document provides detailed build instructions for all supported platforms.
 
 > **📋 Dependency Reference:** All package names for each platform are defined in
 > [`.github/dependencies.yml`](../.github/dependencies.yml) — the single source of truth
-> used by both CI workflows and this documentation.
+> used by both CI pipelines and this documentation.
 
 ## Prerequisites
 
@@ -49,9 +49,9 @@ Generated HTML is written to `doc/html/index.html`.
 
 ## Linux
 
-### Option A: Using vcpkg (Recommended)
+### Option A (Linux): Using vcpkg (Recommended)
 
-#### 1. Install Build Tools
+#### (Linux) 1. Install Build Tools
 
 **Debian/Ubuntu:**
 
@@ -66,7 +66,7 @@ sudo apt install build-essential cmake git doxygen graphviz clang-format clang-t
 sudo dnf install gcc-c++ cmake git doxygen graphviz clang-tools-extra pkgconf-pkg-config
 ```
 
-#### 2. Install vcpkg
+#### (Linux) 2. Install vcpkg
 
 ```bash
 git clone https://github.com/microsoft/vcpkg ~/vcpkg
@@ -75,7 +75,7 @@ echo 'export VCPKG_ROOT="$HOME/vcpkg"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-#### 3. Clone and Build
+#### (Linux) 3. Clone and Build
 
 ```bash
 git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
@@ -84,15 +84,15 @@ cmake --preset vcpkg-linux
 cmake --build build -j$(nproc)
 ```
 
-#### 4. Run Tests
+#### (Linux) 4. Run Tests
 
 ```bash
 ctest --test-dir build --output-on-failure -j$(nproc)
 ```
 
-### Option B: Manual Dependencies
+### Option B (Linux): Manual Dependencies
 
-#### 1. Install All Dependencies
+#### (Linux) 1. Install All Dependencies
 
 **Debian/Ubuntu:**
 
@@ -110,7 +110,7 @@ sudo dnf install gcc-c++ cmake git doxygen \
     protobuf-devel lz4-devel zstd-devel gtest-devel pkgconf-pkg-config
 ```
 
-#### 2. Clone and Build
+#### (Linux) 2. Clone and Build
 
 ```bash
 git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
@@ -123,9 +123,9 @@ cmake --build build -j$(nproc)
 
 ## Windows
 
-### Option A: Using vcpkg (Recommended)
+### Option A (Windows): Using vcpkg (Recommended)
 
-#### 1. Install Build Tools
+#### (Windows) 1. Install Build Tools
 
 Using `winget` (Windows Package Manager):
 
@@ -174,7 +174,7 @@ winget install --id Microsoft.VisualStudio.2022.BuildTools --source winget `
 >   - `pacman -S --needed mingw-w64-x86_64-libtool`
 > - Add `C:\msys64\mingw64\bin` to PATH (or copy `libltdl-7.dll` next to `dot.exe`).
 
-#### 2. Install vcpkg
+#### (Windows) 2. Install vcpkg
 
 ```powershell
 git clone https://github.com/microsoft/vcpkg C:\vcpkg
@@ -184,7 +184,7 @@ C:\vcpkg\bootstrap-vcpkg.bat
 
 Open a new terminal to pick up the environment variable.
 
-#### 3. Clone and Build
+#### (Windows) 3. Clone and Build
 
 ```powershell
 git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
@@ -193,13 +193,13 @@ cmake --preset vcpkg-windows
 cmake --build build --config Release --parallel
 ```
 
-#### 4. Run Tests
+#### (Windows) 4. Run Tests
 
 ```powershell
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### Option B: Manual Dependencies
+### Option B (Windows): Manual Dependencies
 
 Manual dependency installation on Windows without vcpkg is significantly more complex and **not recommended**. You would need to:
 
@@ -215,38 +215,9 @@ If you must use this approach, consider using [Conan](https://conan.io/) or buil
 
 ## macOS
 
-### Option A: Using Homebrew
+### Option A (macOS): Using vcpkg (Recommended)
 
-#### 1. Install Xcode Command Line Tools
-
-```bash
-xcode-select --install
-```
-
-#### 2. Install Dependencies with Homebrew
-
-```bash
-brew install cmake protobuf lz4 zstd googletest doxygen graphviz
-```
-
-#### 3. Clone and Build
-
-```bash
-git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
-cd asam-osi-utilities
-cmake -B build
-cmake --build build -j$(sysctl -n hw.ncpu)
-```
-
-#### 4. Run Tests
-
-```bash
-ctest --test-dir build --output-on-failure
-```
-
-### Option B: Using vcpkg
-
-Follow the Linux vcpkg instructions, replacing `vcpkg-linux` with `vcpkg`:
+Follow the Linux vcpkg instructions, replacing the preset with `vcpkg`:
 
 ```bash
 git clone https://github.com/microsoft/vcpkg ~/vcpkg
@@ -255,6 +226,38 @@ export VCPKG_ROOT="$HOME/vcpkg"
 cmake --preset vcpkg
 cmake --build build -j$(sysctl -n hw.ncpu)
 ```
+
+### Option B (macOS): Using Homebrew
+
+#### (macOS) 1. Install Xcode Command Line Tools
+
+```bash
+xcode-select --install
+```
+
+#### (macOS) 2. Install Dependencies with Homebrew
+
+```bash
+brew install cmake protobuf lz4 zstd googletest doxygen graphviz
+```
+
+#### (macOS) 3. Clone and Build
+
+```bash
+git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
+cd asam-osi-utilities
+cmake -B build
+cmake --build build -j$(sysctl -n hw.ncpu)
+```
+
+#### (macOS) 4. Run Tests
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+> **Note:** Homebrew’s protobuf can pull in Abseil logging symbols. If you hit linker
+> errors on macOS, prefer the vcpkg build or ensure Abseil libraries are linked.
 
 ---
 

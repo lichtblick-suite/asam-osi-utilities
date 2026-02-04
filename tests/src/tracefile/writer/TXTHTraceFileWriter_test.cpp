@@ -7,8 +7,11 @@
 
 #include <gtest/gtest.h>
 
+#include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <string>
+#include <system_error>
 
 #include "osi_groundtruth.pb.h"
 #include "osi_sensorview.pb.h"
@@ -16,13 +19,31 @@
 class TxthTraceFileWriterTest : public ::testing::Test {
    protected:
     osi3::TXTHTraceFileWriter writer_;
-    const std::string test_file_gt_ = "test_output_gt.txth";
-    const std::string test_file_sv_ = "test_output_sv.txth";
+    std::filesystem::path test_file_gt_;
+    std::filesystem::path test_file_sv_;
+
+    void SetUp() override {
+        test_file_gt_ = MakeTempPath("txth_gt", "txth");
+        test_file_sv_ = MakeTempPath("txth_sv", "txth");
+    }
 
     void TearDown() override {
         writer_.Close();
-        std::filesystem::remove(test_file_gt_);
-        std::filesystem::remove(test_file_sv_);
+        std::error_code ec;
+        std::filesystem::remove(test_file_gt_, ec);
+        std::filesystem::remove(test_file_sv_, ec);
+    }
+
+   private:
+    static std::filesystem::path MakeTempPath(const std::string& prefix, const std::string& extension) {
+        const auto* test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+        std::string name = std::string(test_info->test_suite_name()) + "_" + test_info->name();
+        for (auto& ch : name) {
+            if (!std::isalnum(static_cast<unsigned char>(ch))) {
+                ch = '_';
+            }
+        }
+        return std::filesystem::temp_directory_path() / (prefix + "_" + name + "." + extension);
     }
 };
 

@@ -146,9 +146,7 @@ TEST_F(TxthTraceFileReaderTest, OpenInvalidMessageType) {
 
 TEST_F(TxthTraceFileReaderTest, ReadEmptyFile) {
     std::string empty_file = "empty.txth";
-    {
-        std::ofstream file(empty_file);
-    }
+    { std::ofstream file(empty_file); }
     ASSERT_TRUE(reader_.Open(empty_file, osi3::ReaderTopLevelMessage::kGroundTruth));
     EXPECT_FALSE(reader_.HasNext());
     reader_.Close();
