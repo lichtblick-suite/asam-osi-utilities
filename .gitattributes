@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+# Shell scripts must have LF line endings
+*.sh text eol=lf
+
+# Windows scripts
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.pdf binary

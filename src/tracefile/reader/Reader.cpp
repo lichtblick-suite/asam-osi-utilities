@@ -5,9 +5,9 @@
 
 #include "osi-utilities/tracefile/Reader.h"
 
+#include "osi-utilities/tracefile/reader/MCAPTraceFileReader.h"
 #include "osi-utilities/tracefile/reader/SingleChannelBinaryTraceFileReader.h"
 #include "osi-utilities/tracefile/reader/TXTHTraceFileReader.h"
-#include "osi-utilities/tracefile/reader/MCAPTraceFileReader.h"
 
 namespace osi3 {
 
@@ -24,4 +24,4 @@ std::unique_ptr<osi3::TraceFileReader> TraceFileReaderFactory::createReader(cons
     throw std::invalid_argument("Unsupported format: " + path.extension().string());
 }
 
-}
+}  // namespace osi3

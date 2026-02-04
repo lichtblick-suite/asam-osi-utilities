@@ -1,0 +1,155 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+#
+# Centralized dependency manifest for CI workflows and documentation.
+# This file is the single source of truth for build dependencies.
+#
+# Roles:
+#   - build: Required to compile the library and examples
+#   - test:  Required to run unit tests (includes build deps)
+#   - docs:  Required to generate documentation
+#   - lint:  Required for static analysis (includes build deps)
+#   - dev:   Additional tools for development (formatting, etc.)
+
+dependencies:
+  # =========================================================================
+  # Core build dependencies (library compilation)
+  # =========================================================================
+  build:
+    apt:
+      - cmake
+      - build-essential
+      - protobuf-compiler
+      - libprotobuf-dev
+      - liblz4-dev
+      - libzstd-dev
+    dnf:
+      - cmake
+      - gcc-c++
+      - protobuf-devel
+      - lz4-devel
+      - libzstd-devel
+    brew:
+      - cmake
+      - protobuf
+      - lz4
+      - zstd
+    vcpkg:
+      - protobuf
+      - lz4
+      - zstd
+    winget:
+      - Kitware.CMake
+      - Git.Git
+      - Microsoft.VisualStudio.2022.BuildTools
+
+  # =========================================================================
+  # Test dependencies (unit tests)
+  # =========================================================================
+  test:
+    apt:
+      - libgtest-dev
+    dnf:
+      - gtest-devel
+    brew:
+      - googletest
+    vcpkg:
+      - gtest
+
+  # =========================================================================
+  # Documentation dependencies (Doxygen)
+  # =========================================================================
+  docs:
+    apt:
+      - doxygen
+      - graphviz
+    dnf:
+      - doxygen
+      - graphviz
+    brew:
+      - doxygen
+      - graphviz
+    winget:
+      - DimitriVanHeesch.Doxygen
+      - Graphviz.Graphviz
+
+# ---------------------------------------------------------------------------
+# Windows notes (local development)
+# ---------------------------------------------------------------------------
+# - If `winget` fails while searching the `msstore` source (e.g. certificate/proxy issues),
+#   prefer `--source winget` (community repo) or disable the store source via:
+#     winget source disable msstore
+# - Graphviz on Windows: ensure `dot -V` works in PowerShell.
+#   In Git Bash/MSYS environments, `dot.exe` may fail to start if a MinGW runtime DLL is missing
+#   (e.g. `libltdl-7.dll`). In that case, install MSYS2 and `mingw-w64-x86_64-libtool`, then add
+#   `C:\msys64\mingw64\bin` to PATH (or place the missing DLL next to `dot.exe`).
+
+  # =========================================================================
+  # Lint/static analysis dependencies
+  # =========================================================================
+  lint:
+    apt:
+      - clang-tidy-18
+    dnf:
+      - clang-tools-extra
+    brew:
+      - llvm
+
+  # =========================================================================
+  # Development tools (formatting, hooks)
+  # =========================================================================
+  dev:
+    apt:
+      - clang-format-18
+      - git
+    dnf:
+      - clang-tools-extra
+      - git
+    brew:
+      - clang-format
+      - git
+    winget:
+      - LLVM.LLVM
+      - Git.Git
+
+  # =========================================================================
+  # Coverage reporting
+  # =========================================================================
+  coverage:
+    apt:
+      - gcovr
+
+# ===========================================================================
+# CI Job dependency mappings
+# ===========================================================================
+# Use these combinations in CI workflows:
+#
+# ci_build.yml (Ubuntu):     build + test + docs + coverage
+# ci_build.yml (macOS):      build + test + docs
+# ci_build.yml (vcpkg):      (vcpkg handles all via vcpkg.json)
+# ci_lint.yml:               build + test + lint
+# ci_format.yml:             dev (clang-format only)
+# cd_docs.yml:               docs only (no build/test deps needed with -DBUILD_TESTING=OFF)
+
+ci_jobs:
+  ubuntu_build:
+    description: "Ubuntu system package builds"
+    apt: |
+      cmake build-essential protobuf-compiler libprotobuf-dev
+      liblz4-dev libzstd-dev libgtest-dev doxygen graphviz gcovr
+
+  ubuntu_lint:
+    description: "Ubuntu static analysis"
+    apt: |
+      cmake build-essential protobuf-compiler libprotobuf-dev
+      liblz4-dev libzstd-dev libgtest-dev clang-tidy-18
+
+  ubuntu_docs:
+    description: "Documentation build only"
+    apt: |
+      cmake doxygen graphviz
+
+  macos_build:
+    description: "macOS Homebrew builds"
+    brew: |
+      cmake protobuf lz4 zstd googletest doxygen

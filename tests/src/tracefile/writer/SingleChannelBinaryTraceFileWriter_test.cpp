@@ -3,16 +3,18 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-#include <gtest/gtest.h>
 #include "osi-utilities/tracefile/writer/SingleChannelBinaryTraceFileWriter.h"
+
+#include <gtest/gtest.h>
+
+#include <filesystem>
+#include <fstream>
+
 #include "osi_groundtruth.pb.h"
 #include "osi_sensorview.pb.h"
 
-#include <fstream>
-#include <filesystem>
-
 class SingleChannelBinaryTraceFileWriterTest : public ::testing::Test {
-protected:
+   protected:
     osi3::SingleChannelBinaryTraceFileWriter writer_;
     const std::string test_file_gt_ = "test_write_gt_.osi";
     const std::string test_file_sv_ = "test_write_sv_.osi";
@@ -24,13 +26,9 @@ protected:
     }
 };
 
-TEST_F(SingleChannelBinaryTraceFileWriterTest, OpenFile) {
-    EXPECT_TRUE(writer_.Open(test_file_gt_));
-}
+TEST_F(SingleChannelBinaryTraceFileWriterTest, OpenFile) { EXPECT_TRUE(writer_.Open(test_file_gt_)); }
 
-TEST_F(SingleChannelBinaryTraceFileWriterTest, OpenInvalidExtension) {
-    EXPECT_FALSE(writer_.Open("test.txt"));
-}
+TEST_F(SingleChannelBinaryTraceFileWriterTest, OpenInvalidExtension) { EXPECT_FALSE(writer_.Open("test.txt")); }
 
 TEST_F(SingleChannelBinaryTraceFileWriterTest, WriteGroundTruthMessage) {
     ASSERT_TRUE(writer_.Open(test_file_gt_));

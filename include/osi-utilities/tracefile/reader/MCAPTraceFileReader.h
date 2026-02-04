@@ -57,12 +57,12 @@ class MCAPTraceFileReader final : public TraceFileReader {
     void SetSkipNonOSIMsgs(const bool skip) { skip_non_osi_msgs_ = skip; }
 
    private:
-    std::ifstream trace_file_;                                            /**< File stream for reading */
-    mcap::McapReader mcap_reader_;                                        /**< Upstream MCAP reader object */
+    std::ifstream trace_file_;                               /**< File stream for reading */
+    mcap::McapReader mcap_reader_;                           /**< Upstream MCAP reader object */
     std::unique_ptr<mcap::LinearMessageView> message_view_;  // Cannot copy or move LinearMessageView
     std::unique_ptr<mcap::LinearMessageView::Iterator> message_iterator_;
 
-    bool skip_non_osi_msgs_ = false; /**< Flag to skip non-OSI messages during reading */
+    bool skip_non_osi_msgs_ = false;        /**< Flag to skip non-OSI messages during reading */
     mcap::ReadMessageOptions mcap_options_; /**< Options for the mcap reader */
 
     /**

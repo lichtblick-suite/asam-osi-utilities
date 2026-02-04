@@ -50,10 +50,10 @@ class SingleChannelBinaryTraceFileReader final : public osi3::TraceFileReader {
     ReaderTopLevelMessage GetMessageType() const { return message_type_; };
 
    private:
-   /**
-   * @brief Function type for parsing binary buffers (as char vector) into protobuf objects
-   */
-   using MessageParserFunc = std::function<std::unique_ptr<google::protobuf::Message>(const std::vector<char>&)>;
+    /**
+     * @brief Function type for parsing binary buffers (as char vector) into protobuf objects
+     */
+    using MessageParserFunc = std::function<std::unique_ptr<google::protobuf::Message>(const std::vector<char>&)>;
 
     std::ifstream trace_file_;                                            /**< File stream for reading */
     MessageParserFunc parser_;                                            /**< Message parsing function */

@@ -22,9 +22,7 @@ add_library(OSIUtilities ${OSIUtilities_SRCS})
 # add a compile definition to specify the version of the trace file specification.
 # This is not the version of the linked OSI library, but the version of the trace file spec
 # which is implemented (in functions, methods etc.) by this library (OSIUtilities).
-# TODO: As of today (2nd of December 2024) mcap support is neither merged nor officially released yet.
-# TODO: Change the following value once a new OSI version including mcap is officially released. Until then assume 3.7.1.
-target_compile_definitions(OSIUtilities PRIVATE OSI_TRACE_FILE_SPEC_VERSION="3.7.1")
+target_compile_definitions(OSIUtilities PRIVATE OSI_TRACE_FILE_SPEC_VERSION="${OSI_TRACE_FILE_SPEC_VERSION}")
 
 
 # Specify the public headers for the library for clean access
@@ -33,16 +31,22 @@ target_include_directories(OSIUtilities PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # Link against OSI made available by parent CMakeLists.txt
 if (LINK_WITH_SHARED_OSI)
-    target_link_libraries(OSIUtilities PRIVATE open_simulation_interface)
+    target_link_libraries(OSIUtilities PRIVATE open_simulation_interface::open_simulation_interface)
 else ()
-    target_link_libraries(OSIUtilities PRIVATE open_simulation_interface_pic)
+    target_link_libraries(OSIUtilities PRIVATE open_simulation_interface::open_simulation_interface_pic)
 endif ()
-include_directories(${open_simulation_interface_BINARY_DIR})
 
 
 # get mcap and its dependencies
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
-pkg_check_modules(zstd REQUIRED libzstd)
-target_link_libraries(OSIUtilities PRIVATE ${lz4_LIBRARIES} ${zstd_LIBRARIES})
-target_include_directories(OSIUtilities PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../lib/mcap/cpp/mcap/include)
+set(MCAP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../lib/mcap/cpp/mcap/include)
+target_include_directories(OSIUtilities PUBLIC ${MCAP_INCLUDE_DIR})
+
+# Find compression libraries (LZ4, ZSTD)
+include(FindCompression)
+find_compression_libraries()
+
+if (COMPRESSION_FOUND)
+    target_link_libraries(OSIUtilities PRIVATE ${LZ4_TARGET} ${ZSTD_TARGET})
+else ()
+    message(FATAL_ERROR "Could not find LZ4 and ZSTD compression libraries")
+endif ()

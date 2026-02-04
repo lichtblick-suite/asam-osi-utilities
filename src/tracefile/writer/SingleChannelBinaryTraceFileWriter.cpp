@@ -44,10 +44,7 @@ bool SingleChannelBinaryTraceFileWriter::Open(const std::filesystem::path& file_
     return true;
 }
 
-void SingleChannelBinaryTraceFileWriter::Close() {
-        trace_file_.close();
-}
-
+void SingleChannelBinaryTraceFileWriter::Close() { trace_file_.close(); }
 
 template <typename T>
 bool SingleChannelBinaryTraceFileWriter::WriteMessage(const T& top_level_message) {

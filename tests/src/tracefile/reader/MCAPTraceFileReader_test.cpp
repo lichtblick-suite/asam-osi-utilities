@@ -170,6 +170,7 @@ TEST_F(McapTraceFileReaderTest, ReadInvalidMessageFormat) {
     }
 
     EXPECT_FALSE(reader_.Open(invalid_file));
+    reader_.Close();  // Ensure any partial open is closed before removing
     std::filesystem::remove(invalid_file);
 }
 

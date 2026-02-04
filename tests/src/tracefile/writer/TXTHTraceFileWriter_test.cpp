@@ -3,16 +3,18 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-#include <gtest/gtest.h>
 #include "osi-utilities/tracefile/writer/TXTHTraceFileWriter.h"
-#include "osi_groundtruth.pb.h"
-#include "osi_sensorview.pb.h"
+
+#include <gtest/gtest.h>
 
 #include <filesystem>
 #include <fstream>
 
+#include "osi_groundtruth.pb.h"
+#include "osi_sensorview.pb.h"
+
 class TxthTraceFileWriterTest : public ::testing::Test {
-protected:
+   protected:
     osi3::TXTHTraceFileWriter writer_;
     const std::string test_file_gt_ = "test_output_gt.txth";
     const std::string test_file_sv_ = "test_output_sv.txth";
@@ -24,13 +26,9 @@ protected:
     }
 };
 
-TEST_F(TxthTraceFileWriterTest, OpenWithValidExtension) {
-    EXPECT_TRUE(writer_.Open(test_file_gt_));
-}
+TEST_F(TxthTraceFileWriterTest, OpenWithValidExtension) { EXPECT_TRUE(writer_.Open(test_file_gt_)); }
 
-TEST_F(TxthTraceFileWriterTest, OpenWithInvalidExtension) {
-    EXPECT_FALSE(writer_.Open("test.invalid"));
-}
+TEST_F(TxthTraceFileWriterTest, OpenWithInvalidExtension) { EXPECT_FALSE(writer_.Open("test.invalid")); }
 
 TEST_F(TxthTraceFileWriterTest, WriteGroundTruthMessage) {
     ASSERT_TRUE(writer_.Open(test_file_gt_));

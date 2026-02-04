@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ===========================================================================
+  # Code Quality (reusable workflows)
+  # ===========================================================================
+  format:
+    name: Format
+    uses: ./.github/workflows/ci_format.yml
+
+  lint:
+    name: Lint
+    uses: ./.github/workflows/ci_lint.yml
+
+  # ===========================================================================
+  # Build Matrix (reusable workflow)
+  # ===========================================================================
+  build:
+    name: Build
+    uses: ./.github/workflows/ci_build.yml
+
+  # ===========================================================================
+  # Compliance Checks (reusable workflow)
+  # ===========================================================================
+  compliance:
+    name: Compliance
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/ci_compliance.yml
+
+  # ===========================================================================
+  # Documentation Build and Deploy
+  # ===========================================================================
+  docs:
+    name: Docs
+    uses: ./.github/workflows/cd_docs.yml
+    with:
+      deploy: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

@@ -1,10 +1,13 @@
 # Subfolders
 build/
+build-*/
 dist/
 doc/html
 doc/latex
 osi/
 osi3/
+vcpkg_installed/
+_untracked_/
 
 # Specific extensions
 *.egg-info

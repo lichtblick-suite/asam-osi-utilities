@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2024 ASAM OSI Utilities Contributors
+
+name: Lint
+
+on:
+  workflow_call:
+
+jobs:
+  clang-tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential liblz4-dev libzstd-dev \
+            protobuf-compiler libprotobuf-dev libgtest-dev clang-tidy-18
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Run clang-tidy
+        run: |
+          find src include -name "*.cpp" | \
+            xargs clang-tidy-18 -p build --warnings-as-errors='*'

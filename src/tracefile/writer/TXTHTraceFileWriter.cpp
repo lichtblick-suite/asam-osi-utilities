@@ -40,9 +40,7 @@ bool TXTHTraceFileWriter::Open(const std::filesystem::path& file_path) {
     return true;
 }
 
-void TXTHTraceFileWriter::Close() {
-    trace_file_.close();
-}
+void TXTHTraceFileWriter::Close() { trace_file_.close(); }
 
 template <typename T>
 bool TXTHTraceFileWriter::WriteMessage(const T& top_level_message) {
@@ -71,6 +69,5 @@ template bool TXTHTraceFileWriter::WriteMessage<osi3::TrafficCommandUpdate>(cons
 template bool TXTHTraceFileWriter::WriteMessage<osi3::TrafficUpdate>(const osi3::TrafficUpdate&);
 template bool TXTHTraceFileWriter::WriteMessage<osi3::MotionRequest>(const osi3::MotionRequest&);
 template bool TXTHTraceFileWriter::WriteMessage<osi3::StreamingUpdate>(const osi3::StreamingUpdate&);
-
 
 }  // namespace osi3

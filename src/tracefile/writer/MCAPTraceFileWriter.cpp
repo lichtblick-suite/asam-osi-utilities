@@ -109,8 +109,7 @@ bool MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::st
 bool MCAPTraceFileWriter::AddFileMetadata(const mcap::Metadata& metadata) {
     // check if the provided metadata contains the required metadata by the OSI specification
     // to allow writing messages to the trace file
-    if (metadata.name  == "net.asam.osi.trace") {
-
+    if (metadata.name == "net.asam.osi.trace") {
         if (required_metadata_added_) {
             std::cerr << "ERROR: cannot add net.asam.osi.trace metadata record, it was already added.\n";
             return false;
@@ -133,8 +132,6 @@ bool MCAPTraceFileWriter::AddFileMetadata(const mcap::Metadata& metadata) {
     }
     return true;
 }
-
-
 
 bool MCAPTraceFileWriter::AddFileMetadata(const std::string& name, const std::unordered_map<std::string, std::string>& metadata_entries) {
     mcap::Metadata metadata;
@@ -194,7 +191,7 @@ uint16_t MCAPTraceFileWriter::AddChannel(const std::string& topic, const google:
     if (channel_metadata.find("net.asam.osi.trace.channel.osi_version") == channel_metadata.end()) {
         const auto osi_version = osi3::InterfaceVersion::descriptor()->file()->options().GetExtension(osi3::current_interface_version);
         channel_metadata["net.asam.osi.trace.channel.osi_version"] =
-       std::to_string(osi_version.version_major()) + "." + std::to_string(osi_version.version_minor()) + "." + std::to_string(osi_version.version_patch());
+            std::to_string(osi_version.version_major()) + "." + std::to_string(osi_version.version_minor()) + "." + std::to_string(osi_version.version_patch());
     }
 
     // add protobuf version (if not present) to channel metadata as required by spec.

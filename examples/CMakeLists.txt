@@ -2,10 +2,9 @@ function(configure_example TARGET_NAME SOURCE_FILE)
     add_executable(${TARGET_NAME} ${SOURCE_FILE})
 
     if (LINK_WITH_SHARED_OSI)
-        target_link_libraries(${TARGET_NAME} PRIVATE open_simulation_interface)
+        target_link_libraries(${TARGET_NAME} PRIVATE open_simulation_interface::open_simulation_interface)
     else ()
-        target_link_libraries(${TARGET_NAME} PRIVATE open_simulation_interface_pic)
-        include_directories(${OSI_INCLUDE_DIR})
+        target_link_libraries(${TARGET_NAME} PRIVATE open_simulation_interface::open_simulation_interface_pic)
     endif ()
 
     target_link_libraries(${TARGET_NAME} PRIVATE OSIUtilities)

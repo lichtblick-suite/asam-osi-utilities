@@ -17,7 +17,7 @@ namespace osi3 {
 /**
  * @brief Enumeration of supported top-level message types in trace files
  */
-enum class ReaderTopLevelMessage : u_int8_t {
+enum class ReaderTopLevelMessage : uint8_t {
     kUnknown = 0,             /**< Unknown message type */
     kGroundTruth,             /**< OSI3::GroundTruth data */
     kSensorData,              /**< OSI3::SensorSata */

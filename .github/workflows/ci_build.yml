@@ -1,0 +1,147 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+
+name: Build
+
+on:
+  workflow_call:
+
+jobs:
+  # ===========================================================================
+  # Ubuntu with system packages
+  # ===========================================================================
+  ubuntu:
+    name: Ubuntu ${{ matrix.ubuntu }} (${{ matrix.compiler }})
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ['22.04', '24.04']
+        compiler: [gcc, clang]
+        include:
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+          - compiler: clang
+            cc: clang
+            cxx: clang++
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential liblz4-dev libzstd-dev \
+            protobuf-compiler libprotobuf-dev libgtest-dev doxygen graphviz gcovr
+
+      - name: Configure CMake
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: cmake -B build -DCODE_COVERAGE=${{ matrix.compiler == 'gcc' && 'ON' || 'OFF' }}
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel $(nproc)
+
+      - name: Generate Coverage Report
+        if: matrix.compiler == 'gcc' && matrix.ubuntu == '24.04'
+        run: gcovr -r . build --xml -o coverage.xml
+
+      - name: Upload Coverage
+        if: matrix.compiler == 'gcc' && matrix.ubuntu == '24.04'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
+  # ===========================================================================
+  # Ubuntu with vcpkg
+  # ===========================================================================
+  ubuntu-vcpkg:
+    name: Ubuntu (vcpkg)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+
+      - name: Configure CMake
+        run: cmake --preset vcpkg-linux
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel $(nproc)
+
+  # ===========================================================================
+  # Windows with vcpkg
+  # ===========================================================================
+  windows:
+    name: Windows (MSVC)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+
+      - name: Configure CMake
+        run: cmake --preset vcpkg-windows
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest -C Release --output-on-failure --parallel
+
+  # ===========================================================================
+  # macOS with Homebrew
+  # ===========================================================================
+  macos:
+    name: macOS (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: x64
+          - runner: macos-14
+            arch: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: brew install cmake protobuf lz4 zstd googletest doxygen
+
+      - name: Configure CMake
+        run: cmake -B build
+
+      - name: Build
+        run: cmake --build build -j$(sysctl -n hw.ncpu)
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)

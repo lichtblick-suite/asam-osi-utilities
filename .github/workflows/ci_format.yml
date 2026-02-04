@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2024 ASAM OSI Utilities Contributors
+
+name: Format Check
+
+on:
+  workflow_call:
+
+jobs:
+  format-check:
+    name: clang-format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-18
+
+      - name: Check C++ formatting
+        run: |
+          find src include tests examples -name "*.cpp" -o -name "*.h" | \
+            xargs clang-format-18 --dry-run --Werror

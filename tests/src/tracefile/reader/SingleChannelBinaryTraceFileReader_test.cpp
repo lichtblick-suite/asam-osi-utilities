@@ -3,16 +3,18 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-#include <gtest/gtest.h>
 #include "osi-utilities/tracefile/reader/SingleChannelBinaryTraceFileReader.h"
+
+#include <gtest/gtest.h>
+
+#include <filesystem>
+#include <fstream>
+
 #include "osi_groundtruth.pb.h"
 #include "osi_sensorview.pb.h"
 
-#include <fstream>
-#include <filesystem>
-
 class SingleChannelBinaryTraceFileReaderTest : public ::testing::Test {
-protected:
+   protected:
     osi3::SingleChannelBinaryTraceFileReader reader_;
     const std::string test_file_gt_ = "test_gt_.osi";
     const std::string test_file_sv_ = "test_sv_.osi";
@@ -28,7 +30,7 @@ protected:
         std::filesystem::remove(test_file_sv_);
     }
 
-private:
+   private:
     void CreateTestGroundTruthFile() const {
         std::ofstream file(test_file_gt_, std::ios::binary);
         osi3::GroundTruth ground_truth;
@@ -56,13 +58,9 @@ private:
     }
 };
 
-TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenGroundTruthFile) {
-    EXPECT_TRUE(reader_.Open(test_file_gt_));
-}
+TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenGroundTruthFile) { EXPECT_TRUE(reader_.Open(test_file_gt_)); }
 
-TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenSensorViewFile) {
-    EXPECT_TRUE(reader_.Open(test_file_sv_));
-}
+TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenSensorViewFile) { EXPECT_TRUE(reader_.Open(test_file_sv_)); }
 
 TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadGroundTruthMessage) {
     ASSERT_TRUE(reader_.Open(test_file_gt_));
@@ -104,7 +102,6 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, PreventMultipleFileOpens) {
     EXPECT_TRUE(reader_.Open(test_file_gt_));
 }
 
-
 TEST_F(SingleChannelBinaryTraceFileReaderTest, HasNextReturnsFalseWhenEmpty) {
     ASSERT_TRUE(reader_.Open(test_file_gt_));
     ASSERT_TRUE(reader_.HasNext());
@@ -112,9 +109,7 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, HasNextReturnsFalseWhenEmpty) {
     EXPECT_FALSE(reader_.HasNext());
 }
 
-TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenNonexistentFile) {
-    EXPECT_FALSE(reader_.Open("nonexistent_file.osi"));
-}
+TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenNonexistentFile) { EXPECT_FALSE(reader_.Open("nonexistent_file.osi")); }
 
 TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenInvalidFileFormat) {
     std::string invalid_file = "invalid.bin";
@@ -151,6 +146,7 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadEmptyMessage) {
 
     ASSERT_TRUE(reader_.Open(empty_file));
     EXPECT_THROW(reader_.ReadMessage(), std::runtime_error);
+    reader_.Close();
     std::filesystem::remove(empty_file);
 }
 
@@ -164,6 +160,7 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadCorruptedMessageSize) {
 
     ASSERT_TRUE(reader_.Open(corrupted_file));
     EXPECT_THROW(reader_.ReadMessage(), std::runtime_error);
+    reader_.Close();
     std::filesystem::remove(corrupted_file);
 }
 
@@ -180,6 +177,7 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadCorruptedMessageContent) {
 
     ASSERT_TRUE(reader_.Open(corrupted_file));
     EXPECT_THROW(reader_.ReadMessage(), std::runtime_error);
+    reader_.Close();
     std::filesystem::remove(corrupted_file);
 }
 
