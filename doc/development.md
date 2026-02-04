@@ -235,13 +235,19 @@ cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 Ensure clangd is pointed at `build/compile_commands.json` (this is automatic with CMake Tools). If you keep the compile database in the repo root, clangd will also pick it up.
 
-If you prefer manual setup on Windows, run from a **x64 Native Tools Command Prompt for VS 2022** (or call `vcvars64.bat` first):
+If you prefer manual setup on Windows, run from a **x64 Native Tools Command Prompt for VS 2022** (or call `vcvars64.bat` first). In PowerShell, use this one-liner to preserve the VS environment:
 
 ```powershell
-cmake -G Ninja -B build-ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows
+cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && set VCPKG_ROOT=C:\vcpkg && rmdir /s /q build-ninja && cmake -G Ninja -B build-ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows'
 ```
 
-Then point clangd to `build-ninja/compile_commands.json`.
+Then point clangd to `build-ninja/compile_commands.json`. If clangd still reports missing headers, set the compile commands directory explicitly (VS Code):
+
+```json
+{
+  "clangd.arguments": ["--compile-commands-dir=build-ninja"]
+}
+```
 
 Settings for VS Code (`.vscode/settings.json`):
 
