@@ -38,6 +38,15 @@ else
     echo "           or: brew install cmake (macOS)"
 fi
 
+# Check for Ninja (recommended for compile_commands.json on Windows)
+if command -v ninja &> /dev/null; then
+    echo "✓ Ninja found: $(ninja --version)"
+else
+    echo "WARNING: Ninja not found (recommended for clangd on Windows)"
+    echo "  Install via: winget install Ninja-build.Ninja (Windows)"
+fi
+
+
 # Install Git hooks
 echo ""
 echo "Installing Git hooks..."
@@ -51,13 +60,20 @@ cat > "$HOOKS_DIR/pre-commit" << 'EOF'
 # Works on Linux, macOS, and Windows (Git Bash)
 #
 # Usage:
-#   .git/hooks/pre-commit           # Check staged files only (default)
-#   .git/hooks/pre-commit --run-all  # Check all C++ files in the project
+#   .git/hooks/pre-commit                     # Check staged files only (default)
+#   .git/hooks/pre-commit --run-all           # Check all C++ files in the project
+#   .git/hooks/pre-commit --fix               # Auto-fix staged files (clang-format -i)
+#   .git/hooks/pre-commit --run-all --fix     # Auto-fix all C++ files
 
 RUN_ALL=0
-if [ "$1" = "--run-all" ]; then
-    RUN_ALL=1
-fi
+FIX=0
+for arg in "$@"; do
+    if [ "$arg" = "--run-all" ]; then
+        RUN_ALL=1
+    elif [ "$arg" = "--fix" ]; then
+        FIX=1
+    fi
+done
 
 # Check if VERSION file is staged and sync to other files (only in normal mode)
 if [ $RUN_ALL -eq 0 ] && git diff --cached --name-only | grep -q "^VERSION$"; then
@@ -94,22 +110,37 @@ else
 fi
 
 if [ -n "$FILES" ]; then
-    echo "Checking code formatting..."
+    if [ $FIX -eq 1 ]; then
+        echo "Auto-fixing code formatting..."
+    else
+        echo "Checking code formatting..."
+    fi
     FAILED=0
     for FILE in $FILES; do
         if command -v clang-format &> /dev/null; then
-            if ! clang-format --dry-run --Werror "$FILE" 2>/dev/null; then
-                echo "  ✗ $FILE needs formatting"
-                FAILED=1
+            if [ $FIX -eq 1 ]; then
+                clang-format -i "$FILE" 2>/dev/null
+                if [ $RUN_ALL -eq 0 ]; then
+                    git add "$FILE"
+                fi
+            else
+                if ! clang-format --dry-run --Werror "$FILE" 2>/dev/null; then
+                    echo "  ✗ $FILE needs formatting"
+                    FAILED=1
+                fi
             fi
         fi
     done
-    if [ $FAILED -ne 0 ]; then
-        echo ""
-        echo "Please run: clang-format -i <file> to fix formatting"
-        exit 1
+    if [ $FIX -eq 1 ]; then
+        echo "✓ Code formatting fixed"
+    else
+        if [ $FAILED -ne 0 ]; then
+            echo ""
+            echo "Please run: .git/hooks/pre-commit --fix"
+            exit 1
+        fi
+        echo "✓ Code formatting OK"
     fi
-    echo "✓ Code formatting OK"
 else
     if [ $RUN_ALL -eq 1 ]; then
         echo "No C++ files found to check."

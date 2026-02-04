@@ -27,13 +27,14 @@ The setup script will:
 
 ## Required Tools
 
-| Tool         | Required    | Purpose                |
-| ------------ | ----------- | ---------------------- |
-| Git          | Yes         | Version control        |
-| CMake        | Yes         | Build system           |
-| clang-format | Recommended | Code formatting        |
-| clang-tidy   | Optional    | Static analysis        |
-| Graphviz     | Optional    | Doxygen diagrams (dot) |
+| Tool         | Required    | Purpose                                     |
+| ------------ | ----------- | ------------------------------------------- |
+| Git          | Yes         | Version control                             |
+| CMake        | Yes         | Build system                                |
+| clang-format | Recommended | Code formatting                             |
+| clang-tidy   | Optional    | Static analysis                             |
+| Ninja        | Optional    | Compile database for clangd (Windows)       |
+| Graphviz     | Optional    | Doxygen diagrams (dot)                      |
 
 ### Installing Development Tools
 
@@ -55,6 +56,9 @@ sudo dnf install clang-tools-extra graphviz
 ```powershell
 # LLVM includes clang-format and clang-tidy
 winget install --id LLVM.LLVM --source winget
+
+# Ninja (recommended for clangd compile database on Windows)
+winget install --id Ninja-build.Ninja --source winget
 
 # Graphviz provides the 'dot' tool for Doxygen diagrams
 winget install --id Graphviz.Graphviz --source winget
@@ -109,6 +113,13 @@ This project uses native Git hooks to ensure code quality before commits:
 | `pre-commit` | Before commit | Checks C++ code formatting with clang-format           |
 | `commit-msg` | After message | Validates DCO sign-off and Conventional Commits format |
 
+> **Quick usage:**
+>
+> - Check staged files: `.git/hooks/pre-commit`
+> - Check all files: `.git/hooks/pre-commit --run-all`
+> - Fix staged files: `.git/hooks/pre-commit --fix`
+> - Fix all files: `.git/hooks/pre-commit --run-all --fix`
+
 ### Running Checks Manually
 
 Check formatting on all C++ files:
@@ -121,6 +132,12 @@ Fix formatting on all C++ files:
 
 ```bash
 find src include tests examples -name "*.cpp" -o -name "*.h" | xargs clang-format -i
+```
+
+Run the hook with auto-fix:
+
+```bash
+.git/hooks/pre-commit --fix
 ```
 
 ## Code Style
@@ -203,6 +220,28 @@ Recommended extensions:
 - **CMake Tools** - CMake integration
 - **clangd** - Better C++ language server
 - **EditorConfig** - Consistent editor settings
+
+**clangd configuration note (recommended setup):**
+
+1. Install the VS Code **CMake Tools** extension.
+2. Configure a build directory named `build` (CMake Tools → Configure). On Windows, select the **Ninja** generator.
+3. Build once (CMake Tools → Build).
+
+This generates `build/compile_commands.json`, which clangd uses automatically. If you prefer manual setup, run:
+
+```bash
+cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
+
+Ensure clangd is pointed at `build/compile_commands.json` (this is automatic with CMake Tools). If you keep the compile database in the repo root, clangd will also pick it up.
+
+If you prefer manual setup on Windows, run from a **x64 Native Tools Command Prompt for VS 2022** (or call `vcvars64.bat` first):
+
+```powershell
+cmake -G Ninja -B build-ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows
+```
+
+Then point clangd to `build-ninja/compile_commands.json`.
 
 Settings for VS Code (`.vscode/settings.json`):
 
@@ -325,6 +364,12 @@ To run the pre-commit hook manually on all files:
 
 ```bash
 .git/hooks/pre-commit --run-all
+```
+
+To run the pre-commit hook and auto-fix all files:
+
+```bash
+.git/hooks/pre-commit --run-all --fix
 ```
 
 To skip hooks temporarily (not recommended):

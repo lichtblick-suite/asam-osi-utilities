@@ -96,7 +96,7 @@ const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kValidTypes =
                                                                                   {"StreamingUpdate", osi3::ReaderTopLevelMessage::kStreamingUpdate}};
 
 void printHelp() {
-    std::cout << "Usage: example_text_reader.cpp <file_path> [--type <message_type>]\n\n"
+    std::cout << "Usage: example_txth_reader <file_path> [--type <message_type>]\n\n"
               << "Arguments:\n"
               << "  file_path               Path to the txth trace file\n"
               << "  --type <message_type>   Optional: Specify messages type if not stated in filename\n\n"

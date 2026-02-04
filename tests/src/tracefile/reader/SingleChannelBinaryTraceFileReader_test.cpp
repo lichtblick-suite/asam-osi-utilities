@@ -7,8 +7,11 @@
 
 #include <gtest/gtest.h>
 
+#include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <string>
+#include <system_error>
 
 #include "osi_groundtruth.pb.h"
 #include "osi_sensorview.pb.h"
@@ -16,21 +19,35 @@
 class SingleChannelBinaryTraceFileReaderTest : public ::testing::Test {
    protected:
     osi3::SingleChannelBinaryTraceFileReader reader_;
-    const std::string test_file_gt_ = "test_gt_.osi";
-    const std::string test_file_sv_ = "test_sv_.osi";
+    std::filesystem::path test_file_gt_;
+    std::filesystem::path test_file_sv_;
 
     void SetUp() override {
+        test_file_gt_ = MakeTempPath("gt", "osi");
+        test_file_sv_ = MakeTempPath("sv", "osi");
         CreateTestGroundTruthFile();
         CreateTestSensorViewFile();
     }
 
     void TearDown() override {
         reader_.Close();
-        std::filesystem::remove(test_file_gt_);
-        std::filesystem::remove(test_file_sv_);
+        std::error_code ec;
+        std::filesystem::remove(test_file_gt_, ec);
+        std::filesystem::remove(test_file_sv_, ec);
     }
 
    private:
+    static std::filesystem::path MakeTempPath(const std::string& prefix, const std::string& extension) {
+        const auto* test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+        std::string name = std::string(test_info->test_suite_name()) + "_" + test_info->name();
+        for (auto& ch : name) {
+            if (!std::isalnum(static_cast<unsigned char>(ch))) {
+                ch = '_';
+            }
+        }
+        return std::filesystem::temp_directory_path() / (prefix + "_" + name + "." + extension);
+    }
+
     void CreateTestGroundTruthFile() const {
         std::ofstream file(test_file_gt_, std::ios::binary);
         osi3::GroundTruth ground_truth;
@@ -112,7 +129,7 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, HasNextReturnsFalseWhenEmpty) {
 TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenNonexistentFile) { EXPECT_FALSE(reader_.Open("nonexistent_file.osi")); }
 
 TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenInvalidFileFormat) {
-    std::string invalid_file = "invalid.bin";
+    const auto invalid_file = MakeTempPath("invalid", "bin");
     {
         std::ofstream file(invalid_file, std::ios::binary);
         file << "Invalid data";
@@ -121,13 +138,13 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenInvalidFileFormat) {
     EXPECT_FALSE(reader_.Open(invalid_file));
     std::filesystem::remove(invalid_file);
 
-    invalid_file = "invalid_filename.osi";
+    const auto invalid_file_osi = MakeTempPath("invalid_filename", "osi");
     {
-        std::ofstream file(invalid_file, std::ios::binary);
+        std::ofstream file(invalid_file_osi, std::ios::binary);
         file << "Invalid data";
     }
-    EXPECT_FALSE(reader_.Open(invalid_file));
-    std::filesystem::remove(invalid_file);
+    EXPECT_FALSE(reader_.Open(invalid_file_osi));
+    std::filesystem::remove(invalid_file_osi);
 }
 
 TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenWithExplicitMessageType) {
@@ -137,7 +154,7 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenWithExplicitMessageType) {
 }
 
 TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadEmptyMessage) {
-    std::string empty_file = "empty_sv_99.osi";
+    const auto empty_file = MakeTempPath("empty_sv_99", "osi");
     {
         std::ofstream file(empty_file, std::ios::binary);
         uint32_t size = 0;
@@ -151,7 +168,7 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadEmptyMessage) {
 }
 
 TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadCorruptedMessageSize) {
-    std::string corrupted_file = "corrupted_size_sv_99.osi";
+    const auto corrupted_file = MakeTempPath("corrupted_size_sv_99", "osi");
     {
         std::ofstream file(corrupted_file, std::ios::binary);
         uint32_t invalid_size = 0xFFFFFFFF;
@@ -165,7 +182,7 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadCorruptedMessageSize) {
 }
 
 TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadCorruptedMessageContent) {
-    std::string corrupted_file = "corrupted_content_sv_99.osi";
+    const auto corrupted_file = MakeTempPath("corrupted_content_sv_99", "osi");
     {
         std::ofstream file(corrupted_file, std::ios::binary);
         uint32_t size = 100;

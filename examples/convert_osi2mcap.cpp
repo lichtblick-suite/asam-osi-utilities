@@ -140,7 +140,7 @@ void printHelp() {
     }
     std::cout << "  --chunk_size <size>           Optional: Chunk size in bytes (default: 786432)\n"
               << "  --compression <type>          Optional: Compression type (none, lz4, zstd) (default: zstd)\n"
-              << "  --compression_level <type>    Optional: Compression level (fastest, fast, default, slow, slowest) (default: default)\n\n";
+              << "  --compression_level <type>    Optional: Compression level (fastest, fast, default) (default: default)\n\n";
 }
 
 mcap::Compression parseCompressionType(const std::string& compression_str) {

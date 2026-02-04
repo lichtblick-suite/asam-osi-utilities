@@ -26,7 +26,7 @@ namespace {
 void fdSetInternal(google::protobuf::FileDescriptorSet& fd_set, std::unordered_set<std::string>& files, const google::protobuf::FileDescriptor* file_descriptor) {
     for (int i = 0; i < file_descriptor->dependency_count(); ++i) {
         const auto* dep = file_descriptor->dependency(i);
-        if (auto [_, inserted] = files.insert(dep->name()); !inserted) {
+        if (auto [_, inserted] = files.insert(std::string(dep->name())); !inserted) {
             continue;
         }
         fdSetInternal(fd_set, files, file_descriptor->dependency(i));
