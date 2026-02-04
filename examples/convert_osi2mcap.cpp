@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+#include <osi-utilities/tracefile/OsiFileAnalyzer.h>
+#include <osi-utilities/tracefile/TraceFileConfig.h>
 #include <osi-utilities/tracefile/reader/SingleChannelBinaryTraceFileReader.h>
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
@@ -116,9 +118,11 @@ struct ProgramOptions {
     std::filesystem::path input_file_path;
     std::filesystem::path output_file_path;
     osi3::ReaderTopLevelMessage message_type = osi3::ReaderTopLevelMessage::kUnknown;
-    size_t chunk_size = static_cast<size_t>(1024 * 768);      // Default upstream mcap is 768 KiB
-    mcap::Compression compression = mcap::Compression::Zstd;  // Default upstream mcap is Zstd
+    size_t chunk_size = osi3::tracefile::config::kDefaultChunkSize;
+    mcap::Compression compression = mcap::Compression::Zstd;
     mcap::CompressionLevel compression_level = mcap::CompressionLevel::Default;
+    bool auto_optimize = false;           // Enable automatic optimization based on file analysis
+    bool chunk_size_set_by_user = false;  // Track if user explicitly set chunk size
 };
 
 const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kValidTypes = {
@@ -129,18 +133,31 @@ const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kValidTypes =
     {"StreamingUpdate", osi3::ReaderTopLevelMessage::kStreamingUpdate}};
 
 void printHelp() {
-    std::cout << "Usage: convert_osi2mcap <input_file> <output_file> [--input-type <message_type>]\n\n"
+    std::cout << "Usage: convert_osi2mcap <input_file> <output_file> [options]\n\n"
               << "Arguments:\n"
               << "  input_file              Path to the input OSI trace file\n"
-              << "  output_file             Path to the output MCAP file\n"
-              << "  --input-type <message_type>   Optional: Specify input message type if not stated in filename\n\n"
-              << "\tValid message types:\n";
+              << "  output_file             Path to the output MCAP file\n\n"
+              << "Options:\n"
+              << "  --input-type <type>     Specify input message type if not stated in filename\n";
+    std::cout << "\tValid message types:\n";
     for (const auto& [type, _] : kValidTypes) {
         std::cout << "\t\t" << type << "\n";
     }
-    std::cout << "  --chunk_size <size>           Optional: Chunk size in bytes (default: 786432)\n"
-              << "  --compression <type>          Optional: Compression type (none, lz4, zstd) (default: zstd)\n"
-              << "  --compression_level <type>    Optional: Compression level (fastest, fast, default) (default: default)\n\n";
+    std::cout << "\n  --auto-optimize         Analyze input file and automatically determine optimal\n"
+              << "                          chunk size and compression settings for playback.\n"
+              << "                          Targets ~1 second of data per chunk for efficient buffering.\n"
+              << "\n  --chunk_size <size>     Chunk size in bytes (default: " << osi3::tracefile::config::kDefaultChunkSize << ")\n"
+              << "                          Overrides --auto-optimize if both are specified.\n"
+              << "  --compression <type>    Compression type: none, lz4, zstd (default: zstd)\n"
+              << "  --compression_level <l> Compression level: fastest, fast, default (default: default)\n\n"
+              << "Auto-optimization rationale:\n"
+              << "  MCAP files are organized into chunks. Each chunk must be decompressed fully\n"
+              << "  before any message within it can be read. The default chunk size (768 KiB)\n"
+              << "  may result in only 1-2 large OSI messages per chunk, causing excessive\n"
+              << "  decompression overhead during playback.\n\n"
+              << "  --auto-optimize analyzes your input file to calculate the optimal chunk size\n"
+              << "  that packs approximately 1 second of data per chunk. This significantly\n"
+              << "  improves playback performance in viewers like Lichtblick.\n";
 }
 
 mcap::Compression parseCompressionType(const std::string& compression_str) {
@@ -178,10 +195,13 @@ std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
                 options.message_type = types_it->second;
             } else if (arg == "--chunk_size" && i + 1 < argc) {
                 options.chunk_size = std::stoull(argv[++i]);
+                options.chunk_size_set_by_user = true;
             } else if (arg == "--compression" && i + 1 < argc) {
                 options.compression = parseCompressionType(argv[++i]);
             } else if (arg == "--compression_level" && i + 1 < argc) {
                 options.compression_level = parseCompressionLevel(argv[++i]);
+            } else if (arg == "--auto-optimize" || arg == "--auto_optimize") {
+                options.auto_optimize = true;
             } else {
                 throw std::invalid_argument("Invalid argument: " + arg);
             }
@@ -195,13 +215,40 @@ std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
 }
 
 int main(const int argc, const char** argv) {
-    const auto options = parseArgs(argc, argv);
+    auto options = parseArgs(argc, argv);
     if (!options) {
         return 1;
     }
 
     std::cout << "Input file:  " << options->input_file_path << std::endl;
     std::cout << "Output file: " << options->output_file_path << std::endl;
+
+    // Auto-optimize: analyze input file to determine optimal settings
+    if (options->auto_optimize) {
+        std::cout << "\nAnalyzing input file for optimal MCAP settings..." << std::endl;
+
+        osi3::OsiFileAnalyzer analyzer;
+        auto stats = analyzer.Analyze(options->input_file_path);
+
+        if (stats && stats->IsValid()) {
+            osi3::OsiFileAnalyzer::PrintStatistics(*stats);
+
+            auto recommended = analyzer.RecommendMcapOptions(*stats);
+            osi3::OsiFileAnalyzer::PrintRecommendation(recommended);
+
+            // Apply recommended settings (unless user explicitly set chunk_size)
+            if (!options->chunk_size_set_by_user) {
+                options->chunk_size = recommended.chunk_size;
+            } else {
+                std::cout << "\nNote: Using user-specified chunk size (" << options->chunk_size << ") instead of recommended (" << recommended.chunk_size << ")" << std::endl;
+            }
+            options->compression = recommended.compression;
+            options->compression_level = recommended.compression_level;
+        } else {
+            std::cerr << "WARNING: Could not analyze input file. Using default settings." << std::endl;
+        }
+        std::cout << std::endl;
+    }
 
     // create single channel trace file (.osi) reader
     auto trace_file_reader = osi3::SingleChannelBinaryTraceFileReader();
@@ -221,7 +268,7 @@ int main(const int argc, const char** argv) {
 
     // print information about chunk size and compression
     std::cout << "MCAP options:" << "\n";
-    std::cout << "\tchunk size: " << mcap_options.chunkSize << "\n";
+    std::cout << "\tchunk size: " << mcap_options.chunkSize << " bytes (" << (mcap_options.chunkSize / (1024.0 * 1024.0)) << " MiB)" << "\n";
 
     std::cout << "\tcompression: " << kCompressionEnumStringMap.at(mcap_options.compression) << "\n";
     std::cout << "\tcompression level: " << kCompressionLevelEnumStringMap.at(mcap_options.compressionLevel) << "\n";

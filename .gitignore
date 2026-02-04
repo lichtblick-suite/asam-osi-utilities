@@ -8,6 +8,7 @@ osi/
 osi3/
 vcpkg_installed/
 _untracked_/
+traces/
 
 # Specific extensions
 *.egg-info

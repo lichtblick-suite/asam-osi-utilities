@@ -10,6 +10,7 @@
 
 #include <mcap/mcap.hpp>
 
+#include "../TraceFileConfig.h"
 #include "../Writer.h"
 
 namespace osi3 {
