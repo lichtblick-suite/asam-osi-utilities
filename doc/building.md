@@ -57,13 +57,17 @@ Generated HTML is written to `doc/html/index.html`.
 
 ```bash
 sudo apt update
-sudo apt install build-essential cmake git doxygen graphviz clang-format clang-tidy pkg-config
+sudo apt install -y yq
+yq -r '(.dependencies.build.apt + .dependencies.docs.apt + .dependencies.dev.apt) | unique | .[]' .github/dependencies.yml | \
+    xargs sudo apt install -y
 ```
 
 **Fedora/RHEL:**
 
 ```bash
-sudo dnf install gcc-c++ cmake git doxygen graphviz clang-tools-extra pkgconf-pkg-config
+sudo dnf install -y yq
+yq -r '(.dependencies.build.dnf + .dependencies.docs.dnf + .dependencies.dev.dnf) | unique | .[]' .github/dependencies.yml | \
+    xargs sudo dnf install -y
 ```
 
 #### (Linux) 2. Install vcpkg
@@ -98,16 +102,17 @@ ctest --test-dir build --output-on-failure -j$(nproc)
 
 ```bash
 sudo apt update
-sudo apt install build-essential cmake git doxygen \
-    libprotobuf-dev protobuf-compiler pkg-config \
-    liblz4-dev libzstd-dev libgtest-dev
+sudo apt install -y yq
+yq -r '(.dependencies.build.apt + .dependencies.test.apt + .dependencies.docs.apt) | unique | .[]' .github/dependencies.yml | \
+    xargs sudo apt install -y
 ```
 
 **Fedora/RHEL:**
 
 ```bash
-sudo dnf install gcc-c++ cmake git doxygen \
-    protobuf-devel lz4-devel zstd-devel gtest-devel pkgconf-pkg-config
+sudo dnf install -y yq
+yq -r '(.dependencies.build.dnf + .dependencies.test.dnf + .dependencies.docs.dnf) | unique | .[]' .github/dependencies.yml | \
+    xargs sudo dnf install -y
 ```
 
 #### (Linux) 2. Clone and Build
@@ -139,22 +144,14 @@ Using `winget` (Windows Package Manager):
 # PowerShell 7 (recommended for vcpkg)
 winget install --id Microsoft.PowerShell --source winget
 
-# CMake
-winget install --id Kitware.CMake --source winget
+# yq (used to read .github/dependencies.yml)
+winget install --id MikeFarah.yq --source winget
 
-# Git
-winget install --id Git.Git --source winget
+# Install from .github/dependencies.yml
+yq -r '(.dependencies.build.winget + .dependencies.docs.winget + .dependencies.dev.winget) | unique | .[]' .github/dependencies.yml |
+    ForEach-Object { winget install --id $_ --source winget }
 
-# Doxygen (optional, for documentation)
-winget install --id DimitriVanHeesch.Doxygen --source winget
-
-# Graphviz (optional, for Doxygen diagrams)
-winget install --id Graphviz.Graphviz --source winget
-
-# LLVM (optional, provides clang-format and clang-tidy)
-winget install --id LLVM.LLVM --source winget
-
-# Visual Studio 2022 Build Tools
+# Visual Studio 2022 Build Tools (workload override)
 winget install --id Microsoft.VisualStudio.2022.BuildTools --source winget `
     --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
 ```
@@ -238,7 +235,9 @@ xcode-select --install
 #### (macOS) 2. Install Dependencies with Homebrew
 
 ```bash
-brew install cmake protobuf lz4 zstd googletest doxygen graphviz
+brew install yq
+yq -r '(.dependencies.build.brew + .dependencies.test.brew + .dependencies.docs.brew) | unique | .[]' .github/dependencies.yml | \
+    xargs brew install
 ```
 
 #### (macOS) 3. Clone and Build

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2024 ASAM OSI Utilities Contributors
+# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
 name: Format Check
 
@@ -18,7 +18,8 @@ jobs:
       - name: Install clang-format
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format-18
+          sudo apt-get install -y yq
+          yq -r '.dependencies.dev.apt[]' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Check C++ formatting
         run: |

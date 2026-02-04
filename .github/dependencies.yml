@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 #
 # Centralized dependency manifest for CI workflows and documentation.
 # This file is the single source of truth for build dependencies.

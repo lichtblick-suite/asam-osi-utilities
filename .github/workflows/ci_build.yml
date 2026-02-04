@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
 name: Build
 
@@ -34,8 +34,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake build-essential liblz4-dev libzstd-dev \
-            protobuf-compiler libprotobuf-dev libgtest-dev doxygen graphviz gcovr pkg-config
+          sudo apt-get install -y yq
+          yq -r '.ci_jobs.ubuntu_build.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Configure CMake
         env:
@@ -134,7 +134,9 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
-        run: brew install cmake protobuf lz4 zstd googletest doxygen graphviz
+        run: |
+          brew install yq
+          yq -r '.ci_jobs.macos_build.brew' .github/dependencies.yml | xargs brew install
 
       - name: Configure CMake
         run: cmake -B build

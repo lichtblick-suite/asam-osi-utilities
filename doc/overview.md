@@ -131,9 +131,14 @@ if (reader.Open("trace.mcap")) {
 }
 ```
 
+## Examples
+
+The examples provide small, focused programs for reading/writing each supported trace format and for converting `.osi` to `.mcap`.
+See [Examples](examples.md) for purpose and usage details.
+
 ## Further Resources
 
 - [ASAM OSI Specification](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/specification/index.html)
 - [MCAP Documentation](https://mcap.dev/docs)
 - [Protocol Buffers](https://protobuf.dev/)
-- [Examples](../examples/README.md)
+- [Examples](examples.md)

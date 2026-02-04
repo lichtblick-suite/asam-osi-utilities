@@ -41,8 +41,11 @@ ctest --test-dir build --output-on-failure
 | ----------------------------------------------------------------------- | ----------------------------------------------- |
 | [Overview](doc/overview.md)                                             | What is this library and OSI trace file formats |
 | [Building](doc/building.md)                                             | Build instructions for all platforms            |
+| [Development Guide](doc/development.md)                                 | Short index for setup and workflow              |
+| [Development Setup](doc/setup.md)                                       | Tooling and environment setup                   |
+| [Developer Workflow](doc/workflow.md)                                   | Day-to-day commands                             |
 | [Contributing](doc/contributing.md)                                     | How to contribute to this project               |
-| [Development](doc/development.md)                                       | Developer setup, hooks, and code style          |
+| [Examples](doc/examples.md)                                             | Example programs and their purpose              |
 | [CI Pipeline](doc/ci-pipeline.md)                                       | Continuous integration documentation            |
 | [API Reference](https://lichtblick-suite.github.io/asam-osi-utilities/) | Doxygen-generated API docs                      |
 

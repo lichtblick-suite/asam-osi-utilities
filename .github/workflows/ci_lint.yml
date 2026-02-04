@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2024 ASAM OSI Utilities Contributors
+# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
 name: Lint
 
@@ -18,8 +18,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake build-essential liblz4-dev libzstd-dev \
-            protobuf-compiler libprotobuf-dev libgtest-dev clang-tidy-18 pkg-config
+          sudo apt-get install -y yq
+          yq -r '.ci_jobs.ubuntu_lint.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Configure CMake
         run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON

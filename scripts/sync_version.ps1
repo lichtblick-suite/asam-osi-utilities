@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 # SPDX-License-Identifier: MPL-2.0
 #
 # Synchronize version from VERSION file to vcpkg.json and Doxyfile.in
@@ -42,10 +42,12 @@ if (Test-Path $VcpkgFile) {
     
     if ($OldVersion -ne $Version) {
         Write-Host "Updated vcpkg.json: $OldVersion -> $Version" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "vcpkg.json already at version $Version"
     }
-} else {
+}
+else {
     Write-Host "WARNING: vcpkg.json not found at $VcpkgFile" -ForegroundColor Yellow
 }
 
@@ -59,10 +61,12 @@ if (Test-Path $Doxyfile) {
     if ($DoxyContent -ne $NewDoxyContent) {
         Set-Content $Doxyfile $NewDoxyContent -NoNewline
         Write-Host "Updated Doxyfile.in PROJECT_NUMBER to $Version" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "Doxyfile.in already at version $Version"
     }
-} else {
+}
+else {
     Write-Host "WARNING: Doxyfile.in not found at $Doxyfile" -ForegroundColor Yellow
 }
 

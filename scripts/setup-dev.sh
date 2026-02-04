@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 # SPDX-License-Identifier: MPL-2.0
 #
 # Setup development environment for ASAM OSI Utilities
@@ -145,6 +145,43 @@ else
     if [ $RUN_ALL -eq 1 ]; then
         echo "No C++ files found to check."
     fi
+fi
+
+# Run clang-tidy (lint) when available
+if command -v clang-tidy &> /dev/null; then
+    if [ -f "build/compile_commands.json" ]; then
+        COMPILE_DIR="build"
+    elif [ -f "build-ninja/compile_commands.json" ]; then
+        COMPILE_DIR="build-ninja"
+    else
+        COMPILE_DIR=""
+    fi
+
+    if [ -n "$COMPILE_DIR" ]; then
+        if [ $RUN_ALL -eq 1 ]; then
+            TIDY_FILES=$(find src include tests examples -type f \( -name "*.cpp" \) 2>/dev/null | grep -v "^lib/")
+        else
+            TIDY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.cpp$" | grep -v "^lib/")
+        fi
+
+        if [ -n "$TIDY_FILES" ]; then
+            echo "Running clang-tidy..."
+            LINT_FAILED=0
+            for FILE in $TIDY_FILES; do
+                if ! clang-tidy -p "$COMPILE_DIR" --warnings-as-errors='*' "$FILE"; then
+                    LINT_FAILED=1
+                fi
+            done
+            if [ $LINT_FAILED -ne 0 ]; then
+                exit 1
+            fi
+            echo "✓ clang-tidy OK"
+        fi
+    else
+        echo "clang-tidy skipped (no compile_commands.json found). Build once to generate it."
+    fi
+else
+    echo "clang-tidy not found, skipping lint"
 fi
 
 exit 0

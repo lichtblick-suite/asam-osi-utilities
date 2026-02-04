@@ -9,8 +9,7 @@ Thank you for your interest in contributing to ASAM OSI Utilities! This document
 - [Developer Certificate of Origin (DCO)](#developer-certificate-of-origin-dco)
 - [DCO Sign-Off Methods](#dco-sign-off-methods)
 - [GPG Signed Commits](#gpg-signed-commits)
-- [Getting Started](#getting-started)
-- [Development Workflow](#development-workflow)
+- [Setup and Workflow](#setup-and-workflow)
 - [Pull Request Process](#pull-request-process)
 
 ## Code of Conduct
@@ -172,56 +171,12 @@ With `commit.gpgsign` set to `true`, all commits will be automatically signed. Y
 git commit -S -s -m "Your signed and signed-off commit message"
 ```
 
-## Getting Started
+## Setup and Workflow
 
-1. **Fork the repository** on GitHub
+Use the focused pages for everyday steps:
 
-2. **Clone your fork**:
-
-   ```bash
-   git clone --recurse-submodules https://github.com/YOUR_USERNAME/asam-osi-utilities.git
-   cd asam-osi-utilities
-   ```
-
-3. **Set up the development environment** (see [Development Setup](development.md)):
-
-   ```bash
-   # Linux/macOS:
-   ./scripts/setup-dev.sh
-
-   # Windows PowerShell:
-   .\scripts\setup-dev.ps1
-   ```
-
-4. **Create a branch** for your changes:
-
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-## Development Workflow
-
-1. Make your changes
-2. Ensure code passes formatting checks:
-
-   ```bash
-   # Check formatting
-   find src include tests examples -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
-   ```
-
-3. Build and test:
-
-   ```bash
-   cmake --preset vcpkg-linux  # or vcpkg-windows
-   cmake --build build -j
-   ctest --test-dir build --output-on-failure
-   ```
-
-4. Commit with sign-off and GPG signature:
-
-   ```bash
-   git commit -S -s -m "feat: your feature description"
-   ```
+- [Development Setup](setup.md) — tools, hooks, and environment
+- [Developer Workflow](workflow.md) — build, test, format, and commit
 
 ## Pull Request Process
 

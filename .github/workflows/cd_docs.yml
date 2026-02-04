@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
 name: Documentation
 
@@ -30,8 +30,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake doxygen graphviz liblz4-dev libzstd-dev \
-            protobuf-compiler libprotobuf-dev pkg-config
+          sudo apt-get install -y yq
+          yq -r '.ci_jobs.ubuntu_docs.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Configure CMake
         run: cmake -B build -DBUILD_TESTING=OFF
