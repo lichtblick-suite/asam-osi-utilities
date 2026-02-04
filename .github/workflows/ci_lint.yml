@@ -19,7 +19,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake build-essential liblz4-dev libzstd-dev \
-            protobuf-compiler libprotobuf-dev libgtest-dev clang-tidy-18
+            protobuf-compiler libprotobuf-dev libgtest-dev clang-tidy-18 pkg-config
 
       - name: Configure CMake
         run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON

@@ -28,6 +28,13 @@ target_compile_definitions(OSIUtilities PRIVATE OSI_TRACE_FILE_SPEC_VERSION="${O
 # Specify the public headers for the library for clean access
 target_include_directories(OSIUtilities PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
+# MCAP is header-only with a single implementation TU. On Windows, its default
+# visibility uses dllimport/dllexport which causes LNK4217/LNK4286 warnings
+# when linking statically. Override MCAP_PUBLIC to empty for static builds.
+if (WIN32)
+    target_compile_definitions(OSIUtilities PUBLIC MCAP_PUBLIC=)
+endif ()
+
 
 # Link against OSI made available by parent CMakeLists.txt
 if (LINK_WITH_SHARED_OSI)

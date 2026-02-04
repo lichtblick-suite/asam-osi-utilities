@@ -7,12 +7,11 @@
 
 #include <gtest/gtest.h>
 
-#include <cctype>
 #include <filesystem>
 #include <regex>
 #include <string>
-#include <system_error>
 
+#include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_sensordata.pb.h"
 
@@ -21,24 +20,11 @@ class MCAPTraceFileWriterTest : public ::testing::Test {
     osi3::MCAPTraceFileWriter writer_;
     std::filesystem::path test_file_;
 
-    void SetUp() override { test_file_ = MakeTempPath("mcap", "mcap"); }
+    void SetUp() override { test_file_ = osi3::testing::MakeTempPath("mcap", osi3::testing::FileExtensions::kMcap); }
 
     void TearDown() override {
         writer_.Close();
-        std::error_code ec;
-        std::filesystem::remove(test_file_, ec);
-    }
-
-   private:
-    static std::filesystem::path MakeTempPath(const std::string& prefix, const std::string& extension) {
-        const auto* test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-        std::string name = std::string(test_info->test_suite_name()) + "_" + test_info->name();
-        for (auto& ch : name) {
-            if (!std::isalnum(static_cast<unsigned char>(ch))) {
-                ch = '_';
-            }
-        }
-        return std::filesystem::temp_directory_path() / (prefix + "_" + name + "." + extension);
+        osi3::testing::SafeRemoveTestFile(test_file_);
     }
 
    protected:

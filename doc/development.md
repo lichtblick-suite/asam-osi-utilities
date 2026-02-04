@@ -27,14 +27,18 @@ The setup script will:
 
 ## Required Tools
 
-| Tool         | Required    | Purpose                                     |
-| ------------ | ----------- | ------------------------------------------- |
-| Git          | Yes         | Version control                             |
-| CMake        | Yes         | Build system                                |
-| clang-format | Recommended | Code formatting                             |
-| clang-tidy   | Optional    | Static analysis                             |
-| Ninja        | Optional    | Compile database for clangd (Windows)       |
-| Graphviz     | Optional    | Doxygen diagrams (dot)                      |
+> **📋 Dependency Reference:** All package names for each platform are defined in
+> [`.github/dependencies.yml`](../.github/dependencies.yml) — the single source of truth
+> used by both CI pipelines and this documentation.
+
+| Tool         | Required    | Purpose                                |
+| ------------ | ----------- | -------------------------------------- |
+| Git          | Yes         | Version control                        |
+| CMake        | Yes         | Build system                           |
+| clang-format | Recommended | Code formatting (version 18 preferred) |
+| clang-tidy   | Optional    | Static analysis                        |
+| Ninja        | Optional    | Compile database for clangd (Windows)  |
+| Graphviz     | Optional    | Doxygen diagrams (dot)                 |
 
 ### Installing Development Tools
 
@@ -42,8 +46,11 @@ The setup script will:
 
 ```bash
 sudo apt update
-sudo apt install clang-format clang-tidy graphviz
+sudo apt install clang-format-18 clang-tidy-18 graphviz
 ```
+
+> **Note:** If clang-format-18 is not available, install `clang-format` and check the version.
+> CI uses clang-format-18 as the reference.
 
 **Linux (Fedora/RHEL):**
 
@@ -249,6 +256,13 @@ Then point clangd to `build-ninja/compile_commands.json`. If clangd still report
 }
 ```
 
+### Build Directory Conventions
+
+- `build/` is the default CMake build directory (often Visual Studio generator on Windows).
+- `build-ninja/` is the recommended Ninja build directory for clangd on Windows.
+
+**Pick one and stick with it** for your current workflow. If you use clangd on Windows, prefer `build-ninja/` and keep it for compile_commands.json. If you use the default generator, use `build/`.
+
 Settings for VS Code (`.vscode/settings.json`):
 
 ```json
@@ -306,7 +320,7 @@ Build Doxygen documentation:
 
 ```bash
 cmake -B build
-cmake --build build --target doc
+cmake --build build --target library_api_doc
 ```
 
 View the generated documentation:

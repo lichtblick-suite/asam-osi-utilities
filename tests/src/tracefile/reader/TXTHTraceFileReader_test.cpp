@@ -7,12 +7,11 @@
 
 #include <gtest/gtest.h>
 
-#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <string>
-#include <system_error>
 
+#include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_sensorview.pb.h"
 
@@ -22,29 +21,17 @@ class TxthTraceFileReaderTest : public ::testing::Test {
     std::filesystem::path test_file_gt_;
     std::filesystem::path test_file_sv_;
 
-    static std::filesystem::path MakeTempPath(const std::string& prefix, const std::string& extension) {
-        const auto* test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-        std::string name = std::string(test_info->test_suite_name()) + "_" + test_info->name();
-        for (auto& ch : name) {
-            if (!std::isalnum(static_cast<unsigned char>(ch))) {
-                ch = '_';
-            }
-        }
-        return std::filesystem::temp_directory_path() / (prefix + "_" + name + "." + extension);
-    }
-
     void SetUp() override {
-        test_file_gt_ = MakeTempPath("gt", "txth");
-        test_file_sv_ = MakeTempPath("sv", "txth");
+        test_file_gt_ = osi3::testing::MakeTempPath("gt", osi3::testing::FileExtensions::kTxth);
+        test_file_sv_ = osi3::testing::MakeTempPath("sv", osi3::testing::FileExtensions::kTxth);
         CreateTestGroundTruthFile();
         CreateTestSensorViewFile();
     }
 
     void TearDown() override {
         reader_.Close();
-        std::error_code ec;
-        std::filesystem::remove(test_file_gt_, ec);
-        std::filesystem::remove(test_file_sv_, ec);
+        osi3::testing::SafeRemoveTestFile(test_file_gt_);
+        osi3::testing::SafeRemoveTestFile(test_file_sv_);
     }
 
    private:
@@ -141,7 +128,7 @@ TEST_F(TxthTraceFileReaderTest, HasNextReturnsFalseWhenEmpty) {
 TEST_F(TxthTraceFileReaderTest, OpenNonexistentFile) { EXPECT_FALSE(reader_.Open("nonexistent_file.txth")); }
 
 TEST_F(TxthTraceFileReaderTest, OpenInvalidFileExtension) {
-    const auto invalid_file = MakeTempPath("invalid", "txt");
+    const auto invalid_file = osi3::testing::MakeTempPath("invalid", "txt");
     {
         std::ofstream file(invalid_file);
         file << "Invalid data";
@@ -151,7 +138,7 @@ TEST_F(TxthTraceFileReaderTest, OpenInvalidFileExtension) {
 }
 
 TEST_F(TxthTraceFileReaderTest, OpenInvalidMessageType) {
-    const auto invalid_file = MakeTempPath("invalid_type", "txth");
+    const auto invalid_file = osi3::testing::MakeTempPath("invalid_type", osi3::testing::FileExtensions::kTxth);
     {
         std::ofstream file(invalid_file);
         file << "InvalidType:\n";
@@ -162,7 +149,7 @@ TEST_F(TxthTraceFileReaderTest, OpenInvalidMessageType) {
 }
 
 TEST_F(TxthTraceFileReaderTest, ReadEmptyFile) {
-    const auto empty_file = MakeTempPath("empty", "txth");
+    const auto empty_file = osi3::testing::MakeTempPath("empty", osi3::testing::FileExtensions::kTxth);
     { std::ofstream file(empty_file); }
     ASSERT_TRUE(reader_.Open(empty_file, osi3::ReaderTopLevelMessage::kGroundTruth));
     EXPECT_FALSE(reader_.HasNext());
@@ -171,7 +158,7 @@ TEST_F(TxthTraceFileReaderTest, ReadEmptyFile) {
 }
 
 TEST_F(TxthTraceFileReaderTest, ReadInvalidMessageFormat) {
-    const auto invalid_format_file = MakeTempPath("invalid_format_gt_99", "txth");
+    const auto invalid_format_file = osi3::testing::MakeTempPath("invalid_format_gt_99", osi3::testing::FileExtensions::kTxth);
     {
         std::ofstream file(invalid_format_file);
         file << "GroundTruth:\n";

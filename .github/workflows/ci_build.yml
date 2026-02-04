@@ -35,7 +35,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake build-essential liblz4-dev libzstd-dev \
-            protobuf-compiler libprotobuf-dev libgtest-dev doxygen graphviz gcovr
+            protobuf-compiler libprotobuf-dev libgtest-dev doxygen graphviz gcovr pkg-config
 
       - name: Configure CMake
         env:

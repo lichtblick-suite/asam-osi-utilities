@@ -11,8 +11,7 @@ The CI/CD pipeline is split into modular workflow files for clarity and maintain
 | `ci.yml`            | Orchestrator | Main workflow that triggers all CI jobs |
 | `ci_format.yml`     | CI           | Code formatting checks                  |
 | `ci_lint.yml`       | CI           | Static analysis with clang-tidy         |
-| `ci_build.yml`      | CI           | Build on all platforms                  |
-| `ci_test.yml`       | CI           | Run unit tests                          |
+| `ci_build.yml`      | CI           | Build and test on all platforms         |
 | `ci_compliance.yml` | CI           | DCO and Conventional Commits checks     |
 | `cd_docs.yml`       | CD           | Build and deploy documentation          |
 
@@ -80,18 +79,20 @@ Builds the project on multiple platforms and configurations:
 | Ubuntu 24.04     | Clang       | Manual deps |
 | Ubuntu Latest    | -           | vcpkg       |
 | Windows Latest   | MSVC        | vcpkg       |
-| macOS 13 (x64)   | Apple Clang | Homebrew    |
+| macOS 15 (x64)   | Apple Clang | Homebrew    |
 | macOS 14 (arm64) | Apple Clang | Homebrew    |
+| macOS 15 (x64)   | Apple Clang | vcpkg       |
+| macOS 14 (arm64) | Apple Clang | vcpkg       |
 
-### ci_test.yml - Unit Tests
+### Unit Tests (in ci_build.yml)
 
-Runs the test suite using CTest:
+Tests are run as part of the build workflow using CTest:
 
 ```yaml
 ctest --output-on-failure --parallel $(nproc)
 ```
 
-On Ubuntu with GCC, code coverage is collected and uploaded to Codecov.
+On Ubuntu 24.04 with GCC, code coverage is collected and uploaded to Codecov.
 
 ### ci_compliance.yml - Compliance Checks
 
@@ -110,9 +111,9 @@ On Ubuntu with GCC, code coverage is collected and uploaded to Codecov.
 
 Builds Doxygen documentation and deploys to GitHub Pages:
 
-1. Configure CMake
-2. Build `doc` target
-3. Deploy `doc/html/` to `gh-pages` branch
+1. Configure CMake with `-DBUILD_TESTING=OFF`
+2. Build `library_api_doc` target
+3. Deploy `doc/html/` to GitHub Pages
 4. Available at: `https://lichtblick-suite.github.io/asam-osi-utilities/`
 
 **Triggers:** Push to `main` branch only.

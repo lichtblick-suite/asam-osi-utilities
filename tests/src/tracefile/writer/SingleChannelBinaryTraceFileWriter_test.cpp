@@ -10,19 +10,25 @@
 #include <filesystem>
 #include <fstream>
 
+#include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_sensorview.pb.h"
 
 class SingleChannelBinaryTraceFileWriterTest : public ::testing::Test {
    protected:
     osi3::SingleChannelBinaryTraceFileWriter writer_;
-    const std::string test_file_gt_ = "test_write_gt_.osi";
-    const std::string test_file_sv_ = "test_write_sv_.osi";
+    std::filesystem::path test_file_gt_;
+    std::filesystem::path test_file_sv_;
+
+    void SetUp() override {
+        test_file_gt_ = osi3::testing::MakeTempPath("scb_gt", osi3::testing::FileExtensions::kOsi);
+        test_file_sv_ = osi3::testing::MakeTempPath("scb_sv", osi3::testing::FileExtensions::kOsi);
+    }
 
     void TearDown() override {
         writer_.Close();
-        std::filesystem::remove(test_file_gt_);
-        std::filesystem::remove(test_file_sv_);
+        osi3::testing::SafeRemoveTestFile(test_file_gt_);
+        osi3::testing::SafeRemoveTestFile(test_file_sv_);
     }
 };
 
