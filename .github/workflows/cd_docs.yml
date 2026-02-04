@@ -30,7 +30,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y yq
+          YQ_VERSION=v4.44.3
+          sudo curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
           yq -r '.ci_jobs.ubuntu_docs.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Configure CMake
