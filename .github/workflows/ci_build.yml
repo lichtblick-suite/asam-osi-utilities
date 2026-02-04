@@ -104,7 +104,7 @@ jobs:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
       - name: Configure CMake
-        run: cmake --preset vcpkg-windows
+        run: cmake --preset vcpkg-windows -DBUILD_DOCS=OFF
 
       - name: Build
         run: cmake --build build --config Release --parallel
@@ -138,6 +138,41 @@ jobs:
 
       - name: Configure CMake
         run: cmake -B build
+
+      - name: Build
+        run: cmake --build build -j$(sysctl -n hw.ncpu)
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
+
+  # ==========================================================================
+  # macOS with vcpkg
+  # ==========================================================================
+  macos-vcpkg:
+    name: macOS (vcpkg, ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: x64
+          - runner: macos-14
+            arch: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+
+      - name: Configure CMake
+        run: cmake --preset vcpkg
 
       - name: Build
         run: cmake --build build -j$(sysctl -n hw.ncpu)
