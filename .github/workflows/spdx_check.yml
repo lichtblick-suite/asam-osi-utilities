@@ -31,7 +31,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           dep5 = Path(".reuse/dep5").read_text(encoding="utf-8").splitlines()
-          filtered = [line for line in dep5 if line.strip() != "tests/intentional-failures/**"]
+          filtered = [line for line in dep5 if not line.strip().startswith("tests/intentional-failures/")]
           Path(".reuse/dep5").write_text("\n".join(filtered) + "\n", encoding="utf-8")
           PY
       - name: REUSE lint (expected failure)

@@ -115,41 +115,6 @@ jobs:
         working-directory: build
         run: ctest -C Release --output-on-failure --parallel
 
-  # ===========================================================================
-  # macOS with Homebrew
-  # ===========================================================================
-  macos:
-    name: macOS (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-15
-            arch: x64
-          - runner: macos-14
-            arch: arm64
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-
-      - name: Install dependencies
-        run: |
-          brew install yq
-          yq -r '.ci_jobs.macos_build.brew' .github/dependencies.yml | xargs brew install
-
-      - name: Configure CMake
-        run: cmake -B build -DBUILD_TESTING=ON -DLINK_WITH_SHARED_OSI=ON
-
-      - name: Build
-        run: cmake --build build -j$(sysctl -n hw.ncpu)
-
-      - name: Run Tests
-        working-directory: build
-        run: ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
-
   # ==========================================================================
   # macOS with vcpkg
   # ==========================================================================

@@ -79,8 +79,6 @@ Builds the project on multiple platforms and configurations:
 | Ubuntu 24.04     | Clang       | Manual deps |
 | Ubuntu Latest    | -           | vcpkg       |
 | Windows Latest   | MSVC        | vcpkg       |
-| macOS 15 (x64)   | Apple Clang | Homebrew    |
-| macOS 14 (arm64) | Apple Clang | Homebrew    |
 | macOS 15 (x64)   | Apple Clang | vcpkg       |
 | macOS 14 (arm64) | Apple Clang | vcpkg       |
 

@@ -31,11 +31,6 @@ dependencies:
       - lz4-devel
       - libzstd-devel
       - pkgconf-pkg-config
-    brew:
-      - cmake
-      - protobuf
-      - lz4
-      - zstd
     vcpkg:
       - protobuf
       - lz4
@@ -82,8 +77,6 @@ dependencies:
       - libgtest-dev
     dnf:
       - gtest-devel
-    brew:
-      - googletest
     vcpkg:
       - gtest
 
@@ -179,8 +172,3 @@ ci_jobs:
     description: "Documentation build only"
     apt: |
       cmake doxygen graphviz
-
-  macos_build:
-    description: "macOS Homebrew builds"
-    brew: |
-      cmake protobuf abseil lz4 zstd googletest

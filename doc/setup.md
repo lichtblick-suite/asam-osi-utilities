@@ -55,10 +55,19 @@ yq -r '(.dependencies.dev.winget + .dependencies.docs.winget) | unique | .[]' .g
 winget install --id Ninja-build.Ninja --source winget
 ```
 
-### macOS (Homebrew)
+### macOS (vcpkg only)
+
+macOS builds are supported only via vcpkg. Install the host tools first:
 
 ```bash
 brew install yq
+yq -r '.dependencies.vcpkg_host.brew | unique | .[]' .github/dependencies.yml | \
+  xargs brew install
+```
+
+Optional tooling (format/lint/docs):
+
+```bash
 yq -r '(.dependencies.dev.brew + .dependencies.lint.brew + .dependencies.docs.brew) | unique | .[]' .github/dependencies.yml | \
   xargs brew install
 

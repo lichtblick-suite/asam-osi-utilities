@@ -251,7 +251,8 @@ If you must use this approach, consider using [Conan](https://conan.io/) or buil
 
 ## macOS
 
-### Option A (macOS): Using vcpkg (Recommended)
+macOS builds are supported **only via vcpkg**. Homebrew/system dependency builds
+are not supported.
 
 Follow the Linux vcpkg instructions, replacing the preset with `vcpkg`:
 
@@ -263,51 +264,7 @@ cmake --preset vcpkg
 cmake --build build -j$(sysctl -n hw.ncpu)
 ```
 
-### Option B (macOS): Using Homebrew
-
-#### (macOS) 1. Install Xcode Command Line Tools
-
-```bash
-xcode-select --install
-```
-
-#### (macOS) 2. Install Dependencies with Homebrew
-
-```bash
-brew install yq
-yq -r '.dependencies.build.brew | unique | .[]' .github/dependencies.yml | \
-    xargs brew install
-```
-
-Optional extras:
-
-```bash
-# Test dependencies
-yq -r '.dependencies.test.brew | unique | .[]' .github/dependencies.yml | xargs brew install
-
-# Docs tools
-yq -r '.dependencies.docs.brew | unique | .[]' .github/dependencies.yml | xargs brew install
-```
-
-#### (macOS) 3. Clone and Build
-
-```bash
-git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
-cd asam-osi-utilities
-cmake -B build
-cmake --build build -j$(sysctl -n hw.ncpu)
-```
-
-#### (macOS) 4. Run Tests
-
 Configure with `-DBUILD_TESTING=ON` first (for vcpkg, set `VCPKG_MANIFEST_FEATURES=tests`).
-
-```bash
-ctest --test-dir build --output-on-failure
-```
-
-> **Note:** Homebrew’s protobuf can pull in Abseil logging symbols. If you hit linker
-> errors on macOS, prefer the vcpkg build or ensure Abseil libraries are linked.
 
 ---
 
