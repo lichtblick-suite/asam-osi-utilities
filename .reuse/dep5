@@ -3,10 +3,11 @@ Upstream-Name: ASAM OSI Utilities
 Source: https://github.com/Lichtblick-Suite/asam-osi-utilities
 Files-Excluded:
  build*/**
+ tests/reuse_spdx_invalid.cpp
  lib/osi-cpp/**
  lib/mcap/**
  .git/**
 
 Files: *
-Copyright: 2024-2026 BMW AG
+Copyright: NONE
 License: MPL-2.0

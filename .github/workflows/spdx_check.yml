@@ -17,55 +17,24 @@ jobs:
         run: |
           mkdir -p LICENSES
           cp LICENSE LICENSES/MPL-2.0.txt
-      - name: Generate REUSE excludes from .gitignore
+      - name: REUSE lint (expected success)
+        uses: fsfe/reuse-action@v2
+      - name: Enable invalid SPDX test file
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          raw_lines = Path(".gitignore").read_text(encoding="utf-8").splitlines()
-          patterns = []
-          for line in raw_lines:
-              stripped = line.strip()
-              if not stripped or stripped.startswith("#") or stripped.startswith("!"):
-                  continue
-              patterns.append(stripped)
-          # Always exclude submodules and git metadata
-          patterns.extend(["lib/osi-cpp/**", "lib/mcap/**", ".git/**"])
-          normalized = []
-          for pat in patterns:
-              if pat.endswith("/"):
-                  normalized.append(pat + "**")
-                  continue
-              if pat.endswith("/**"):
-                  normalized.append(pat)
-                  continue
-              if all(ch not in pat for ch in "*?[]") and "/" not in pat:
-                  normalized.append(pat)
-                  normalized.append(pat + "/**")
-              else:
-                  normalized.append(pat)
-          seen = set()
-          unique = []
-          for pat in normalized:
-              if pat in seen:
-                  continue
-              seen.add(pat)
-              unique.append(pat)
-          dep5 = [
-              "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/",
-              "Upstream-Name: ASAM OSI Utilities",
-              "Source: https://github.com/Lichtblick-Suite/asam-osi-utilities",
-              "Files-Excluded:",
-          ]
-          dep5.extend([f" {pat}" for pat in unique])
-          dep5.extend([
-              "",
-              "Files: *",
-              "Copyright: 2024-2026 BMW AG",
-              "License: MPL-2.0",
-              "",
-          ])
-          Path(".reuse/dep5").write_text("\n".join(dep5), encoding="utf-8")
+          dep5 = Path(".reuse/dep5").read_text(encoding="utf-8").splitlines()
+          filtered = [line for line in dep5 if line.strip() != "tests/reuse_spdx_invalid.cpp"]
+          Path(".reuse/dep5").write_text("\n".join(filtered) + "\n", encoding="utf-8")
           PY
-      - name: REUSE lint
+      - name: REUSE lint (expected failure)
+        id: reuse_fail
         uses: fsfe/reuse-action@v2
+        continue-on-error: true
+      - name: Assert REUSE failure occurred
+        if: steps.reuse_fail.outcome != 'failure'
+        shell: bash
+        run: |
+          echo "ERROR: REUSE lint was expected to fail but succeeded."
+          exit 1
