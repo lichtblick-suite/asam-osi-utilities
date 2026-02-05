@@ -17,8 +17,14 @@ jobs:
         run: |
           mkdir -p LICENSES
           cp LICENSE LICENSES/MPL-2.0.txt
+      - name: Install reuse tool
+        shell: bash
+        run: |
+          python3 -m pip install --user reuse
       - name: REUSE lint (expected success)
-        uses: fsfe/reuse-action@v2
+        shell: bash
+        run: |
+          python3 -m reuse lint --suppress-deprecation
       - name: Enable invalid SPDX test file
         shell: bash
         run: |
@@ -29,12 +35,13 @@ jobs:
           Path(".reuse/dep5").write_text("\n".join(filtered) + "\n", encoding="utf-8")
           PY
       - name: REUSE lint (expected failure)
-        id: reuse_fail
-        uses: fsfe/reuse-action@v2
-        continue-on-error: true
-      - name: Assert REUSE failure occurred
-        if: steps.reuse_fail.outcome != 'failure'
         shell: bash
         run: |
-          echo "ERROR: REUSE lint was expected to fail but succeeded."
-          exit 1
+          set +e
+          python3 -m reuse lint --suppress-deprecation
+          status=$?
+          set -e
+          if [ $status -eq 0 ]; then
+            echo "ERROR: REUSE lint was expected to fail but succeeded."
+            exit 1
+          fi
