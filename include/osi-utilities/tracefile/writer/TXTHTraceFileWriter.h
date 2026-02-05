@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
@@ -20,7 +20,16 @@ namespace osi3 {
  */
 class TXTHTraceFileWriter final : public TraceFileWriter {
    public:
+    /**
+     * @brief Opens a text trace file for writing
+     * @param file_path Path to the file to be created/opened
+     * @return true if successful, false otherwise
+     */
     bool Open(const std::filesystem::path& file_path) override;
+
+    /**
+     * @brief Closes the trace file
+     */
     void Close() override;
 
     /**
@@ -33,7 +42,7 @@ class TXTHTraceFileWriter final : public TraceFileWriter {
     bool WriteMessage(const T& top_level_message);
 
    private:
-    std::ofstream trace_file_;
+    std::ofstream trace_file_; /**< Output file stream. */
 };
 
 }  // namespace osi3

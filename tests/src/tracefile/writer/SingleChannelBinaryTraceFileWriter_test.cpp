@@ -1,36 +1,40 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
-#include <gtest/gtest.h>
 #include "osi-utilities/tracefile/writer/SingleChannelBinaryTraceFileWriter.h"
+
+#include <gtest/gtest.h>
+
+#include <filesystem>
+#include <fstream>
+
+#include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_sensorview.pb.h"
 
-#include <fstream>
-#include <filesystem>
-
 class SingleChannelBinaryTraceFileWriterTest : public ::testing::Test {
-protected:
+   protected:
     osi3::SingleChannelBinaryTraceFileWriter writer_;
-    const std::string test_file_gt_ = "test_write_gt_.osi";
-    const std::string test_file_sv_ = "test_write_sv_.osi";
+    std::filesystem::path test_file_gt_;
+    std::filesystem::path test_file_sv_;
+
+    void SetUp() override {
+        test_file_gt_ = osi3::testing::MakeTempPath("scb_gt", osi3::testing::FileExtensions::kOsi);
+        test_file_sv_ = osi3::testing::MakeTempPath("scb_sv", osi3::testing::FileExtensions::kOsi);
+    }
 
     void TearDown() override {
         writer_.Close();
-        std::filesystem::remove(test_file_gt_);
-        std::filesystem::remove(test_file_sv_);
+        osi3::testing::SafeRemoveTestFile(test_file_gt_);
+        osi3::testing::SafeRemoveTestFile(test_file_sv_);
     }
 };
 
-TEST_F(SingleChannelBinaryTraceFileWriterTest, OpenFile) {
-    EXPECT_TRUE(writer_.Open(test_file_gt_));
-}
+TEST_F(SingleChannelBinaryTraceFileWriterTest, OpenFile) { EXPECT_TRUE(writer_.Open(test_file_gt_)); }
 
-TEST_F(SingleChannelBinaryTraceFileWriterTest, OpenInvalidExtension) {
-    EXPECT_FALSE(writer_.Open("test.txt"));
-}
+TEST_F(SingleChannelBinaryTraceFileWriterTest, OpenInvalidExtension) { EXPECT_FALSE(writer_.Open("test.txt")); }
 
 TEST_F(SingleChannelBinaryTraceFileWriterTest, WriteGroundTruthMessage) {
     ASSERT_TRUE(writer_.Open(test_file_gt_));
@@ -92,7 +96,7 @@ TEST_F(SingleChannelBinaryTraceFileWriterTest, WriteMultipleMessages) {
 
 TEST_F(SingleChannelBinaryTraceFileWriterTest, WriteToClosedFile) {
     writer_.Close();
-    osi3::GroundTruth ground_truth;
+    const osi3::GroundTruth ground_truth;
     EXPECT_FALSE(writer_.WriteMessage(ground_truth));
 }
 
@@ -104,6 +108,6 @@ TEST_F(SingleChannelBinaryTraceFileWriterTest, ReopenFile) {
 
 TEST_F(SingleChannelBinaryTraceFileWriterTest, WriteEmptyMessage) {
     ASSERT_TRUE(writer_.Open(test_file_gt_));
-    osi3::GroundTruth empty_gt;
+    const osi3::GroundTruth empty_gt;
     EXPECT_TRUE(writer_.WriteMessage(empty_gt));
 }

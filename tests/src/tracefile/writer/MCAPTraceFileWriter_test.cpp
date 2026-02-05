@@ -1,31 +1,35 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
 #include "osi-utilities/tracefile/writer/MCAPTraceFileWriter.h"
 
-#include <regex>
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <regex>
+#include <string>
 
+#include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_sensordata.pb.h"
 
 class MCAPTraceFileWriterTest : public ::testing::Test {
-protected:
+   protected:
     osi3::MCAPTraceFileWriter writer_;
-    const std::string test_file_ = "test_output.mcap";
+    std::filesystem::path test_file_;
+
+    void SetUp() override { test_file_ = osi3::testing::MakeTempPath("mcap", osi3::testing::FileExtensions::kMcap); }
 
     void TearDown() override {
         writer_.Close();
-        std::filesystem::remove(test_file_);
+        osi3::testing::SafeRemoveTestFile(test_file_);
     }
 
     void AddRequiredMetadata() {
         auto required_metadata = osi3::MCAPTraceFileWriter::PrepareRequiredFileMetadata();
-        required_metadata.metadata["description"] = "Example mcap trace file created with the ASAM OSI utilities library."; // optional description
+        required_metadata.metadata["description"] = "Example mcap trace file created with the ASAM OSI utilities library.";  // optional description
         if (!writer_.AddFileMetadata(required_metadata)) {
             throw std::runtime_error("Failed to add required metadata.");
         }
@@ -64,7 +68,6 @@ TEST_F(MCAPTraceFileWriterTest, OpenWithCustomOptions) {
     EXPECT_GT(std::filesystem::file_size(test_file_), 0);
 }
 
-
 TEST_F(MCAPTraceFileWriterTest, WriteMessage) {
     ASSERT_TRUE(writer_.Open(test_file_));
     AddRequiredMetadata();
@@ -99,10 +102,7 @@ TEST_F(MCAPTraceFileWriterTest, TryWriteWithoutReqMetaData) {
 TEST_F(MCAPTraceFileWriterTest, SetMetadata) {
     ASSERT_TRUE(writer_.Open(test_file_));
 
-    std::unordered_map<std::string, std::string> metadata{
-        {"key1", "value1"},
-        {"key2", "value2"}
-    };
+    const std::unordered_map<std::string, std::string> metadata{{"key1", "value1"}, {"key2", "value2"}};
 
     EXPECT_TRUE(writer_.AddFileMetadata("test_metadata", metadata));
 }
@@ -111,19 +111,13 @@ TEST_F(MCAPTraceFileWriterTest, AddChannel) {
     ASSERT_TRUE(writer_.Open(test_file_));
 
     const std::string topic = "/ground_truth";
-    const std::unordered_map<std::string, std::string> channel_metadata{
-        {"description", "Test channel"}
-    };
+    const std::unordered_map<std::string, std::string> channel_metadata{{"description", "Test channel"}};
 
-    const uint16_t channel_id = writer_.AddChannel(topic,
-                                                   osi3::GroundTruth::descriptor(),
-                                                   channel_metadata);
+    const uint16_t channel_id = writer_.AddChannel(topic, osi3::GroundTruth::descriptor(), channel_metadata);
     EXPECT_GT(channel_id, 0);
 
     // Test adding same topic with same schema
-    const uint16_t second_id = writer_.AddChannel(topic,
-                                                  osi3::GroundTruth::descriptor(),
-                                                  channel_metadata);
+    const uint16_t second_id = writer_.AddChannel(topic, osi3::GroundTruth::descriptor(), channel_metadata);
     EXPECT_EQ(channel_id, second_id);
 }
 
@@ -140,7 +134,7 @@ TEST_F(MCAPTraceFileWriterTest, WriteMessageWithoutChannel) {
 TEST_F(MCAPTraceFileWriterTest, WriteMessageWithEmptyTopic) {
     ASSERT_TRUE(writer_.Open(test_file_));
 
-    osi3::GroundTruth ground_truth;
+    const osi3::GroundTruth ground_truth;
     EXPECT_FALSE(writer_.WriteMessage(ground_truth, ""));
 }
 
@@ -197,10 +191,9 @@ TEST_F(MCAPTraceFileWriterTest, AddFileMetadataMissingRequiredFields) {
     ASSERT_TRUE(writer_.Open(test_file_));
     mcap::Metadata metadata;
     metadata.name = "net.asam.osi.trace";
-    metadata.metadata["version"] = "1.0.0"; // Missing other required fields
+    metadata.metadata["version"] = "1.0.0";  // Missing other required fields
     EXPECT_FALSE(writer_.AddFileMetadata(metadata));
 }
-
 
 TEST_F(MCAPTraceFileWriterTest, WriteMessageTopicNotFound) {
     ASSERT_TRUE(writer_.Open(test_file_));
@@ -231,14 +224,12 @@ TEST_F(MCAPTraceFileWriterTest, WriteMessageFailedWrite) {
 }
 
 TEST_F(MCAPTraceFileWriterTest, WriteMetadataFailedWrite) {
-
     ASSERT_TRUE(writer_.Open(test_file_));
     // Terminate file to force write failure
     writer_.GetMcapWriter()->terminate();
 
     EXPECT_THROW(AddRequiredMetadata(), std::runtime_error);
 }
-
 
 TEST_F(MCAPTraceFileWriterTest, AddChannelTopicExistsWithDifferentType) {
     ASSERT_TRUE(writer_.Open(test_file_));
@@ -247,10 +238,7 @@ TEST_F(MCAPTraceFileWriterTest, AddChannelTopicExistsWithDifferentType) {
     writer_.AddChannel(topic, osi3::GroundTruth::descriptor(), {});
 
     // Try to add same topic with different message type
-    EXPECT_THROW(
-        writer_.AddChannel(topic, osi3::SensorData::descriptor(), {}),
-        std::runtime_error
-    );
+    EXPECT_THROW(writer_.AddChannel(topic, osi3::SensorData::descriptor(), {}), std::runtime_error);
 }
 
 TEST_F(MCAPTraceFileWriterTest, AddChannelReuseExistingSchema) {

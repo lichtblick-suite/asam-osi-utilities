@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
@@ -8,7 +8,9 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <string>
 
+#include "../../TestUtilities.h"
 #include "osi-utilities/tracefile/writer/MCAPTraceFileWriter.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_sensorview.pb.h"
@@ -21,13 +23,16 @@ class McapTraceFileReaderTest : public ::testing::Test {
    protected:
     osi3::MCAPTraceFileReader reader_;
     osi3::MCAPTraceFileWriter writer_;
-    const std::string test_file_ = "test.mcap";
+    std::filesystem::path test_file_;
 
-    void SetUp() override { CreateTestMcapFile(); }
+    void SetUp() override {
+        test_file_ = osi3::testing::MakeTempPath("mcap", osi3::testing::FileExtensions::kMcap);
+        CreateTestMcapFile();
+    }
 
     void TearDown() override {
         reader_.Close();
-        std::filesystem::remove(test_file_);
+        osi3::testing::SafeRemoveTestFile(test_file_);
     }
 
    private:
@@ -62,7 +67,7 @@ class McapTraceFileReaderTest : public ::testing::Test {
         mcap::Channel channel("json_topic", "json", json_schema.id);
         mcap_writer->addChannel(channel);
 
-        std::string json_data = "{\"test_field1\": \"data\"}";
+        std::string json_data = R"({"test_field1": "data"})";
         mcap::Message msg;
         msg.channelId = channel.id;
         msg.data = reinterpret_cast<const std::byte*>(json_data.data());
@@ -84,7 +89,7 @@ TEST_F(McapTraceFileReaderTest, OpenWithReaderOptions) {
     mcap::ReadMessageOptions options;
     options.startTime = 1000000;
     options.endTime = options.startTime + 1;
-    ASSERT_TRUE(reader_.Open(test_file_, options));
+    ASSERT_TRUE(reader_.Open(test_file_.string(), options));
 
     // Verify behavior with the configured options
     // that no messages should be returned
@@ -97,7 +102,10 @@ TEST_F(McapTraceFileReaderTest, ReadGroundTruthMessage) {
     EXPECT_TRUE(reader_.HasNext());
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << "Expected GroundTruth message";
+        return;
+    }
 
     auto* ground_truth = dynamic_cast<osi3::GroundTruth*>(result->message.get());
     ASSERT_NE(ground_truth, nullptr);
@@ -115,7 +123,10 @@ TEST_F(McapTraceFileReaderTest, ReadSensorViewMessage) {
     reader_.ReadMessage();
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << "Expected SensorView message";
+        return;
+    }
 
     auto* sensor_view = dynamic_cast<osi3::SensorView*>(result->message.get());
     ASSERT_NE(sensor_view, nullptr);
@@ -170,6 +181,7 @@ TEST_F(McapTraceFileReaderTest, ReadInvalidMessageFormat) {
     }
 
     EXPECT_FALSE(reader_.Open(invalid_file));
+    reader_.Close();  // Ensure any partial open is closed before removing
     std::filesystem::remove(invalid_file);
 }
 
@@ -186,12 +198,18 @@ TEST_F(McapTraceFileReaderTest, SkipNonOSIMessagesWhenEnabled) {
 
     // Read first OSI message (GroundTruth)
     auto result1 = reader_.ReadMessage();
-    ASSERT_TRUE(result1.has_value());
+    if (!result1.has_value()) {
+        FAIL() << "Expected GroundTruth message";
+        return;
+    }
     EXPECT_EQ(result1->channel_name, "gt");
 
     // Read second OSI message (SensorView)
     auto result2 = reader_.ReadMessage();
-    ASSERT_TRUE(result2.has_value());
+    if (!result2.has_value()) {
+        FAIL() << "Expected SensorView message";
+        return;
+    }
     EXPECT_EQ(result2->channel_name, "sv");
 
     // Third message (JSON) should be skipped automatically

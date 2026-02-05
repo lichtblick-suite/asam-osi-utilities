@@ -1,0 +1,126 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+
+name: Compliance
+
+on:
+  workflow_call:
+
+jobs:
+  # ===========================================================================
+  # DCO Sign-off Check
+  # ===========================================================================
+  dco:
+    name: DCO Sign-off
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check DCO Sign-off
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          echo "Checking commits from $BASE_SHA to $HEAD_SHA"
+
+          FAILED=0
+          for COMMIT in $(git rev-list $BASE_SHA..$HEAD_SHA); do
+            if ! git log -1 --format='%B' $COMMIT | grep -q "^Signed-off-by: "; then
+              echo "❌ Commit $COMMIT is missing Signed-off-by"
+              git log -1 --format='  Subject: %s' $COMMIT
+              FAILED=1
+            else
+              echo "✓ Commit $COMMIT has Signed-off-by"
+            fi
+          done
+
+          if [ $FAILED -ne 0 ]; then
+            echo ""
+            echo "=============================================="
+            echo "ERROR: Some commits are missing DCO sign-off!"
+            echo "=============================================="
+            echo ""
+            echo "Please sign off your commits using:"
+            echo "  git commit --amend -s"
+            echo ""
+            echo "Or for multiple commits:"
+            echo "  git rebase --signoff HEAD~N"
+            echo ""
+            echo "Then force push:"
+            echo "  git push --force-with-lease"
+            echo ""
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ All commits have DCO sign-off"
+
+  # ===========================================================================
+  # Conventional Commits Check
+  # ===========================================================================
+  conventional-commits:
+    name: Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check Conventional Commits
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          echo "Checking commits from $BASE_SHA to $HEAD_SHA"
+
+          PATTERN="^(feat|fix|docs|style|refactor|test|chore|ci|perf|build)(\([a-zA-Z0-9_-]+\))?: .+"
+
+          FAILED=0
+          for COMMIT in $(git rev-list $BASE_SHA..$HEAD_SHA); do
+            MSG=$(git log -1 --format='%s' $COMMIT)
+
+            # Skip merge commits
+            if echo "$MSG" | grep -qE "^Merge "; then
+              echo "⏭ Skipping merge commit: $COMMIT"
+              continue
+            fi
+
+            # Skip revert commits
+            if echo "$MSG" | grep -qE "^Revert "; then
+              echo "⏭ Skipping revert commit: $COMMIT"
+              continue
+            fi
+
+            if ! echo "$MSG" | grep -qE "$PATTERN"; then
+              echo "❌ Commit $COMMIT does not follow Conventional Commits"
+              echo "   Message: $MSG"
+              FAILED=1
+            else
+              echo "✓ Commit $COMMIT follows Conventional Commits"
+            fi
+          done
+
+          if [ $FAILED -ne 0 ]; then
+            echo ""
+            echo "=================================================="
+            echo "ERROR: Some commits don't follow Conventional Commits!"
+            echo "=================================================="
+            echo ""
+            echo "Expected format: <type>(<scope>): <description>"
+            echo ""
+            echo "Valid types: feat, fix, docs, style, refactor, test, chore, ci, perf, build"
+            echo ""
+            echo "Examples:"
+            echo "  feat: add new feature"
+            echo "  fix(mcap): resolve memory leak"
+            echo "  docs: update README"
+            echo ""
+            echo "See CONTRIBUTING.md for more details."
+            echo ""
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ All commits follow Conventional Commits"

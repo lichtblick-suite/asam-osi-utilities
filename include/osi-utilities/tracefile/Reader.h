@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
@@ -17,7 +17,7 @@ namespace osi3 {
 /**
  * @brief Enumeration of supported top-level message types in trace files
  */
-enum class ReaderTopLevelMessage : u_int8_t {
+enum class ReaderTopLevelMessage : uint8_t {
     kUnknown = 0,             /**< Unknown message type */
     kGroundTruth,             /**< OSI3::GroundTruth data */
     kSensorData,              /**< OSI3::SensorSata */

@@ -1,35 +1,41 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
-#include <gtest/gtest.h>
 #include "osi-utilities/tracefile/reader/TXTHTraceFileReader.h"
+
+#include <gtest/gtest.h>
+
+#include <filesystem>
+#include <fstream>
+#include <string>
+
+#include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_sensorview.pb.h"
 
-#include <fstream>
-#include <filesystem>
-
 class TxthTraceFileReaderTest : public ::testing::Test {
-protected:
+   protected:
     osi3::TXTHTraceFileReader reader_;
-    const std::string test_file_gt_ = "test_gt_.txth";
-    const std::string test_file_sv_ = "test_sv_.txth";
+    std::filesystem::path test_file_gt_;
+    std::filesystem::path test_file_sv_;
 
     void SetUp() override {
+        test_file_gt_ = osi3::testing::MakeTempPath("gt", osi3::testing::FileExtensions::kTxth);
+        test_file_sv_ = osi3::testing::MakeTempPath("sv", osi3::testing::FileExtensions::kTxth);
         CreateTestGroundTruthFile();
         CreateTestSensorViewFile();
     }
 
     void TearDown() override {
         reader_.Close();
-        std::filesystem::remove(test_file_gt_);
-        std::filesystem::remove(test_file_sv_);
+        osi3::testing::SafeRemoveTestFile(test_file_gt_);
+        osi3::testing::SafeRemoveTestFile(test_file_sv_);
     }
 
-private:
-    void CreateTestGroundTruthFile() const {
+   private:
+    void CreateTestGroundTruthFile() {
         std::ofstream file(test_file_gt_);
         file << "version {\n";
         file << "  version_major: 3\n";
@@ -51,7 +57,7 @@ private:
         file << "}\n";
     }
 
-    void CreateTestSensorViewFile() const {
+    void CreateTestSensorViewFile() {
         std::ofstream file(test_file_sv_);
         file << "version {\n";
         file << "  version_major: 3\n";
@@ -65,24 +71,21 @@ private:
     }
 };
 
-TEST_F(TxthTraceFileReaderTest, OpenGroundTruthFile) {
-    EXPECT_TRUE(reader_.Open(test_file_gt_));
-}
+TEST_F(TxthTraceFileReaderTest, OpenGroundTruthFile) { EXPECT_TRUE(reader_.Open(test_file_gt_)); }
 
-TEST_F(TxthTraceFileReaderTest, OpenSensorViewFile) {
-    EXPECT_TRUE(reader_.Open(test_file_sv_));
-}
+TEST_F(TxthTraceFileReaderTest, OpenSensorViewFile) { EXPECT_TRUE(reader_.Open(test_file_sv_)); }
 
-TEST_F(TxthTraceFileReaderTest, OpenWithExplicitMessageType) {
-    EXPECT_TRUE(reader_.Open(test_file_gt_, osi3::ReaderTopLevelMessage::kGroundTruth));
-}
+TEST_F(TxthTraceFileReaderTest, OpenWithExplicitMessageType) { EXPECT_TRUE(reader_.Open(test_file_gt_, osi3::ReaderTopLevelMessage::kGroundTruth)); }
 
 TEST_F(TxthTraceFileReaderTest, ReadGroundTruthMessage) {
     ASSERT_TRUE(reader_.Open(test_file_gt_));
     EXPECT_TRUE(reader_.HasNext());
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << true;
+        return;
+    }
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
 
     auto* ground_truth = dynamic_cast<osi3::GroundTruth*>(result->message.get());
@@ -96,7 +99,10 @@ TEST_F(TxthTraceFileReaderTest, ReadSensorViewMessage) {
     EXPECT_TRUE(reader_.HasNext());
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << true;
+        return;
+    }
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kSensorView);
 
     auto* sensor_view = dynamic_cast<osi3::SensorView*>(result->message.get());
@@ -117,7 +123,6 @@ TEST_F(TxthTraceFileReaderTest, PreventMultipleFileOpens) {
     EXPECT_TRUE(reader_.Open(test_file_gt_));
 }
 
-
 TEST_F(TxthTraceFileReaderTest, HasNextReturnsFalseWhenEmpty) {
     ASSERT_TRUE(reader_.Open(test_file_gt_));
     ASSERT_TRUE(reader_.HasNext());
@@ -126,12 +131,10 @@ TEST_F(TxthTraceFileReaderTest, HasNextReturnsFalseWhenEmpty) {
     EXPECT_FALSE(reader_.HasNext());
 }
 
-TEST_F(TxthTraceFileReaderTest, OpenNonexistentFile) {
-    EXPECT_FALSE(reader_.Open("nonexistent_file.txth"));
-}
+TEST_F(TxthTraceFileReaderTest, OpenNonexistentFile) { EXPECT_FALSE(reader_.Open("nonexistent_file.txth")); }
 
 TEST_F(TxthTraceFileReaderTest, OpenInvalidFileExtension) {
-    const std::string invalid_file = "invalid.txt";
+    const auto invalid_file = osi3::testing::MakeTempPath("invalid", "txt");
     {
         std::ofstream file(invalid_file);
         file << "Invalid data";
@@ -141,7 +144,7 @@ TEST_F(TxthTraceFileReaderTest, OpenInvalidFileExtension) {
 }
 
 TEST_F(TxthTraceFileReaderTest, OpenInvalidMessageType) {
-    const std::string invalid_file = "invalid_type.txth";
+    const auto invalid_file = osi3::testing::MakeTempPath("invalid_type", osi3::testing::FileExtensions::kTxth);
     {
         std::ofstream file(invalid_file);
         file << "InvalidType:\n";
@@ -152,17 +155,16 @@ TEST_F(TxthTraceFileReaderTest, OpenInvalidMessageType) {
 }
 
 TEST_F(TxthTraceFileReaderTest, ReadEmptyFile) {
-    std::string empty_file = "empty.txth";
-    {
-        std::ofstream file(empty_file);
-    }
+    const auto empty_file = osi3::testing::MakeTempPath("empty", osi3::testing::FileExtensions::kTxth);
+    { const std::ofstream file(empty_file); }
     ASSERT_TRUE(reader_.Open(empty_file, osi3::ReaderTopLevelMessage::kGroundTruth));
     EXPECT_FALSE(reader_.HasNext());
+    reader_.Close();
     std::filesystem::remove(empty_file);
 }
 
 TEST_F(TxthTraceFileReaderTest, ReadInvalidMessageFormat) {
-    std::string invalid_format_file = "invalid_format_gt_99.txth";
+    const auto invalid_format_file = osi3::testing::MakeTempPath("invalid_format_gt_99", osi3::testing::FileExtensions::kTxth);
     {
         std::ofstream file(invalid_format_file);
         file << "GroundTruth:\n";
@@ -170,5 +172,6 @@ TEST_F(TxthTraceFileReaderTest, ReadInvalidMessageFormat) {
     }
     ASSERT_TRUE(reader_.Open(invalid_format_file));
     EXPECT_THROW(reader_.ReadMessage(), std::runtime_error);
+    reader_.Close();
     std::filesystem::remove(invalid_format_file);
 }

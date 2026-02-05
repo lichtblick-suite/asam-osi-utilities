@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
@@ -17,7 +17,7 @@
 
 namespace osi3 {
 
-bool SingleChannelBinaryTraceFileWriter::Open(const std::filesystem::path& file_path) {
+auto SingleChannelBinaryTraceFileWriter::Open(const std::filesystem::path& file_path) -> bool {
     // check if at least .osi ending is present
     if (file_path.extension().string() != ".osi") {
         std::cerr << "ERROR: The trace file '" << file_path << "' must have a '.osi' extension." << std::endl;
@@ -44,20 +44,17 @@ bool SingleChannelBinaryTraceFileWriter::Open(const std::filesystem::path& file_
     return true;
 }
 
-void SingleChannelBinaryTraceFileWriter::Close() {
-        trace_file_.close();
-}
-
+void SingleChannelBinaryTraceFileWriter::Close() { trace_file_.close(); }
 
 template <typename T>
-bool SingleChannelBinaryTraceFileWriter::WriteMessage(const T& top_level_message) {
+auto SingleChannelBinaryTraceFileWriter::WriteMessage(const T& top_level_message) -> bool {
     if (!(trace_file_ && trace_file_.is_open())) {
         std::cerr << "ERROR: cannot write message, file is not open\n";
         return false;
     }
 
     const std::string serialized_message = top_level_message.SerializeAsString();
-    const uint32_t message_size = static_cast<uint32_t>(serialized_message.size());
+    const auto message_size = static_cast<uint32_t>(serialized_message.size());
 
     trace_file_.write(reinterpret_cast<const char*>(&message_size), sizeof(message_size));
     trace_file_.write(serialized_message.data(), message_size);

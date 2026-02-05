@@ -1,36 +1,41 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
-#include <gtest/gtest.h>
 #include "osi-utilities/tracefile/writer/TXTHTraceFileWriter.h"
-#include "osi_groundtruth.pb.h"
-#include "osi_sensorview.pb.h"
+
+#include <gtest/gtest.h>
 
 #include <filesystem>
 #include <fstream>
+#include <string>
+
+#include "../../TestUtilities.h"
+#include "osi_groundtruth.pb.h"
+#include "osi_sensorview.pb.h"
 
 class TxthTraceFileWriterTest : public ::testing::Test {
-protected:
+   protected:
     osi3::TXTHTraceFileWriter writer_;
-    const std::string test_file_gt_ = "test_output_gt.txth";
-    const std::string test_file_sv_ = "test_output_sv.txth";
+    std::filesystem::path test_file_gt_;
+    std::filesystem::path test_file_sv_;
+
+    void SetUp() override {
+        test_file_gt_ = osi3::testing::MakeTempPath("txth_gt", osi3::testing::FileExtensions::kTxth);
+        test_file_sv_ = osi3::testing::MakeTempPath("txth_sv", osi3::testing::FileExtensions::kTxth);
+    }
 
     void TearDown() override {
         writer_.Close();
-        std::filesystem::remove(test_file_gt_);
-        std::filesystem::remove(test_file_sv_);
+        osi3::testing::SafeRemoveTestFile(test_file_gt_);
+        osi3::testing::SafeRemoveTestFile(test_file_sv_);
     }
 };
 
-TEST_F(TxthTraceFileWriterTest, OpenWithValidExtension) {
-    EXPECT_TRUE(writer_.Open(test_file_gt_));
-}
+TEST_F(TxthTraceFileWriterTest, OpenWithValidExtension) { EXPECT_TRUE(writer_.Open(test_file_gt_)); }
 
-TEST_F(TxthTraceFileWriterTest, OpenWithInvalidExtension) {
-    EXPECT_FALSE(writer_.Open("test.invalid"));
-}
+TEST_F(TxthTraceFileWriterTest, OpenWithInvalidExtension) { EXPECT_FALSE(writer_.Open("test.invalid")); }
 
 TEST_F(TxthTraceFileWriterTest, WriteGroundTruthMessage) {
     ASSERT_TRUE(writer_.Open(test_file_gt_));
@@ -46,7 +51,7 @@ TEST_F(TxthTraceFileWriterTest, WriteGroundTruthMessage) {
 
     // Verify file content
     std::ifstream file(test_file_gt_);
-    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    const std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     EXPECT_TRUE(content.find("seconds: 123") != std::string::npos);
     EXPECT_TRUE(content.find("nanos: 456") != std::string::npos);
 }
@@ -63,13 +68,13 @@ TEST_F(TxthTraceFileWriterTest, WriteSensorViewMessage) {
     writer_.Close();
 
     std::ifstream file(test_file_sv_);
-    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    const std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     EXPECT_TRUE(content.find("seconds: 789") != std::string::npos);
     EXPECT_TRUE(content.find("nanos: 101") != std::string::npos);
 }
 
 TEST_F(TxthTraceFileWriterTest, WriteMessageToClosedFile) {
-    osi3::GroundTruth ground_truth;
+    const osi3::GroundTruth ground_truth;
     EXPECT_FALSE(writer_.WriteMessage(ground_truth));
 }
 
@@ -87,7 +92,7 @@ TEST_F(TxthTraceFileWriterTest, MultipleMessages) {
     writer_.Close();
 
     std::ifstream file(test_file_gt_);
-    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    const std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     EXPECT_TRUE(content.find("seconds: 111") != std::string::npos);
     EXPECT_TRUE(content.find("seconds: 222") != std::string::npos);
 }

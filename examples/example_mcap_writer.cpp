@@ -1,7 +1,11 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
+/**
+ * \file
+ * \brief Write an example OSI MCAP trace file with metadata and channels.
+ */
 
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
@@ -10,11 +14,18 @@
 #include "osi_sensorview.pb.h"
 #include "osi_version.pb.h"
 
-std::filesystem::path GenerateTempFilePath() {
+/**
+ * \brief Generate a temporary output path for the example MCAP file.
+ * \return Temporary file path.
+ */
+auto GenerateTempFilePath() -> std::filesystem::path {
     return std::filesystem::temp_directory_path() / "sv_example.mcap";  // add sv to indicate sensor view as recommended by the OSI-specification
 }
 
-int main(int argc, const char** argv) {
+/**
+ * \brief Entry point for the MCAP writer example.
+ */
+auto main(int /*argc*/, const char** /*argv*/) -> int {
     std::cout << "Starting MCAP Writer example:" << std::endl;
 
     // Create writer and open file
@@ -25,7 +36,7 @@ int main(int argc, const char** argv) {
     mcap::McapWriterOptions mcap_options("osi");
     // Adapt chunk size according to data and usecase:
     // Example: ros2 is using 4 * 1024 * 1024)
-    mcap_options.chunkSize = 4 * 1024 * 1024;
+    mcap_options.chunkSize = static_cast<uint64_t>(4) * 1024 * 1024;
     // Default: zstd
     mcap_options.compression = mcap::Compression::Lz4;
 
@@ -34,9 +45,9 @@ int main(int argc, const char** argv) {
     // add required and optional metadata to the net.asam.osi.trace metadata record
     auto net_asam_osi_trace_metadata = osi3::MCAPTraceFileWriter::PrepareRequiredFileMetadata();
     // Add optional metadata to the net.asam.osi.trace metadata record, as recommended by the OSI specification.
-    net_asam_osi_trace_metadata.metadata["description"] = "Example mcap trace file created with the ASAM OSI utilities library."; // optional field
-    net_asam_osi_trace_metadata.metadata["creation_time"] = osi3::MCAPTraceFileWriter::GetCurrentTimeAsString(); // optional field
-    net_asam_osi_trace_metadata.metadata["authors"] = "Jane Doe, John Doe"; // optional field
+    net_asam_osi_trace_metadata.metadata["description"] = "Example mcap trace file created with the ASAM OSI utilities library.";  // optional field
+    net_asam_osi_trace_metadata.metadata["creation_time"] = osi3::MCAPTraceFileWriter::GetCurrentTimeAsString();                   // optional field
+    net_asam_osi_trace_metadata.metadata["authors"] = "Jane Doe, John Doe";                                                        // optional field
     if (!trace_file_writer.AddFileMetadata(net_asam_osi_trace_metadata)) {
         std::cerr << "Failed to add required metadata to trace_file." << std::endl;
         exit(1);
@@ -44,7 +55,8 @@ int main(int argc, const char** argv) {
 
     // add a channel to store some data
     const std::string topic = "Sensor_1_Input";
-    const std::unordered_map<std::string, std::string> channel_metadata = {{"net.asam.osi.trace.channel.description", "This channel contains the input data (SensorView) for sensor 1"}};
+    const std::unordered_map<std::string, std::string> channel_metadata = {
+        {"net.asam.osi.trace.channel.description", "This channel contains the input data (SensorView) for sensor 1"}};
     trace_file_writer.AddChannel(topic, osi3::SensorView::descriptor(), channel_metadata);
 
     // create OSI data to store

@@ -1,19 +1,67 @@
-name: SPDX License Check
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+name: REUSE Compliance
 
-on: [push, pull_request]
+on:
+  pull_request:
 
 jobs:
-  check-spdx-headers:
-    name: SPDX License Check
+  reuse-lint:
+    name: REUSE Lint
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - uses: enarx/spdx@c3e8116ed31c31b3c2e58a26ba5cac407510ca37
-        with:
-          licenses: |-
-            Apache-2.0
-            BSD-3-Clause
-            BSD-2-Clause
-            MIT
-            MPL-2.0
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Provide SPDX license text
+        shell: bash
+        run: |
+          mkdir -p LICENSES
+          cp LICENSE LICENSES/MPL-2.0.txt
+      - name: Install reuse tool
+        shell: bash
+        run: |
+          python3 -m pip install --user reuse
+      - name: REUSE lint (expected success)
+        shell: bash
+        run: |
+          python3 -m reuse lint
+      - name: Enable invalid SPDX test folder
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("REUSE.toml")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          blocks = []
+          current = []
+          for line in lines:
+              if line.strip().startswith("[[annotations]]") and current:
+                  blocks.append(current)
+                  current = [line]
+              else:
+                  current.append(line)
+          if current:
+              blocks.append(current)
+          filtered_blocks = []
+          for block in blocks:
+              if any('path = "tests/intentional-failures/**"' in line for line in block):
+                  continue
+              filtered_blocks.append(block)
+          out_lines = []
+          for block in filtered_blocks:
+              if out_lines and block and block[0].strip().startswith("[[annotations]]"):
+                  out_lines.append("")
+              out_lines.extend(block)
+          path.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
+          PY
+      - name: REUSE lint (expected failure)
+        shell: bash
+        run: |
+          set +e
+          python3 -m reuse lint
+          status=$?
+          set -e
+          if [ $status -eq 0 ]; then
+            echo "ERROR: REUSE lint was expected to fail but succeeded."
+            exit 1
+          fi

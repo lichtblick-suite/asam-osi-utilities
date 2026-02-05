@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
@@ -26,7 +26,7 @@ namespace {
 void fdSetInternal(google::protobuf::FileDescriptorSet& fd_set, std::unordered_set<std::string>& files, const google::protobuf::FileDescriptor* file_descriptor) {
     for (int i = 0; i < file_descriptor->dependency_count(); ++i) {
         const auto* dep = file_descriptor->dependency(i);
-        if (auto [_, inserted] = files.insert(dep->name()); !inserted) {
+        if (auto [_, inserted] = files.insert(std::string(dep->name())); !inserted) {
             continue;
         }
         fdSetInternal(fd_set, files, file_descriptor->dependency(i));
@@ -36,7 +36,7 @@ void fdSetInternal(google::protobuf::FileDescriptorSet& fd_set, std::unordered_s
 
 // Returns a serialized google::protobuf::FileDescriptorSet containing
 // the necessary google::protobuf::FileDescriptor's to describe d.
-std::string fdSet(const google::protobuf::Descriptor* descriptor) {
+auto fdSet(const google::protobuf::Descriptor* descriptor) -> std::string {
     std::unordered_set<std::string> files;
     google::protobuf::FileDescriptorSet fd_set;
     fdSetInternal(fd_set, files, descriptor->file());
@@ -47,7 +47,7 @@ std::string fdSet(const google::protobuf::Descriptor* descriptor) {
 
 namespace osi3 {
 
-bool MCAPTraceFileWriter::Open(const std::filesystem::path& file_path) {
+auto MCAPTraceFileWriter::Open(const std::filesystem::path& file_path) -> bool {
     // prevent opening again if already opened
     if (trace_file_.is_open()) {
         std::cerr << "ERROR: Opening file " << file_path << ", writer has already a file opened" << std::endl;
@@ -63,13 +63,13 @@ bool MCAPTraceFileWriter::Open(const std::filesystem::path& file_path) {
     return true;
 }
 
-bool MCAPTraceFileWriter::Open(const std::filesystem::path& file_path, const mcap::McapWriterOptions& options) {
+auto MCAPTraceFileWriter::Open(const std::filesystem::path& file_path, const mcap::McapWriterOptions& options) -> bool {
     mcap_options_ = options;
     return this->Open(file_path);
 }
 
 template <typename T>
-bool MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::string& topic) {
+auto MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::string& topic) -> bool {
     if (topic.empty()) {
         std::cerr << "ERROR: cannot write message, topic is empty\n";
         return false;
@@ -106,11 +106,10 @@ bool MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::st
     return true;
 }
 
-bool MCAPTraceFileWriter::AddFileMetadata(const mcap::Metadata& metadata) {
+auto MCAPTraceFileWriter::AddFileMetadata(const mcap::Metadata& metadata) -> bool {
     // check if the provided metadata contains the required metadata by the OSI specification
     // to allow writing messages to the trace file
-    if (metadata.name  == "net.asam.osi.trace") {
-
+    if (metadata.name == "net.asam.osi.trace") {
         if (required_metadata_added_) {
             std::cerr << "ERROR: cannot add net.asam.osi.trace metadata record, it was already added.\n";
             return false;
@@ -134,9 +133,7 @@ bool MCAPTraceFileWriter::AddFileMetadata(const mcap::Metadata& metadata) {
     return true;
 }
 
-
-
-bool MCAPTraceFileWriter::AddFileMetadata(const std::string& name, const std::unordered_map<std::string, std::string>& metadata_entries) {
+auto MCAPTraceFileWriter::AddFileMetadata(const std::string& name, const std::unordered_map<std::string, std::string>& metadata_entries) -> bool {
     mcap::Metadata metadata;
     metadata.name = name;
     metadata.metadata = metadata_entries;
@@ -148,7 +145,7 @@ void MCAPTraceFileWriter::Close() {
     trace_file_.close();
 }
 
-mcap::Metadata MCAPTraceFileWriter::PrepareRequiredFileMetadata() {
+auto MCAPTraceFileWriter::PrepareRequiredFileMetadata() -> mcap::Metadata {
     mcap::Metadata metadata;
     metadata.name = "net.asam.osi.trace";
 
@@ -164,7 +161,8 @@ mcap::Metadata MCAPTraceFileWriter::PrepareRequiredFileMetadata() {
     return metadata;
 }
 
-uint16_t MCAPTraceFileWriter::AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor, std::unordered_map<std::string, std::string> channel_metadata) {
+auto MCAPTraceFileWriter::AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor,
+                                     std::unordered_map<std::string, std::string> channel_metadata) -> uint16_t {
     // Check if the schema for this descriptor's full name already exists
     mcap::Schema path_schema;
     const auto it_schema = std::find_if(schemas_.begin(), schemas_.end(), [&](const mcap::Schema& schema) { return schema.name == descriptor->full_name(); });
@@ -194,7 +192,7 @@ uint16_t MCAPTraceFileWriter::AddChannel(const std::string& topic, const google:
     if (channel_metadata.find("net.asam.osi.trace.channel.osi_version") == channel_metadata.end()) {
         const auto osi_version = osi3::InterfaceVersion::descriptor()->file()->options().GetExtension(osi3::current_interface_version);
         channel_metadata["net.asam.osi.trace.channel.osi_version"] =
-       std::to_string(osi_version.version_major()) + "." + std::to_string(osi_version.version_minor()) + "." + std::to_string(osi_version.version_patch());
+            std::to_string(osi_version.version_major()) + "." + std::to_string(osi_version.version_minor()) + "." + std::to_string(osi_version.version_patch());
     }
 
     // add protobuf version (if not present) to channel metadata as required by spec.
@@ -212,7 +210,7 @@ uint16_t MCAPTraceFileWriter::AddChannel(const std::string& topic, const google:
     return channel.id;
 }
 
-std::string MCAPTraceFileWriter::GetCurrentTimeAsString() {
+auto MCAPTraceFileWriter::GetCurrentTimeAsString() -> std::string {
     const auto now = std::chrono::system_clock::now();
     const auto now_in_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
     const auto timer = std::chrono::system_clock::to_time_t(now);

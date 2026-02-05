@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2024, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+// Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
 
@@ -19,7 +19,7 @@
 
 namespace osi3 {
 
-bool TXTHTraceFileWriter::Open(const std::filesystem::path& file_path) {
+auto TXTHTraceFileWriter::Open(const std::filesystem::path& file_path) -> bool {
     // check if at least .osi ending is present
     if (file_path.extension().string() != ".txth") {
         std::cerr << "ERROR: The trace file '" << file_path << "' must have a '.txth' extension." << std::endl;
@@ -40,12 +40,10 @@ bool TXTHTraceFileWriter::Open(const std::filesystem::path& file_path) {
     return true;
 }
 
-void TXTHTraceFileWriter::Close() {
-    trace_file_.close();
-}
+void TXTHTraceFileWriter::Close() { trace_file_.close(); }
 
 template <typename T>
-bool TXTHTraceFileWriter::WriteMessage(const T& top_level_message) {
+auto TXTHTraceFileWriter::WriteMessage(const T& top_level_message) -> bool {
     if (!(trace_file_ && trace_file_.is_open())) {
         std::cerr << "Error: Cannot write message, file is not open\n";
         return false;
@@ -71,6 +69,5 @@ template bool TXTHTraceFileWriter::WriteMessage<osi3::TrafficCommandUpdate>(cons
 template bool TXTHTraceFileWriter::WriteMessage<osi3::TrafficUpdate>(const osi3::TrafficUpdate&);
 template bool TXTHTraceFileWriter::WriteMessage<osi3::MotionRequest>(const osi3::MotionRequest&);
 template bool TXTHTraceFileWriter::WriteMessage<osi3::StreamingUpdate>(const osi3::StreamingUpdate&);
-
 
 }  // namespace osi3

@@ -1,0 +1,151 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+
+name: Build
+
+on:
+  workflow_call:
+
+jobs:
+  # ===========================================================================
+  # Ubuntu with system packages
+  # ===========================================================================
+  ubuntu:
+    name: Ubuntu ${{ matrix.ubuntu }} (${{ matrix.compiler }})
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ['22.04', '24.04']
+        compiler: [gcc, clang]
+        include:
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+          - compiler: clang
+            cc: clang
+            cxx: clang++
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          YQ_VERSION=v4.52.2
+          sudo curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq -r '.ci_jobs.ubuntu_build.apt' .github/dependencies.yml | xargs sudo apt-get install -y
+
+      - name: Configure CMake
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: cmake --preset base -DBUILD_TESTING=ON -DCODE_COVERAGE=${{ matrix.compiler == 'gcc' && 'ON' || 'OFF' }}
+
+      - name: Build
+        run: cmake --build --preset base --parallel $(nproc)
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel $(nproc)
+
+      - name: Generate Coverage Report
+        if: matrix.compiler == 'gcc' && matrix.ubuntu == '24.04'
+        run: gcovr -r . build --xml -o coverage.xml
+
+      - name: Upload Coverage
+        if: matrix.compiler == 'gcc' && matrix.ubuntu == '24.04'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
+  # ===========================================================================
+  # Ubuntu with vcpkg
+  # ===========================================================================
+  ubuntu-vcpkg:
+    name: Ubuntu (vcpkg)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+
+      - name: Configure CMake
+        run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+
+      - name: Build
+        run: cmake --build --preset vcpkg --parallel $(nproc)
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel $(nproc)
+
+  # ===========================================================================
+  # Windows with vcpkg
+  # ===========================================================================
+  windows:
+    name: Windows (MSVC)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+
+      - name: Configure CMake
+        run: cmake --preset vcpkg -DBUILD_DOCS=OFF -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+
+      - name: Build
+        run: cmake --build --preset vcpkg --parallel
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest -C Release --output-on-failure --parallel
+
+  # ==========================================================================
+  # macOS with vcpkg
+  # ==========================================================================
+  macos-vcpkg:
+    name: macOS (vcpkg, ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: x64
+          - runner: macos-14
+            arch: arm64
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+
+      - name: Configure CMake
+        run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+
+      - name: Build
+        run: cmake --build --preset vcpkg --parallel $(sysctl -n hw.ncpu)
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)

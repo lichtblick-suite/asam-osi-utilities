@@ -1,0 +1,33 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "base",
+      "description": "Base build without vcpkg (requires manual dependency installation)",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "vcpkg",
+      "description": "Build using vcpkg for dependency management",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "base",
+      "configurePreset": "base",
+      "configuration": "Release"
+    },
+    {
+      "name": "vcpkg",
+      "configurePreset": "vcpkg",
+      "configuration": "Release"
+    }
+  ]
+}
