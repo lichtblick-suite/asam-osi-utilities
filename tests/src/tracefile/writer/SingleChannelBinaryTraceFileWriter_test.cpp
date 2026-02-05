@@ -96,7 +96,7 @@ TEST_F(SingleChannelBinaryTraceFileWriterTest, WriteMultipleMessages) {
 
 TEST_F(SingleChannelBinaryTraceFileWriterTest, WriteToClosedFile) {
     writer_.Close();
-    osi3::GroundTruth ground_truth;
+    const osi3::GroundTruth ground_truth;
     EXPECT_FALSE(writer_.WriteMessage(ground_truth));
 }
 
@@ -108,6 +108,6 @@ TEST_F(SingleChannelBinaryTraceFileWriterTest, ReopenFile) {
 
 TEST_F(SingleChannelBinaryTraceFileWriterTest, WriteEmptyMessage) {
     ASSERT_TRUE(writer_.Open(test_file_gt_));
-    osi3::GroundTruth empty_gt;
+    const osi3::GroundTruth empty_gt;
     EXPECT_TRUE(writer_.WriteMessage(empty_gt));
 }

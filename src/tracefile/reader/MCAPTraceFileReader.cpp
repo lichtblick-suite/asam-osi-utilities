@@ -9,7 +9,7 @@
 
 namespace osi3 {
 
-bool MCAPTraceFileReader::Open(const std::filesystem::path& file_path) {
+auto MCAPTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
     // prevent opening again if already opened
     if (message_view_ != nullptr) {
         std::cerr << "ERROR: Opening file " << file_path << ", reader has already a file opened" << std::endl;
@@ -38,12 +38,12 @@ bool MCAPTraceFileReader::Open(const std::filesystem::path& file_path) {
     return true;
 }
 
-bool MCAPTraceFileReader::Open(const std::string& file_path, const mcap::ReadMessageOptions& options) {
+auto MCAPTraceFileReader::Open(const std::string& file_path, const mcap::ReadMessageOptions& options) -> bool {
     mcap_options_ = options;
     return this->Open(file_path);
 }
 
-std::optional<ReadResult> MCAPTraceFileReader::ReadMessage() {
+auto MCAPTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
     // check if ready and if there are messages left
     if (!this->HasNext()) {
         std::cerr << "Unable to read message: No more messages available in trace file or file not opened." << std::endl;
@@ -91,7 +91,7 @@ void MCAPTraceFileReader::Close() {
     trace_file_.close();
 }
 
-bool MCAPTraceFileReader::HasNext() {
+auto MCAPTraceFileReader::HasNext() -> bool {
     // not opened yet
     if (!(trace_file_ && trace_file_.is_open())) {
         return false;

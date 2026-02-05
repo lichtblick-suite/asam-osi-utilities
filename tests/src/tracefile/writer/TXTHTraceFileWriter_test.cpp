@@ -51,7 +51,7 @@ TEST_F(TxthTraceFileWriterTest, WriteGroundTruthMessage) {
 
     // Verify file content
     std::ifstream file(test_file_gt_);
-    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    const std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     EXPECT_TRUE(content.find("seconds: 123") != std::string::npos);
     EXPECT_TRUE(content.find("nanos: 456") != std::string::npos);
 }
@@ -68,13 +68,13 @@ TEST_F(TxthTraceFileWriterTest, WriteSensorViewMessage) {
     writer_.Close();
 
     std::ifstream file(test_file_sv_);
-    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    const std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     EXPECT_TRUE(content.find("seconds: 789") != std::string::npos);
     EXPECT_TRUE(content.find("nanos: 101") != std::string::npos);
 }
 
 TEST_F(TxthTraceFileWriterTest, WriteMessageToClosedFile) {
-    osi3::GroundTruth ground_truth;
+    const osi3::GroundTruth ground_truth;
     EXPECT_FALSE(writer_.WriteMessage(ground_truth));
 }
 
@@ -92,7 +92,7 @@ TEST_F(TxthTraceFileWriterTest, MultipleMessages) {
     writer_.Close();
 
     std::ifstream file(test_file_gt_);
-    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    const std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     EXPECT_TRUE(content.find("seconds: 111") != std::string::npos);
     EXPECT_TRUE(content.find("seconds: 222") != std::string::npos);
 }

@@ -35,7 +35,7 @@ class SingleChannelBinaryTraceFileReaderTest : public ::testing::Test {
     }
 
    private:
-    void CreateTestGroundTruthFile() const {
+    void CreateTestGroundTruthFile() {
         std::ofstream file(test_file_gt_, std::ios::binary);
         osi3::GroundTruth ground_truth;
         ground_truth.mutable_timestamp()->set_seconds(123);
@@ -48,7 +48,7 @@ class SingleChannelBinaryTraceFileReaderTest : public ::testing::Test {
         file.write(serialized.data(), size);
     }
 
-    void CreateTestSensorViewFile() const {
+    void CreateTestSensorViewFile() {
         std::ofstream file(test_file_sv_, std::ios::binary);
         osi3::SensorView sensor_view;
         sensor_view.mutable_timestamp()->set_seconds(789);
@@ -71,7 +71,10 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadGroundTruthMessage) {
     EXPECT_TRUE(reader_.HasNext());
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << "Expected GroundTruth message";
+        return;
+    }
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
 
     auto* ground_truth = dynamic_cast<osi3::GroundTruth*>(result->message.get());
@@ -85,7 +88,10 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadSensorViewMessage) {
     EXPECT_TRUE(reader_.HasNext());
 
     auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << "Expected SensorView message";
+        return;
+    }
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kSensorView);
 
     auto* sensor_view = dynamic_cast<osi3::SensorView*>(result->message.get());
@@ -175,7 +181,7 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadCorruptedMessageContent) {
         uint32_t size = 100;
         file.write(reinterpret_cast<char*>(&size), sizeof(size));
         // Write fewer data than specified in size
-        std::string incomplete_data = "incomplete";
+        const std::string incomplete_data = "incomplete";
         file.write(incomplete_data.c_str(), static_cast<std::streamsize>(incomplete_data.size()));
     }
 

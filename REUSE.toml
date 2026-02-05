@@ -1,0 +1,21 @@
+version = 1
+
+[[annotations]]
+path = ["lib/osi-cpp/**", "lib/mcap/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "NOASSERTION"
+SPDX-FileComment = "Third-party submodules; licensing handled upstream."
+
+[[annotations]]
+path = ["CMakePresets.json", "vcpkg.json", "vcpkg-configuration.json"]
+precedence = "closest"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "MPL-2.0"
+
+[[annotations]]
+path = "tests/intentional-failures/**"
+precedence = "override"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "MPL-2.0"
+SPDX-FileComment = "Intentional CI fixture; CI removes this block to trigger failure."

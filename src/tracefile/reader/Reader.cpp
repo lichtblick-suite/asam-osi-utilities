@@ -11,7 +11,7 @@
 
 namespace osi3 {
 
-std::unique_ptr<osi3::TraceFileReader> TraceFileReaderFactory::createReader(const std::filesystem::path& path) {
+auto TraceFileReaderFactory::createReader(const std::filesystem::path& path) -> std::unique_ptr<osi3::TraceFileReader> {
     if (path.extension().string() == ".osi") {
         return std::make_unique<osi3::SingleChannelBinaryTraceFileReader>();
     }

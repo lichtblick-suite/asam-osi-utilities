@@ -38,6 +38,11 @@ class TXTHTraceFileReader final : public TraceFileReader {
     using MessageParserFunc = std::function<std::unique_ptr<google::protobuf::Message>(const std::string&)>;
 
    public:
+    /**
+     * @brief Opens a trace file for reading and infers message type from filename
+     * @param file_path Path to the trace file
+     * @return true if successful, false otherwise
+     */
     bool Open(const std::filesystem::path& file_path) override;
     /**
      * @brief Opens a trace file with specified message type
@@ -46,15 +51,28 @@ class TXTHTraceFileReader final : public TraceFileReader {
      * @return true if successful, false otherwise
      */
     bool Open(const std::filesystem::path& file_path, ReaderTopLevelMessage message_type);
+    /**
+     * @brief Closes the trace file
+     */
     void Close() override;
+
+    /**
+     * @brief Checks whether more messages are available
+     * @return true if there are more messages to read, false otherwise
+     */
     bool HasNext() override;
+
+    /**
+     * @brief Reads the next message from the trace file
+     * @return Optional ReadResult containing the message if available
+     */
     std::optional<ReadResult> ReadMessage() override;
 
    private:
-    std::ifstream trace_file_;
-    MessageParserFunc parser_;
-    std::string line_indicating_msg_start_;
-    ReaderTopLevelMessage message_type_{ReaderTopLevelMessage::kUnknown};
+    std::ifstream trace_file_;                                            /**< File stream for reading. */
+    MessageParserFunc parser_;                                            /**< Parser for the current message type. */
+    std::string line_indicating_msg_start_;                               /**< Marker indicating the start of a message. */
+    ReaderTopLevelMessage message_type_{ReaderTopLevelMessage::kUnknown}; /**< Current message type. */
     /**
      * @brief Reads the next complete message from the trace file
      * @return String containing the complete message in text format
@@ -92,6 +110,7 @@ class TXTHTraceFileReader final : public TraceFileReader {
      *
      * Maps ReaderTopLevelMessage enums to corresponding parser functions for each OSI message type.
      */
+    /** @brief Map of message types to parser functions. */
     const std::unordered_map<ReaderTopLevelMessage, MessageParserFunc> kParserMap_ = {{ReaderTopLevelMessage::kGroundTruth, CreateParser<GroundTruth>()},
                                                                                       {ReaderTopLevelMessage::kSensorData, CreateParser<SensorData>()},
                                                                                       {ReaderTopLevelMessage::kSensorView, CreateParser<SensorView>()},

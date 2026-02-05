@@ -22,6 +22,11 @@ namespace osi3 {
  */
 class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
    public:
+    /**
+     * @brief Opens a trace file for writing using default MCAP options
+     * @param file_path Path to the file to be created/opened
+     * @return true if successful, false otherwise
+     */
     bool Open(const std::filesystem::path& file_path) override;
 
     /**
@@ -94,6 +99,9 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
      */
     static std::string GetCurrentTimeAsString();
 
+    /**
+     * @brief Closes the trace file and finalizes MCAP output
+     */
     void Close() override;
 
     /**

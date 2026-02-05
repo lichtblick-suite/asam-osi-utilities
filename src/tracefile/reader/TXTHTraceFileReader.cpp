@@ -9,7 +9,7 @@
 
 namespace osi3 {
 
-bool TXTHTraceFileReader::Open(const std::filesystem::path& file_path) {
+auto TXTHTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
     // prevent opening again if already opened
     if (trace_file_.is_open()) {
         std::cerr << "ERROR: Opening file " << file_path << ", reader has already a file opened" << std::endl;
@@ -55,16 +55,16 @@ bool TXTHTraceFileReader::Open(const std::filesystem::path& file_path) {
     return trace_file_.is_open();
 }
 
-bool TXTHTraceFileReader::Open(const std::filesystem::path& file_path, const ReaderTopLevelMessage message_type) {
+auto TXTHTraceFileReader::Open(const std::filesystem::path& file_path, const ReaderTopLevelMessage message_type) -> bool {
     message_type_ = message_type;
     return Open(file_path);
 }
 
 void TXTHTraceFileReader::Close() { trace_file_.close(); }
 
-bool TXTHTraceFileReader::HasNext() { return (trace_file_ && trace_file_.is_open() && trace_file_.peek() != EOF); }
+auto TXTHTraceFileReader::HasNext() -> bool { return (trace_file_ && trace_file_.is_open() && trace_file_.peek() != EOF); }
 
-std::optional<ReadResult> TXTHTraceFileReader::ReadMessage() {
+auto TXTHTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
     // check if ready and if there are messages left
     if (!this->HasNext()) {
         std::cerr << "Unable to read message: No more messages available in trace file or file not opened." << std::endl;
@@ -82,7 +82,7 @@ std::optional<ReadResult> TXTHTraceFileReader::ReadMessage() {
     return result;
 }
 
-std::string TXTHTraceFileReader::ReadNextMessageFromFile() {
+auto TXTHTraceFileReader::ReadNextMessageFromFile() -> std::string {
     std::string message;
     std::string line;
     unsigned int last_position = 0;

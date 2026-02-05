@@ -2,6 +2,10 @@
 // Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
+/**
+ * \file
+ * \brief Write an OSI `.txth` text trace file.
+ */
 
 #include <osi-utilities/tracefile/writer/TXTHTraceFileWriter.h>
 
@@ -10,17 +14,25 @@
 #include "osi_sensordata.pb.h"
 #include "osi_version.pb.h"
 
-std::string GetCurrentTimeAsString() {
+/**
+ * \brief Get the current time in OSI filename format.
+ * \return Timestamp formatted as YYYYMMDDThhmmssZ.
+ */
+auto GetCurrentTimeAsString() -> std::string {
     const auto now = std::chrono::system_clock::now();
     const auto timer = std::chrono::system_clock::to_time_t(now);
     const std::tm utc_time_structure = *std::gmtime(&timer);  // Greenwich Mean Time (GMT) is in Coordinated Universal Time (UTC) zone
-    std::ostringstream oss;
+    std::ostringstream oss{};
     oss << std::put_time(&utc_time_structure, "%Y%m%dT%H%M%S");
     oss << "Z";  // As GMT is used as a reference time zone, add Z to indicate UTC (+00:00)
     return oss.str();
 }
 
-std::filesystem::path GenerateTempFilePath() {
+/**
+ * \brief Generate a temporary output path for the `.txth` example.
+ * \return Temporary file path.
+ */
+auto GenerateTempFilePath() -> std::filesystem::path {
     // create a path which follows the OSI specification recommendation
     std::string file_name = GetCurrentTimeAsString();
     const auto osi_version = osi3::InterfaceVersion::descriptor()->file()->options().GetExtension(osi3::current_interface_version);
@@ -32,7 +44,10 @@ std::filesystem::path GenerateTempFilePath() {
     return path;
 }
 
-int main(int argc, const char** argv) {
+/**
+ * \brief Entry point for the TXTH writer example.
+ */
+auto main(int /*argc*/, const char** /*argv*/) -> int {
     std::cout << "Starting txth writer example:" << std::endl;
 
     // Create writer and open file

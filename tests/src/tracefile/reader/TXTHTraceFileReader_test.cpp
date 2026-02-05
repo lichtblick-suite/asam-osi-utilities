@@ -35,7 +35,7 @@ class TxthTraceFileReaderTest : public ::testing::Test {
     }
 
    private:
-    void CreateTestGroundTruthFile() const {
+    void CreateTestGroundTruthFile() {
         std::ofstream file(test_file_gt_);
         file << "version {\n";
         file << "  version_major: 3\n";
@@ -57,7 +57,7 @@ class TxthTraceFileReaderTest : public ::testing::Test {
         file << "}\n";
     }
 
-    void CreateTestSensorViewFile() const {
+    void CreateTestSensorViewFile() {
         std::ofstream file(test_file_sv_);
         file << "version {\n";
         file << "  version_major: 3\n";
@@ -82,7 +82,10 @@ TEST_F(TxthTraceFileReaderTest, ReadGroundTruthMessage) {
     EXPECT_TRUE(reader_.HasNext());
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << true;
+        return;
+    }
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
 
     auto* ground_truth = dynamic_cast<osi3::GroundTruth*>(result->message.get());
@@ -96,7 +99,10 @@ TEST_F(TxthTraceFileReaderTest, ReadSensorViewMessage) {
     EXPECT_TRUE(reader_.HasNext());
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << true;
+        return;
+    }
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kSensorView);
 
     auto* sensor_view = dynamic_cast<osi3::SensorView*>(result->message.get());
@@ -150,7 +156,7 @@ TEST_F(TxthTraceFileReaderTest, OpenInvalidMessageType) {
 
 TEST_F(TxthTraceFileReaderTest, ReadEmptyFile) {
     const auto empty_file = osi3::testing::MakeTempPath("empty", osi3::testing::FileExtensions::kTxth);
-    { std::ofstream file(empty_file); }
+    { const std::ofstream file(empty_file); }
     ASSERT_TRUE(reader_.Open(empty_file, osi3::ReaderTopLevelMessage::kGroundTruth));
     EXPECT_FALSE(reader_.HasNext());
     reader_.Close();

@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # ASAM OSI Utilities
 
 [![CI](https://github.com/Lichtblick-Suite/asam-osi-utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Lichtblick-Suite/asam-osi-utilities/actions/workflows/ci.yml)
@@ -18,11 +23,10 @@ git submodule update --init --recursive
 git pull --recurse-submodules
 
 # Build with vcpkg (recommended)
-cmake --preset vcpkg-linux    # Linux
-cmake --preset vcpkg-windows  # Windows
-cmake --build build -j
+cmake --preset vcpkg
+cmake --build --preset vcpkg --parallel
 
-# Run tests
+# Run tests (configure with -DBUILD_TESTING=ON to build them)
 ctest --test-dir build --output-on-failure
 ```
 

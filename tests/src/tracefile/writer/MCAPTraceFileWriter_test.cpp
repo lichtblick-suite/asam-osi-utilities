@@ -103,7 +103,7 @@ TEST_F(MCAPTraceFileWriterTest, TryWriteWithoutReqMetaData) {
 TEST_F(MCAPTraceFileWriterTest, SetMetadata) {
     ASSERT_TRUE(writer_.Open(test_file_));
 
-    std::unordered_map<std::string, std::string> metadata{{"key1", "value1"}, {"key2", "value2"}};
+    const std::unordered_map<std::string, std::string> metadata{{"key1", "value1"}, {"key2", "value2"}};
 
     EXPECT_TRUE(writer_.AddFileMetadata("test_metadata", metadata));
 }
@@ -135,7 +135,7 @@ TEST_F(MCAPTraceFileWriterTest, WriteMessageWithoutChannel) {
 TEST_F(MCAPTraceFileWriterTest, WriteMessageWithEmptyTopic) {
     ASSERT_TRUE(writer_.Open(test_file_));
 
-    osi3::GroundTruth ground_truth;
+    const osi3::GroundTruth ground_truth;
     EXPECT_FALSE(writer_.WriteMessage(ground_truth, ""));
 }
 

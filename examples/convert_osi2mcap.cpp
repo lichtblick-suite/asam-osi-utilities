@@ -2,6 +2,10 @@
 // Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
+/**
+ * \file
+ * \brief Convert single-channel binary OSI traces to MCAP.
+ */
 
 #include <osi-utilities/tracefile/OsiFileAnalyzer.h>
 #include <osi-utilities/tracefile/TraceFileConfig.h>
@@ -21,18 +25,25 @@
 #include "osi_trafficcommandupdate.pb.h"
 #include "osi_trafficupdate.pb.h"
 
-// create a map to convert the compression type to a string and vice versa
+/** \brief Map compression enum values to string names. */
 static const std::map<mcap::Compression, std::string> kCompressionEnumStringMap = {
     {mcap::Compression::None, "none"}, {mcap::Compression::Lz4, "lz4"}, {mcap::Compression::Zstd, "zstd"}};
+/** \brief Map compression string names to enum values. */
 static const std::map<std::string, mcap::Compression> kCompressionStringEnumMap = {
     {"none", mcap::Compression::None}, {"lz4", mcap::Compression::Lz4}, {"zstd", mcap::Compression::Zstd}};
-// create a map to convert the compression level to a string and vice versa
+/** \brief Map compression level enum values to string names. */
 static const std::map<mcap::CompressionLevel, std::string> kCompressionLevelEnumStringMap = {
     {mcap::CompressionLevel::Fastest, "fastest"}, {mcap::CompressionLevel::Fast, "fast"}, {mcap::CompressionLevel::Default, "default"}};
+/** \brief Map compression level string names to enum values. */
 static const std::map<std::string, mcap::CompressionLevel> kCompressionLevelStringEnumMap = {
     {"fastest", mcap::CompressionLevel::Fastest}, {"fast", mcap::CompressionLevel::Fast}, {"default", mcap::CompressionLevel::Default}};
 
-std::optional<std::string> ExtractTimestampFromFileName(const std::filesystem::path& file_path) {
+/**
+ * \brief Extract an OSI timestamp from the input file name if present.
+ * \param file_path Path to the input trace file.
+ * \return Timestamp in ISO format or nullopt if none found.
+ */
+auto ExtractTimestampFromFileName(const std::filesystem::path& file_path) -> std::optional<std::string> {
     // Get first 16 characters which should be the timestamp
     auto possible_timestamp = file_path.filename().string().substr(0, 16);
 
@@ -47,13 +58,14 @@ std::optional<std::string> ExtractTimestampFromFileName(const std::filesystem::p
     }
 
     // Format the timestamp in the by OSI specified mcap metadata format for the zero_time field
-    std::ostringstream formatted_timestamp;
+    std::ostringstream formatted_timestamp{};
     formatted_timestamp << std::put_time(&tm_struct, "%Y-%m-%dT%H:%M:%SZ");
 
     std::cout << "Found timestamp for MCAP metadata 'zero_time' from tracefile name: " << formatted_timestamp.str() << std::endl;
     return formatted_timestamp.str();
 }
 
+/** \brief Map OSI message types to protobuf descriptors. */
 const std::unordered_map<osi3::ReaderTopLevelMessage, const google::protobuf::Descriptor*> kMessageTypeToDescriptor = {
     {osi3::ReaderTopLevelMessage::kGroundTruth, osi3::GroundTruth::descriptor()},
     {osi3::ReaderTopLevelMessage::kSensorData, osi3::SensorData::descriptor()},
@@ -66,21 +78,39 @@ const std::unordered_map<osi3::ReaderTopLevelMessage, const google::protobuf::De
     {osi3::ReaderTopLevelMessage::kStreamingUpdate, osi3::StreamingUpdate::descriptor()},
 };
 
-const google::protobuf::Descriptor* GetDescriptorForMessageType(const osi3::ReaderTopLevelMessage messageType) {
+/**
+ * \brief Resolve a protobuf descriptor for the given OSI message type.
+ * \param messageType OSI message type enum.
+ * \return Descriptor for the corresponding protobuf type.
+ * \throws std::runtime_error if the message type is unknown.
+ */
+auto GetDescriptorForMessageType(const osi3::ReaderTopLevelMessage messageType) -> const google::protobuf::Descriptor* {
     if (const auto iterator = kMessageTypeToDescriptor.find(messageType); iterator != kMessageTypeToDescriptor.end()) {
         return iterator->second;
     }
     throw std::runtime_error("Unknown message type");
 }
 
+/**
+ * \brief Write a typed OSI message into the MCAP writer.
+ * \tparam T Protobuf message type to write.
+ * \param read_result Parsed message container.
+ * \param writer MCAP writer instance.
+ * \param topic Topic name to write to.
+ */
 template <typename T>
-void WriteTypedMessage(const std::optional<osi3::ReadResult>& read_result, osi3::MCAPTraceFileWriter& writer, const std::string& topic) {
-    writer.WriteMessage(*static_cast<T*>(read_result->message.get()), topic);
+void WriteTypedMessage(const osi3::ReadResult& read_result, osi3::MCAPTraceFileWriter& writer, const std::string& topic) {
+    writer.WriteMessage(*static_cast<T*>(read_result.message.get()), topic);
 }
 
-void ProcessMessage(const std::optional<osi3::ReadResult>& read_result, osi3::MCAPTraceFileWriter& writer) {
+/**
+ * \brief Convert a read OSI message into MCAP output.
+ * \param read_result Parsed message container.
+ * \param writer MCAP writer instance.
+ */
+void ProcessMessage(const osi3::ReadResult& read_result, osi3::MCAPTraceFileWriter& writer) {
     const std::string topic = "ConvertedTrace";
-    switch (read_result->message_type) {
+    switch (read_result.message_type) {
         case osi3::ReaderTopLevelMessage::kGroundTruth:
             WriteTypedMessage<osi3::GroundTruth>(read_result, writer, topic);
             break;
@@ -114,17 +144,21 @@ void ProcessMessage(const std::optional<osi3::ReadResult>& read_result, osi3::MC
     }
 }
 
+/**
+ * \brief Parsed command-line options for this converter.
+ */
 struct ProgramOptions {
-    std::filesystem::path input_file_path;
-    std::filesystem::path output_file_path;
-    osi3::ReaderTopLevelMessage message_type = osi3::ReaderTopLevelMessage::kUnknown;
-    size_t chunk_size = osi3::tracefile::config::kDefaultChunkSize;
-    mcap::Compression compression = mcap::Compression::Zstd;
-    mcap::CompressionLevel compression_level = mcap::CompressionLevel::Default;
-    bool auto_optimize = false;           // Enable automatic optimization based on file analysis
-    bool chunk_size_set_by_user = false;  // Track if user explicitly set chunk size
+    std::filesystem::path input_file_path;                                            /**< Input `.osi` trace file. */
+    std::filesystem::path output_file_path;                                           /**< Output `.mcap` file. */
+    osi3::ReaderTopLevelMessage message_type = osi3::ReaderTopLevelMessage::kUnknown; /**< Optional message type hint. */
+    size_t chunk_size = osi3::tracefile::config::kDefaultChunkSize;                   /**< MCAP chunk size in bytes. */
+    mcap::Compression compression = mcap::Compression::Zstd;                          /**< MCAP compression type. */
+    mcap::CompressionLevel compression_level = mcap::CompressionLevel::Default;       /**< MCAP compression level. */
+    bool auto_optimize = false;                                                       /**< Enable automatic optimization based on file analysis. */
+    bool chunk_size_set_by_user = false;                                              /**< Track if user explicitly set chunk size. */
 };
 
+/** \brief Map CLI message type names to OSI enum values. */
 const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kValidTypes = {
     {"GroundTruth", osi3::ReaderTopLevelMessage::kGroundTruth},        {"SensorData", osi3::ReaderTopLevelMessage::kSensorData},
     {"SensorView", osi3::ReaderTopLevelMessage::kSensorView},          {"HostVehicleData", osi3::ReaderTopLevelMessage::kHostVehicleData},
@@ -132,6 +166,9 @@ const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kValidTypes =
     {"TrafficUpdate", osi3::ReaderTopLevelMessage::kTrafficUpdate},    {"MotionRequest", osi3::ReaderTopLevelMessage::kMotionRequest},
     {"StreamingUpdate", osi3::ReaderTopLevelMessage::kStreamingUpdate}};
 
+/**
+ * \brief Print CLI usage information.
+ */
 void printHelp() {
     std::cout << "Usage: convert_osi2mcap <input_file> <output_file> [options]\n\n"
               << "Arguments:\n"
@@ -160,19 +197,35 @@ void printHelp() {
               << "  improves playback performance in viewers like Lichtblick.\n";
 }
 
-mcap::Compression parseCompressionType(const std::string& compression_str) {
+/**
+ * \brief Parse a compression type string into an MCAP enum value.
+ * \param compression_str Compression type name.
+ * \return MCAP compression enum.
+ */
+auto parseCompressionType(const std::string& compression_str) -> mcap::Compression {
     std::string lower_compression_str = compression_str;
     std::transform(lower_compression_str.begin(), lower_compression_str.end(), lower_compression_str.begin(), ::tolower);
     return kCompressionStringEnumMap.at(lower_compression_str);
 }
 
-mcap::CompressionLevel parseCompressionLevel(const std::string& level_str) {
+/**
+ * \brief Parse a compression level string into an MCAP enum value.
+ * \param level_str Compression level name.
+ * \return MCAP compression level enum.
+ */
+auto parseCompressionLevel(const std::string& level_str) -> mcap::CompressionLevel {
     std::string lower_level = level_str;
     std::transform(lower_level.begin(), lower_level.end(), lower_level.begin(), ::tolower);
     return kCompressionLevelStringEnumMap.at(lower_level);
 }
 
-std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
+/**
+ * \brief Parse CLI arguments into ProgramOptions.
+ * \param argc Argument count.
+ * \param argv Argument vector.
+ * \return Parsed options or nullopt on error/help.
+ */
+auto parseArgs(const int argc, const char** argv) -> std::optional<ProgramOptions> {
     if (argc < 3 || std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
         printHelp();
         return std::nullopt;
@@ -214,8 +267,11 @@ std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
     return options;
 }
 
-int main(const int argc, const char** argv) {
-    auto options = parseArgs(argc, argv);
+/**
+ * \brief Entry point for the `.osi` to `.mcap` converter.
+ */
+auto main(const int argc, const char** argv) -> int {
+    const auto options = parseArgs(argc, argv);
     if (!options) {
         return 1;
     }
@@ -308,7 +364,11 @@ int main(const int argc, const char** argv) {
 
     while (trace_file_reader.HasNext()) {
         auto reading_result = trace_file_reader.ReadMessage();
-        ProcessMessage(reading_result, trace_file_writer);
+        if (!reading_result) {
+            std::cerr << "Error: failed to read message from trace file." << std::endl;
+            continue;
+        }
+        ProcessMessage(*reading_result, trace_file_writer);
     }
     std::cout << "Finished single channel binary to mcap converter" << std::endl;
     return 0;

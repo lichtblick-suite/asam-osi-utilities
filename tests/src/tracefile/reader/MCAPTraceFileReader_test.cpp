@@ -67,7 +67,7 @@ class McapTraceFileReaderTest : public ::testing::Test {
         mcap::Channel channel("json_topic", "json", json_schema.id);
         mcap_writer->addChannel(channel);
 
-        std::string json_data = "{\"test_field1\": \"data\"}";
+        std::string json_data = R"({"test_field1": "data"})";
         mcap::Message msg;
         msg.channelId = channel.id;
         msg.data = reinterpret_cast<const std::byte*>(json_data.data());
@@ -102,7 +102,10 @@ TEST_F(McapTraceFileReaderTest, ReadGroundTruthMessage) {
     EXPECT_TRUE(reader_.HasNext());
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << "Expected GroundTruth message";
+        return;
+    }
 
     auto* ground_truth = dynamic_cast<osi3::GroundTruth*>(result->message.get());
     ASSERT_NE(ground_truth, nullptr);
@@ -120,7 +123,10 @@ TEST_F(McapTraceFileReaderTest, ReadSensorViewMessage) {
     reader_.ReadMessage();
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << "Expected SensorView message";
+        return;
+    }
 
     auto* sensor_view = dynamic_cast<osi3::SensorView*>(result->message.get());
     ASSERT_NE(sensor_view, nullptr);
@@ -192,12 +198,18 @@ TEST_F(McapTraceFileReaderTest, SkipNonOSIMessagesWhenEnabled) {
 
     // Read first OSI message (GroundTruth)
     auto result1 = reader_.ReadMessage();
-    ASSERT_TRUE(result1.has_value());
+    if (!result1.has_value()) {
+        FAIL() << "Expected GroundTruth message";
+        return;
+    }
     EXPECT_EQ(result1->channel_name, "gt");
 
     // Read second OSI message (SensorView)
     auto result2 = reader_.ReadMessage();
-    ASSERT_TRUE(result2.has_value());
+    if (!result2.has_value()) {
+        FAIL() << "Expected SensorView message";
+        return;
+    }
     EXPECT_EQ(result2->channel_name, "sv");
 
     // Third message (JSON) should be skipped automatically

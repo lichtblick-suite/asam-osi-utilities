@@ -22,7 +22,16 @@ namespace osi3 {
  */
 class SingleChannelBinaryTraceFileWriter final : public TraceFileWriter {
    public:
+    /**
+     * @brief Opens a file for binary trace output
+     * @param file_path Path to the file to be created/opened
+     * @return true if successful, false otherwise
+     */
     bool Open(const std::filesystem::path& file_path) override;
+
+    /**
+     * @brief Closes the trace file
+     */
     void Close() override;
 
     /**
@@ -35,8 +44,8 @@ class SingleChannelBinaryTraceFileWriter final : public TraceFileWriter {
     bool WriteMessage(const T& top_level_message);
 
    private:
-    std::ofstream trace_file_;
-    bool file_open_ = false;
+    std::ofstream trace_file_; /**< Output file stream. */
+    bool file_open_ = false;   /**< Whether the file is currently open. */
 };
 
 }  // namespace osi3
