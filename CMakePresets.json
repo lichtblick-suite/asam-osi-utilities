@@ -13,6 +13,7 @@
       "name": "vcpkg",
       "description": "Build using vcpkg for dependency management",
       "inherits": "base",
+      "binaryDir": "${sourceDir}/build-vcpkg",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
