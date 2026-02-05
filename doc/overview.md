@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # Overview
 
 ASAM OSI Utilities is a C++ library that provides tools for working with [ASAM Open Simulation Interface (OSI)](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/specification/index.html) trace files.

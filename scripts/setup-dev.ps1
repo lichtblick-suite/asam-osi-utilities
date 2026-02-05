@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 # SPDX-License-Identifier: MPL-2.0
 #
 # Setup development environment for ASAM OSI Utilities (Windows PowerShell)

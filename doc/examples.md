@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # Examples
 
 This project ships small executables that demonstrate how to read/write OSI trace files and convert between formats. Use them as reference implementations for API usage and expected file formats.

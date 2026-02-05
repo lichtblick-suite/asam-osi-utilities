@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # Developer Workflow
 
 This page contains day-to-day commands. For environment setup, see [Development Setup](setup.md).

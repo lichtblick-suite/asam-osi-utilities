@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-License-Identifier: MPL-2.0
 function(configure_example TARGET_NAME SOURCE_FILE)
     add_executable(${TARGET_NAME} ${SOURCE_FILE})
 

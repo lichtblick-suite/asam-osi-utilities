@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 name: REUSE Compliance
 
 on:
@@ -30,11 +30,29 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
           path = Path("REUSE.toml")
-          text = path.read_text(encoding="utf-8")
-          text = re.sub(r'\\{\\s*path\\s*=\\s*"tests/intentional-failures/\\*\\*",\\s*exclude\\s*=\\s*true\\s*\\},?\\n?', "", text)
-          path.write_text(text, encoding="utf-8")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          blocks = []
+          current = []
+          for line in lines:
+              if line.strip().startswith("[[annotations]]") and current:
+                  blocks.append(current)
+                  current = [line]
+              else:
+                  current.append(line)
+          if current:
+              blocks.append(current)
+          filtered_blocks = []
+          for block in blocks:
+              if any('path = "tests/intentional-failures/**"' in line for line in block):
+                  continue
+              filtered_blocks.append(block)
+          out_lines = []
+          for block in filtered_blocks:
+              if out_lines and block and block[0].strip().startswith("[[annotations]]"):
+                  out_lines.append("")
+              out_lines.extend(block)
+          path.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
           PY
       - name: REUSE lint (expected failure)
         shell: bash

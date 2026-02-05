@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # Building
 
 This document provides detailed build instructions for all supported platforms.
@@ -290,14 +295,14 @@ cmake --build build
 
 ## CMake Options
 
-| Option                    | Default | Description                                                     |
-| ------------------------- | ------- | --------------------------------------------------------------- |
-| `BUILD_EXAMPLES`          | `ON`    | Build example programs                                          |
-| `BUILD_DOCS`              | `OFF`   | Enable the `library_api_doc` target                             |
-| `OSIUTILITIES_DOCS_ONLY`  | `OFF`   | Build docs only (implies `BUILD_DOCS=ON`, disables tests/examples) |
-| `BUILD_TESTING`           | `OFF`   | Build unit tests                                                |
-| `OSIUTILITIES_RUN_TESTS`  | `OFF`   | Run tests as part of the default build (implies `BUILD_TESTING`) |
-| `CODE_COVERAGE`           | `OFF`   | Enable code coverage (GCC only)                                 |
+| Option                   | Default | Description                                                        |
+| ------------------------ | ------- | ------------------------------------------------------------------ |
+| `BUILD_EXAMPLES`         | `ON`    | Build example programs                                             |
+| `BUILD_DOCS`             | `OFF`   | Enable the `library_api_doc` target                                |
+| `OSIUTILITIES_DOCS_ONLY` | `OFF`   | Build docs only (implies `BUILD_DOCS=ON`, disables tests/examples) |
+| `BUILD_TESTING`          | `OFF`   | Build unit tests                                                   |
+| `OSIUTILITIES_RUN_TESTS` | `OFF`   | Run tests as part of the default build (implies `BUILD_TESTING`)   |
+| `CODE_COVERAGE`          | `OFF`   | Enable code coverage (GCC only)                                    |
 
 Example:
 

@@ -1,8 +1,6 @@
-#
-# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 # SPDX-License-Identifier: MPL-2.0
 #
-
 # FindCompression.cmake
 # Finds LZ4 and ZSTD compression libraries with cross-platform support
 #

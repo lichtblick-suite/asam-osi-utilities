@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # Examples
 
 This folder contains application examples that demonstrate how to use the OSI utilities library.

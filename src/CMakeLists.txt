@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-License-Identifier: MPL-2.0
 # Add subdirectories for organized modules
 include_directories(tracefile)
 

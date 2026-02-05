@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-License-Identifier: MPL-2.0
 cmake_minimum_required(VERSION 3.16)
 
 # Add cmake modules directory early so we can use custom find modules

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-License-Identifier: MPL-2.0
 # Use GTest from vcpkg (or system)
 find_package(GTest CONFIG REQUIRED)
 include(GoogleTest)

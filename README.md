@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # ASAM OSI Utilities
 
 [![CI](https://github.com/Lichtblick-Suite/asam-osi-utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Lichtblick-Suite/asam-osi-utilities/actions/workflows/ci.yml)
