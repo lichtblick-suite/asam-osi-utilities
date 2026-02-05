@@ -97,8 +97,8 @@ auto GetDescriptorForMessageType(const osi3::ReaderTopLevelMessage messageType) 
  * \param topic Topic name to write to.
  */
 template <typename T>
-void WriteTypedMessage(const std::optional<osi3::ReadResult>& read_result, osi3::MCAPTraceFileWriter& writer, const std::string& topic) {
-    writer.WriteMessage(*static_cast<T*>(read_result->message.get()), topic);
+void WriteTypedMessage(const osi3::ReadResult& read_result, osi3::MCAPTraceFileWriter& writer, const std::string& topic) {
+    writer.WriteMessage(*static_cast<T*>(read_result.message.get()), topic);
 }
 
 /**
@@ -106,9 +106,9 @@ void WriteTypedMessage(const std::optional<osi3::ReadResult>& read_result, osi3:
  * \param read_result Parsed message container.
  * \param writer MCAP writer instance.
  */
-void ProcessMessage(const std::optional<osi3::ReadResult>& read_result, osi3::MCAPTraceFileWriter& writer) {
+void ProcessMessage(const osi3::ReadResult& read_result, osi3::MCAPTraceFileWriter& writer) {
     const std::string topic = "ConvertedTrace";
-    switch (read_result->message_type) {
+    switch (read_result.message_type) {
         case osi3::ReaderTopLevelMessage::kGroundTruth:
             WriteTypedMessage<osi3::GroundTruth>(read_result, writer, topic);
             break;
@@ -317,7 +317,11 @@ auto main(const int argc, const char** argv) -> int {
 
     while (trace_file_reader.HasNext()) {
         auto reading_result = trace_file_reader.ReadMessage();
-        ProcessMessage(reading_result, trace_file_writer);
+        if (!reading_result) {
+            std::cerr << "Error: failed to read message from trace file." << std::endl;
+            continue;
+        }
+        ProcessMessage(*reading_result, trace_file_writer);
     }
     std::cout << "Finished single channel binary to mcap converter" << std::endl;
     return 0;

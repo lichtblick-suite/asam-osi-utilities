@@ -36,52 +36,52 @@ void PrintTimestamp(T msg) {
  * \brief Dispatch the decoded message to the correct type and print its timestamp.
  * \param reading_result Read result containing the decoded message.
  */
-void CastMsgAndPrintTimestamp(const std::optional<osi3::ReadResult>& reading_result) {
+void CastMsgAndPrintTimestamp(const osi3::ReadResult& reading_result) {
     // while reading_result->message_type already contains the correct deserialized OSI message type,
     // we need to cast the pointer during runtime to allow multiple different trace files to be read
-    switch (reading_result->message_type) {
+    switch (reading_result.message_type) {
         case osi3::ReaderTopLevelMessage::kGroundTruth: {
-            auto* const ground_truth = dynamic_cast<osi3::GroundTruth*>(reading_result->message.get());
+            auto* const ground_truth = dynamic_cast<osi3::GroundTruth*>(reading_result.message.get());
             PrintTimestamp(ground_truth);
             break;
         }
         case osi3::ReaderTopLevelMessage::kSensorData: {
-            auto* const sensor_data = dynamic_cast<osi3::SensorData*>(reading_result->message.get());
+            auto* const sensor_data = dynamic_cast<osi3::SensorData*>(reading_result.message.get());
             PrintTimestamp(sensor_data);
             break;
         }
         case osi3::ReaderTopLevelMessage::kSensorView: {
-            auto* const sensor_view = dynamic_cast<osi3::SensorView*>(reading_result->message.get());
+            auto* const sensor_view = dynamic_cast<osi3::SensorView*>(reading_result.message.get());
             PrintTimestamp(sensor_view);
             break;
         }
         case osi3::ReaderTopLevelMessage::kHostVehicleData: {
-            auto* const host_vehicle_data = dynamic_cast<osi3::HostVehicleData*>(reading_result->message.get());
+            auto* const host_vehicle_data = dynamic_cast<osi3::HostVehicleData*>(reading_result.message.get());
             PrintTimestamp(host_vehicle_data);
             break;
         }
         case osi3::ReaderTopLevelMessage::kTrafficCommand: {
-            auto* const traffic_command = dynamic_cast<osi3::TrafficCommand*>(reading_result->message.get());
+            auto* const traffic_command = dynamic_cast<osi3::TrafficCommand*>(reading_result.message.get());
             PrintTimestamp(traffic_command);
             break;
         }
         case osi3::ReaderTopLevelMessage::kTrafficCommandUpdate: {
-            auto* const traffic_command_update = dynamic_cast<osi3::TrafficCommandUpdate*>(reading_result->message.get());
+            auto* const traffic_command_update = dynamic_cast<osi3::TrafficCommandUpdate*>(reading_result.message.get());
             PrintTimestamp(traffic_command_update);
             break;
         }
         case osi3::ReaderTopLevelMessage::kTrafficUpdate: {
-            auto* const traffic_update = dynamic_cast<osi3::TrafficUpdate*>(reading_result->message.get());
+            auto* const traffic_update = dynamic_cast<osi3::TrafficUpdate*>(reading_result.message.get());
             PrintTimestamp(traffic_update);
             break;
         }
         case osi3::ReaderTopLevelMessage::kMotionRequest: {
-            auto* const motion_request = dynamic_cast<osi3::MotionRequest*>(reading_result->message.get());
+            auto* const motion_request = dynamic_cast<osi3::MotionRequest*>(reading_result.message.get());
             PrintTimestamp(motion_request);
             break;
         }
         case osi3::ReaderTopLevelMessage::kStreamingUpdate: {
-            auto* const streaming_update = dynamic_cast<osi3::StreamingUpdate*>(reading_result->message.get());
+            auto* const streaming_update = dynamic_cast<osi3::StreamingUpdate*>(reading_result.message.get());
             PrintTimestamp(streaming_update);
             break;
         }
@@ -96,7 +96,7 @@ void CastMsgAndPrintTimestamp(const std::optional<osi3::ReadResult>& reading_res
  * \brief Parsed command-line options for this example.
  */
 struct ProgramOptions {
-    std::filesystem::path file_path{};                                                /**< Input trace file path. */
+    std::filesystem::path file_path;                                                  /**< Input trace file path. */
     osi3::ReaderTopLevelMessage message_type = osi3::ReaderTopLevelMessage::kUnknown; /**< Optional message type hint. */
 };
 
@@ -184,7 +184,11 @@ auto main(const int argc, const char** argv) -> int {
     while (trace_file_reader.HasNext()) {
         std::cout << "reading next message\n";
         const auto reading_result = trace_file_reader.ReadMessage();
-        CastMsgAndPrintTimestamp(reading_result);
+        if (!reading_result) {
+            std::cerr << "Error reading message." << std::endl;
+            continue;
+        }
+        CastMsgAndPrintTimestamp(*reading_result);
     }
 
     std::cout << "Finished txth reader example" << std::endl;

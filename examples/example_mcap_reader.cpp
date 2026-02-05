@@ -54,7 +54,7 @@ auto parseArgs(const int argc, const char** argv) -> std::filesystem::path {
         return "";
     }
 
-    return std::filesystem::path(argv[1]);
+    return std::filesystem::path{argv[1]};
 }
 
 /**

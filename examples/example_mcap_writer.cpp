@@ -36,7 +36,7 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     mcap::McapWriterOptions mcap_options("osi");
     // Adapt chunk size according to data and usecase:
     // Example: ros2 is using 4 * 1024 * 1024)
-    mcap_options.chunkSize = 4 * 1024 * 1024;
+    mcap_options.chunkSize = static_cast<uint64_t>(4) * 1024 * 1024;
     // Default: zstd
     mcap_options.compression = mcap::Compression::Lz4;
 

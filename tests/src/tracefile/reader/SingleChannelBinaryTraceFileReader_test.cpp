@@ -71,7 +71,10 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadGroundTruthMessage) {
     EXPECT_TRUE(reader_.HasNext());
 
     const auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << "Expected GroundTruth message";
+        return;
+    }
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
 
     auto* ground_truth = dynamic_cast<osi3::GroundTruth*>(result->message.get());
@@ -85,7 +88,10 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadSensorViewMessage) {
     EXPECT_TRUE(reader_.HasNext());
 
     auto result = reader_.ReadMessage();
-    ASSERT_TRUE(result.has_value());
+    if (!result.has_value()) {
+        FAIL() << "Expected SensorView message";
+        return;
+    }
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kSensorView);
 
     auto* sensor_view = dynamic_cast<osi3::SensorView*>(result->message.get());
