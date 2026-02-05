@@ -96,7 +96,7 @@ void CastMsgAndPrintTimestamp(const std::optional<osi3::ReadResult>& reading_res
  * \brief Parsed command-line options for this example.
  */
 struct ProgramOptions {
-    std::filesystem::path file_path;                                  /**< Input trace file path. */
+    std::filesystem::path file_path{};                                                /**< Input trace file path. */
     osi3::ReaderTopLevelMessage message_type = osi3::ReaderTopLevelMessage::kUnknown; /**< Optional message type hint. */
 };
 
@@ -132,18 +132,18 @@ void printHelp() {
  * \param argv Argument vector.
  * \return Parsed options or nullopt on error/help.
  */
-std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
+auto parseArgs(const int argc, const char** argv) -> std::optional<ProgramOptions> {
     if (argc < 2 || std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
         printHelp();
         return std::nullopt;
     }
 
-    ProgramOptions options;
+    ProgramOptions options{};
     options.file_path = argv[1];
     options.message_type = osi3::ReaderTopLevelMessage::kUnknown;
 
     for (int i = 2; i < argc; i++) {
-        if (std::string arg = argv[i]; arg == "--type" && i + 1 < argc) {
+        if (const std::string arg = argv[i]; arg == "--type" && i + 1 < argc) {
             const std::string type_str = argv[++i];
             auto types_it = kValidTypes.find(type_str);
             if (types_it == kValidTypes.end()) {
@@ -161,7 +161,7 @@ std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
 /**
  * \brief Entry point for the single-channel binary reader example.
  */
-int main(const int argc, const char** argv) {
+auto main(const int argc, const char** argv) -> int {
     // Parse program options
     const auto options = parseArgs(argc, argv);
     if (!options) {

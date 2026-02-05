@@ -48,7 +48,7 @@ void printHelp() {
  * \param argv Argument vector.
  * \return Path to the input file or empty path on error/help.
  */
-std::filesystem::path parseArgs(const int argc, const char** argv) {
+auto parseArgs(const int argc, const char** argv) -> std::filesystem::path {
     if (argc < 2 || std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
         printHelp();
         return "";
@@ -60,7 +60,7 @@ std::filesystem::path parseArgs(const int argc, const char** argv) {
 /**
  * \brief Entry point for the MCAP reader example.
  */
-int main(const int argc, const char** argv) {
+auto main(const int argc, const char** argv) -> int {
     std::cout << "Starting MCAP Reader example:" << std::endl;
 
     const auto trace_file_path = parseArgs(argc, argv);

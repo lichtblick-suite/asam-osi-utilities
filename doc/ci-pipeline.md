@@ -56,13 +56,13 @@ xargs clang-format-18 --dry-run --Werror
 
 ### ci_lint.yml - Static Analysis
 
-Runs clang-tidy-18 for static analysis of C++ code.
+Runs clang-tidy via the pre-commit hook (clang-tidy is opt-in by default in hooks).
 
 ```yaml
-# Requires compile_commands.json from CMake
 cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build build
-clang-tidy-18 -p build --warnings-as-errors='*' src/**/*.cpp
+bash scripts/setup-dev.sh
+.git/hooks/pre-commit --all-files --run-tidy --skip-format
 ```
 
 **Fails if:** Any clang-tidy warning is emitted.

@@ -23,7 +23,7 @@ jobs:
     name: Build Doxygen
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -43,7 +43,7 @@ jobs:
 
       - name: Upload artifact for Pages
         if: inputs.deploy
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: doc/html
 
@@ -69,4 +69,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4.0.5

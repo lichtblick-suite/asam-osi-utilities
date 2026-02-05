@@ -69,9 +69,9 @@ class TXTHTraceFileReader final : public TraceFileReader {
     std::optional<ReadResult> ReadMessage() override;
 
    private:
-    std::ifstream trace_file_; /**< File stream for reading. */
-    MessageParserFunc parser_; /**< Parser for the current message type. */
-    std::string line_indicating_msg_start_; /**< Marker indicating the start of a message. */
+    std::ifstream trace_file_;                                            /**< File stream for reading. */
+    MessageParserFunc parser_;                                            /**< Parser for the current message type. */
+    std::string line_indicating_msg_start_;                               /**< Marker indicating the start of a message. */
     ReaderTopLevelMessage message_type_{ReaderTopLevelMessage::kUnknown}; /**< Current message type. */
     /**
      * @brief Reads the next complete message from the trace file

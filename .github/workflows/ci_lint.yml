@@ -11,7 +11,7 @@ jobs:
     name: clang-tidy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -29,7 +29,8 @@ jobs:
       - name: Build
         run: cmake --build build -j$(nproc)
 
+      - name: Install Hooks
+        run: bash scripts/setup-dev.sh
+
       - name: Run clang-tidy
-        run: |
-          find src include -name "*.cpp" | \
-            xargs clang-tidy-18 -p build --warnings-as-errors='*'
+        run: .git/hooks/pre-commit --all-files --run-tidy --skip-format

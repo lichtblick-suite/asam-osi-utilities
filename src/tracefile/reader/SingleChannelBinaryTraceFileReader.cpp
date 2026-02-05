@@ -9,12 +9,12 @@
 
 namespace osi3 {
 
-bool SingleChannelBinaryTraceFileReader::Open(const std::filesystem::path& file_path, const ReaderTopLevelMessage message_type) {
+auto SingleChannelBinaryTraceFileReader::Open(const std::filesystem::path& file_path, const ReaderTopLevelMessage message_type) -> bool {
     message_type_ = message_type;
     return this->Open(file_path);
 }
 
-bool SingleChannelBinaryTraceFileReader::Open(const std::filesystem::path& file_path) {
+auto SingleChannelBinaryTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
     // prevent opening again if already opened
     if (trace_file_.is_open()) {
         std::cerr << "ERROR: Opening file " << file_path << ", reader has already a file opened" << std::endl;
@@ -72,9 +72,9 @@ bool SingleChannelBinaryTraceFileReader::Open(const std::filesystem::path& file_
 
 void SingleChannelBinaryTraceFileReader::Close() { trace_file_.close(); }
 
-bool SingleChannelBinaryTraceFileReader::HasNext() { return (trace_file_ && trace_file_.is_open() && trace_file_.peek() != EOF); }
+auto SingleChannelBinaryTraceFileReader::HasNext() -> bool { return (trace_file_ && trace_file_.is_open() && trace_file_.peek() != EOF); }
 
-std::optional<ReadResult> SingleChannelBinaryTraceFileReader::ReadMessage() {
+auto SingleChannelBinaryTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
     // check if ready and if there are messages left
     if (!this->HasNext()) {
         std::cerr << "Unable to read message: No more messages available in trace file or file not opened." << std::endl;
@@ -94,7 +94,7 @@ std::optional<ReadResult> SingleChannelBinaryTraceFileReader::ReadMessage() {
     return result;
 }
 
-std::vector<char> SingleChannelBinaryTraceFileReader::ReadNextMessageFromFile() {
+auto SingleChannelBinaryTraceFileReader::ReadNextMessageFromFile() -> std::vector<char> {
     uint32_t message_size = 0;
 
     if (!trace_file_.read(reinterpret_cast<char*>(&message_size), sizeof(message_size))) {

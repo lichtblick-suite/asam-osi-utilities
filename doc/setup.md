@@ -71,5 +71,12 @@ export PATH="$(brew --prefix llvm)/bin:$PATH"
 Hooks are generated into `.git/hooks/` by the setup scripts. Use them in the workflow page:
 
 - Run checks: `.git/hooks/pre-commit`
-- Run checks on all files: `.git/hooks/pre-commit --run-all`
-- Auto-fix: `.git/hooks/pre-commit --fix`
+- Run checks on all files: `.git/hooks/pre-commit --all-files`
+- Run clang-tidy: `.git/hooks/pre-commit --run-tidy`
+- Auto-fix formatting: `.git/hooks/pre-commit --fix-format`
+- Auto-fix clang-tidy: `.git/hooks/pre-commit --fix-tidy`
+- Skip tests: `.git/hooks/pre-commit --skip-tests`
+- Skip formatting: `.git/hooks/pre-commit --skip-format`
+- Skip clang-tidy: `.git/hooks/pre-commit --skip-tidy`
+
+Note: clang-tidy is disabled by default in the hook; use `--run-tidy` or `--fix-tidy` to enable it.

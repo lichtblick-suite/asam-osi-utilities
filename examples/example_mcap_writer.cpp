@@ -18,14 +18,14 @@
  * \brief Generate a temporary output path for the example MCAP file.
  * \return Temporary file path.
  */
-std::filesystem::path GenerateTempFilePath() {
+auto GenerateTempFilePath() -> std::filesystem::path {
     return std::filesystem::temp_directory_path() / "sv_example.mcap";  // add sv to indicate sensor view as recommended by the OSI-specification
 }
 
 /**
  * \brief Entry point for the MCAP writer example.
  */
-int main(int argc, const char** argv) {
+auto main(int /*argc*/, const char** /*argv*/) -> int {
     std::cout << "Starting MCAP Writer example:" << std::endl;
 
     // Create writer and open file

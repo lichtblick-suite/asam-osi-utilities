@@ -183,4 +183,4 @@ ci_jobs:
   macos_build:
     description: "macOS Homebrew builds"
     brew: |
-      cmake protobuf lz4 zstd googletest
+      cmake protobuf abseil lz4 zstd googletest

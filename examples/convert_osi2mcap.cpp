@@ -41,7 +41,7 @@ static const std::map<std::string, mcap::CompressionLevel> kCompressionLevelStri
  * \param file_path Path to the input trace file.
  * \return Timestamp in ISO format or nullopt if none found.
  */
-std::optional<std::string> ExtractTimestampFromFileName(const std::filesystem::path& file_path) {
+auto ExtractTimestampFromFileName(const std::filesystem::path& file_path) -> std::optional<std::string> {
     // Get first 16 characters which should be the timestamp
     auto possible_timestamp = file_path.filename().string().substr(0, 16);
 
@@ -56,7 +56,7 @@ std::optional<std::string> ExtractTimestampFromFileName(const std::filesystem::p
     }
 
     // Format the timestamp in the by OSI specified mcap metadata format for the zero_time field
-    std::ostringstream formatted_timestamp;
+    std::ostringstream formatted_timestamp{};
     formatted_timestamp << std::put_time(&tm_struct, "%Y-%m-%dT%H:%M:%SZ");
 
     std::cout << "Found timestamp for MCAP metadata 'zero_time' from tracefile name: " << formatted_timestamp.str() << std::endl;
@@ -82,7 +82,7 @@ const std::unordered_map<osi3::ReaderTopLevelMessage, const google::protobuf::De
  * \return Descriptor for the corresponding protobuf type.
  * \throws std::runtime_error if the message type is unknown.
  */
-const google::protobuf::Descriptor* GetDescriptorForMessageType(const osi3::ReaderTopLevelMessage messageType) {
+auto GetDescriptorForMessageType(const osi3::ReaderTopLevelMessage messageType) -> const google::protobuf::Descriptor* {
     if (const auto iterator = kMessageTypeToDescriptor.find(messageType); iterator != kMessageTypeToDescriptor.end()) {
         return iterator->second;
     }
@@ -146,12 +146,12 @@ void ProcessMessage(const std::optional<osi3::ReadResult>& read_result, osi3::MC
  * \brief Parsed command-line options for this converter.
  */
 struct ProgramOptions {
-    std::filesystem::path input_file_path;                                 /**< Input `.osi` trace file. */
-    std::filesystem::path output_file_path;                                /**< Output `.mcap` file. */
+    std::filesystem::path input_file_path;                                            /**< Input `.osi` trace file. */
+    std::filesystem::path output_file_path;                                           /**< Output `.mcap` file. */
     osi3::ReaderTopLevelMessage message_type = osi3::ReaderTopLevelMessage::kUnknown; /**< Optional message type hint. */
-    size_t chunk_size = static_cast<size_t>(1024 * 768);                   /**< MCAP chunk size in bytes. */
-    mcap::Compression compression = mcap::Compression::Zstd;               /**< MCAP compression type. */
-    mcap::CompressionLevel compression_level = mcap::CompressionLevel::Default; /**< MCAP compression level. */
+    size_t chunk_size = static_cast<size_t>(1024 * 768);                              /**< MCAP chunk size in bytes. */
+    mcap::Compression compression = mcap::Compression::Zstd;                          /**< MCAP compression type. */
+    mcap::CompressionLevel compression_level = mcap::CompressionLevel::Default;       /**< MCAP compression level. */
 };
 
 /** \brief Map CLI message type names to OSI enum values. */
@@ -185,7 +185,7 @@ void printHelp() {
  * \param compression_str Compression type name.
  * \return MCAP compression enum.
  */
-mcap::Compression parseCompressionType(const std::string& compression_str) {
+auto parseCompressionType(const std::string& compression_str) -> mcap::Compression {
     std::string lower_compression_str = compression_str;
     std::transform(lower_compression_str.begin(), lower_compression_str.end(), lower_compression_str.begin(), ::tolower);
     return kCompressionStringEnumMap.at(lower_compression_str);
@@ -196,7 +196,7 @@ mcap::Compression parseCompressionType(const std::string& compression_str) {
  * \param level_str Compression level name.
  * \return MCAP compression level enum.
  */
-mcap::CompressionLevel parseCompressionLevel(const std::string& level_str) {
+auto parseCompressionLevel(const std::string& level_str) -> mcap::CompressionLevel {
     std::string lower_level = level_str;
     std::transform(lower_level.begin(), lower_level.end(), lower_level.begin(), ::tolower);
     return kCompressionLevelStringEnumMap.at(lower_level);
@@ -208,7 +208,7 @@ mcap::CompressionLevel parseCompressionLevel(const std::string& level_str) {
  * \param argv Argument vector.
  * \return Parsed options or nullopt on error/help.
  */
-std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
+auto parseArgs(const int argc, const char** argv) -> std::optional<ProgramOptions> {
     if (argc < 3 || std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
         printHelp();
         return std::nullopt;
@@ -250,7 +250,7 @@ std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
 /**
  * \brief Entry point for the `.osi` to `.mcap` converter.
  */
-int main(const int argc, const char** argv) {
+auto main(const int argc, const char** argv) -> int {
     const auto options = parseArgs(argc, argv);
     if (!options) {
         return 1;

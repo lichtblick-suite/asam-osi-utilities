@@ -1,19 +1,69 @@
-name: SPDX License Check
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+name: REUSE Compliance
 
 on: [push, pull_request]
 
 jobs:
-  check-spdx-headers:
-    name: SPDX License Check
+  reuse-lint:
+    name: REUSE Lint
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - uses: enarx/spdx@c3e8116ed31c31b3c2e58a26ba5cac407510ca37
-        with:
-          licenses: |-
-            Apache-2.0
-            BSD-3-Clause
-            BSD-2-Clause
-            MIT
-            MPL-2.0
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Generate REUSE excludes from .gitignore
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          raw_lines = Path(".gitignore").read_text(encoding="utf-8").splitlines()
+          patterns = []
+          for line in raw_lines:
+              stripped = line.strip()
+              if not stripped or stripped.startswith("#") or stripped.startswith("!"):
+                  continue
+              patterns.append(stripped)
+          # Always exclude submodules and git metadata
+          patterns.extend(["lib/osi-cpp/**", "lib/mcap/**", ".git/**"])
+          normalized = []
+          for pat in patterns:
+              if pat.endswith("/"):
+                  normalized.append(pat + "**")
+                  continue
+              if pat.endswith("/**"):
+                  normalized.append(pat)
+                  continue
+              if all(ch not in pat for ch in "*?[]") and "/" not in pat:
+                  normalized.append(pat)
+                  normalized.append(pat + "/**")
+              else:
+                  normalized.append(pat)
+          seen = set()
+          unique = []
+          for pat in normalized:
+              if pat in seen:
+                  continue
+              seen.add(pat)
+              unique.append(pat)
+          dep5 = [
+              "# SPDX-License-Identifier: MPL-2.0",
+              "# SPDX-FileCopyrightText: 2024-2026 BMW AG",
+              "",
+              "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/",
+              "Upstream-Name: ASAM OSI Utilities",
+              "Source: https://github.com/Lichtblick-Suite/asam-osi-utilities",
+              "",
+              "Files-Excluded:",
+          ]
+          dep5.extend([f" {pat}" for pat in unique])
+          dep5.extend([
+              "",
+              "Files: *",
+              "Copyright: 2024-2026 BMW AG",
+              "License: MPL-2.0",
+              "",
+          ])
+          Path(".reuse/dep5").write_text("\n".join(dep5), encoding="utf-8")
+          PY
+      - name: REUSE lint
+        uses: fsfe/reuse-action@v2

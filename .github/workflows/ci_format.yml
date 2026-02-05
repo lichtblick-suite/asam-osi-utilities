@@ -11,7 +11,7 @@ jobs:
     name: clang-format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: false
 
@@ -23,7 +23,8 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
           yq -r '.dependencies.dev.apt[]' .github/dependencies.yml | xargs sudo apt-get install -y
 
+      - name: Install Hooks
+        run: bash scripts/setup-dev.sh
+
       - name: Check C++ formatting
-        run: |
-          find src include tests examples -name "*.cpp" -o -name "*.h" | \
-            xargs clang-format-18 --dry-run --Werror
+        run: .git/hooks/pre-commit --all-files --skip-tidy

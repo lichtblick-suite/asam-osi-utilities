@@ -67,7 +67,7 @@ class McapTraceFileReaderTest : public ::testing::Test {
         mcap::Channel channel("json_topic", "json", json_schema.id);
         mcap_writer->addChannel(channel);
 
-        std::string json_data = "{\"test_field1\": \"data\"}";
+        std::string json_data = R"({"test_field1": "data"})";
         mcap::Message msg;
         msg.channelId = channel.id;
         msg.data = reinterpret_cast<const std::byte*>(json_data.data());
