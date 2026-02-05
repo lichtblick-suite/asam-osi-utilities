@@ -1,0 +1,13 @@
+version = 1
+spdx_license_identifier = "MPL-2.0"
+copyright = "NONE"
+
+paths = [
+  { path = "lib/osi-cpp/**", exclude = true },
+  { path = "lib/mcap/**", exclude = true },
+  { path = "build/**", exclude = true },
+  { path = "build-*/**", exclude = true },
+  { path = "build*/**", exclude = true },
+  { path = ".git/**", exclude = true },
+  { path = "tests/intentional-failures/**", exclude = true }
+]
