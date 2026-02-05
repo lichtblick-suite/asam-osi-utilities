@@ -213,20 +213,10 @@ Use conventional commit prefixes in your PR title:
 
 ## Version Updates
 
-The project version is managed in a single `VERSION` file. When preparing a release:
+The project version is managed in `vcpkg.json` (`version-string`). When preparing a release:
 
-1. Update the `VERSION` file with the new version
-2. Run the sync script:
-
-   ```bash
-   # Linux/macOS
-   ./scripts/sync_version.sh
-
-   # Windows PowerShell
-   .\scripts\sync_version.ps1
-   ```
-
-3. Commit the version changes
+1. Update `vcpkg.json` with the new version
+2. Commit the version change
 
 ## Questions?
 

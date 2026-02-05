@@ -30,13 +30,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          YQ_VERSION=v4.44.3
+          YQ_VERSION=v4.52.2
           sudo curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
           yq -r '.ci_jobs.ubuntu_docs.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Configure CMake
-        run: cmake -B build -DBUILD_TESTING=OFF
+        run: cmake -B build -DOSIUTILITIES_DOCS_ONLY=ON
 
       - name: Build Documentation
         run: cmake --build build --target library_api_doc

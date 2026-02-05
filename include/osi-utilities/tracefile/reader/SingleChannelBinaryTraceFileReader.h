@@ -30,6 +30,11 @@ namespace osi3 {
  */
 class SingleChannelBinaryTraceFileReader final : public osi3::TraceFileReader {
    public:
+    /**
+     * @brief Opens a trace file for reading and infers message type from filename
+     * @param file_path Path to the trace file
+     * @return true if successful, false otherwise
+     */
     bool Open(const std::filesystem::path& file_path) override;
 
     /**
@@ -39,8 +44,21 @@ class SingleChannelBinaryTraceFileReader final : public osi3::TraceFileReader {
      * @return true if successful, false otherwise
      */
     bool Open(const std::filesystem::path& file_path, ReaderTopLevelMessage message_type);
+    /**
+     * @brief Reads the next message from the trace file
+     * @return Optional ReadResult containing the message if available
+     */
     std::optional<ReadResult> ReadMessage() override;
+
+    /**
+     * @brief Closes the trace file
+     */
     void Close() override;
+
+    /**
+     * @brief Checks whether more messages are available
+     * @return true if there are more messages to read, false otherwise
+     */
     bool HasNext() override;
 
     /**
@@ -65,6 +83,13 @@ class SingleChannelBinaryTraceFileReader final : public osi3::TraceFileReader {
      */
     std::vector<char> ReadNextMessageFromFile();
 
+    /**
+     * @brief Parses a binary buffer into the requested protobuf message type
+     * @tparam T Protobuf message type to parse into
+     * @param data Raw message bytes
+     * @return Unique pointer to the parsed message
+     * @throws std::runtime_error if parsing fails
+     */
     template <typename T>
     std::unique_ptr<google::protobuf::Message> ParseMessage(const std::vector<char>& data) {
         auto msg = std::make_unique<T>();
@@ -74,11 +99,17 @@ class SingleChannelBinaryTraceFileReader final : public osi3::TraceFileReader {
         return std::move(msg);
     }
 
+    /**
+     * @brief Creates a parser function for a specific message type
+     * @tparam T Protobuf message type to parse into
+     * @return MessageParserFunc that can parse the specified message type
+     */
     template <typename T>
     MessageParserFunc CreateParser() {
         return [this](const std::vector<char>& data) { return ParseMessage<T>(data); };
     }
 
+    /** @brief Map of message types to parser functions. */
     const std::unordered_map<ReaderTopLevelMessage, MessageParserFunc> kParserMap_ = {{ReaderTopLevelMessage::kGroundTruth, CreateParser<GroundTruth>()},
                                                                                       {ReaderTopLevelMessage::kSensorData, CreateParser<SensorData>()},
                                                                                       {ReaderTopLevelMessage::kSensorView, CreateParser<SensorView>()},

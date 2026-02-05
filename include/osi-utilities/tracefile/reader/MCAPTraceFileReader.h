@@ -30,6 +30,11 @@ namespace osi3 {
  */
 class MCAPTraceFileReader final : public TraceFileReader {
    public:
+    /**
+     * @brief Opens a trace file for reading with default options
+     * @param file_path Path to the file to be opened
+     * @return true if successful, false otherwise
+     */
     bool Open(const std::filesystem::path& file_path) override;
 
     /**
@@ -44,8 +49,21 @@ class MCAPTraceFileReader final : public TraceFileReader {
      */
     bool Open(const std::string& file_path, const mcap::ReadMessageOptions& options);
 
+    /**
+     * @brief Reads the next OSI message from the trace file
+     * @return Optional ReadResult containing the message if available
+     */
     std::optional<ReadResult> ReadMessage() override;
+
+    /**
+     * @brief Closes the trace file and releases reader resources
+     */
     void Close() override;
+
+    /**
+     * @brief Checks whether more messages are available
+     * @return true if there are more messages to read, false otherwise
+     */
     bool HasNext() override;
 
     /**
@@ -59,8 +77,8 @@ class MCAPTraceFileReader final : public TraceFileReader {
    private:
     std::ifstream trace_file_;                               /**< File stream for reading */
     mcap::McapReader mcap_reader_;                           /**< Upstream MCAP reader object */
-    std::unique_ptr<mcap::LinearMessageView> message_view_;  // Cannot copy or move LinearMessageView
-    std::unique_ptr<mcap::LinearMessageView::Iterator> message_iterator_;
+    std::unique_ptr<mcap::LinearMessageView> message_view_;  /**< Message view over MCAP records. */
+    std::unique_ptr<mcap::LinearMessageView::Iterator> message_iterator_; /**< Iterator over the message view. */
 
     bool skip_non_osi_msgs_ = false;        /**< Flag to skip non-OSI messages during reading */
     mcap::ReadMessageOptions mcap_options_; /**< Options for the mcap reader */

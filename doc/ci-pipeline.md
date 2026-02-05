@@ -111,7 +111,7 @@ On Ubuntu 24.04 with GCC, code coverage is collected and uploaded to Codecov.
 
 Builds Doxygen documentation and deploys to GitHub Pages:
 
-1. Configure CMake with `-DBUILD_TESTING=OFF`
+1. Configure CMake with `-DOSIUTILITIES_DOCS_ONLY=ON` (docs-only configuration)
 2. Build `library_api_doc` target
 3. Deploy `doc/html/` to GitHub Pages
 4. Available at: `https://lichtblick-suite.github.io/asam-osi-utilities/`

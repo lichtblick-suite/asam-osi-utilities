@@ -9,6 +9,13 @@ add_executable(
         ${test_sources}
 )
 
+target_compile_features(unit_tests PRIVATE cxx_std_17)
+set_target_properties(unit_tests PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+)
+
 # Link to the OSIUtilities library instead of recompiling all sources
 target_link_libraries(unit_tests PRIVATE OSIUtilities)
 target_link_libraries(unit_tests PRIVATE GTest::gtest_main)

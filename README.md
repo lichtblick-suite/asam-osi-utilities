@@ -22,7 +22,7 @@ cmake --preset vcpkg-linux    # Linux
 cmake --preset vcpkg-windows  # Windows
 cmake --build build -j
 
-# Run tests
+# Run tests (configure with -DBUILD_TESTING=ON to build them)
 ctest --test-dir build --output-on-failure
 ```
 

@@ -24,7 +24,8 @@ The [MCAP format](https://mcap.dev/) is the recommended format for storing OSI d
 - **Metadata** - Rich metadata including schemas, timestamps, and custom fields
 - **Cross-platform** - Tooling available in C++, Python, Go, TypeScript, and more
 
-OSI defines a specialization of the MCAP format with additional constraints:
+OSI defines a specialization of the MCAP format with additional constraints. See the
+[OSI trace file specification](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/specification/index.html).
 
 | Requirement   | Value                                             |
 | ------------- | ------------------------------------------------- |

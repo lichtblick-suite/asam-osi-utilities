@@ -2,6 +2,10 @@
 // Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
+/**
+ * \file
+ * \brief Read OSI MCAP trace files and print message timestamps.
+ */
 
 #include <osi-utilities/tracefile/reader/MCAPTraceFileReader.h>
 
@@ -18,18 +22,32 @@
 #include "osi_trafficcommandupdate.pb.h"
 #include "osi_trafficupdate.pb.h"
 
+/**
+ * \brief Print the timestamp of a decoded OSI message.
+ * \tparam T Protobuf message pointer type.
+ * \param msg Parsed OSI message instance.
+ */
 template <typename T>
 void PrintTimestamp(T msg) {
     auto timestamp = msg->timestamp().seconds() + msg->timestamp().nanos() / 1000000000.0;
     std::cout << "Type: " << msg->descriptor()->full_name() << " Timestamp " << timestamp << "\n";
 }
 
+/**
+ * \brief Print CLI usage information.
+ */
 void printHelp() {
     std::cout << "Usage: example_mcap_reader <input_file> \n\n"
               << "Arguments:\n"
               << "  input_file              Path to the input OSI MCAP trace file\n";
 }
 
+/**
+ * \brief Parse CLI arguments and return the input file path.
+ * \param argc Argument count.
+ * \param argv Argument vector.
+ * \return Path to the input file or empty path on error/help.
+ */
 std::filesystem::path parseArgs(const int argc, const char** argv) {
     if (argc < 2 || std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
         printHelp();
@@ -39,6 +57,9 @@ std::filesystem::path parseArgs(const int argc, const char** argv) {
     return std::filesystem::path(argv[1]);
 }
 
+/**
+ * \brief Entry point for the MCAP reader example.
+ */
 int main(const int argc, const char** argv) {
     std::cout << "Starting MCAP Reader example:" << std::endl;
 

@@ -1,9 +1,6 @@
 # Add subdirectories for organized modules
 include_directories(tracefile)
 
-# Option to build and run tests.
-option(BUILD_TESTING "Build the testing suite" ON)
-
 # specify library source files
 set(OSIUtilities_SRCS
         tracefile/reader/Reader.cpp
@@ -18,6 +15,13 @@ set(OSIUtilities_SRCS
 
 # Create a library target for the entire library
 add_library(OSIUtilities ${OSIUtilities_SRCS})
+
+target_compile_features(OSIUtilities PUBLIC cxx_std_17)
+set_target_properties(OSIUtilities PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+)
 
 # add a compile definition to specify the version of the trace file specification.
 # This is not the version of the linked OSI library, but the version of the trace file spec

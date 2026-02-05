@@ -2,6 +2,10 @@
 // Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
+/**
+ * \file
+ * \brief Read OSI `.txth` text trace files.
+ */
 
 #include <osi-utilities/tracefile/reader/TXTHTraceFileReader.h>
 
@@ -17,12 +21,21 @@
 #include "osi_trafficcommandupdate.pb.h"
 #include "osi_trafficupdate.pb.h"
 
+/**
+ * \brief Print the timestamp of a decoded OSI message.
+ * \tparam T Protobuf message pointer type.
+ * \param msg Parsed OSI message instance.
+ */
 template <typename T>
 void PrintTimestamp(T msg) {
     auto timestamp = msg->timestamp().seconds() + msg->timestamp().nanos() / 1000000000.0;
     std::cout << "Type: " << msg->descriptor()->full_name() << " Timestamp " << timestamp << "\n";
 }
 
+/**
+ * \brief Dispatch the decoded message to the correct type and print its timestamp.
+ * \param reading_result Read result containing the decoded message.
+ */
 void CastMsgAndPrintTimestamp(const std::optional<osi3::ReadResult>& reading_result) {
     // while reading_result->message_type already contains the correct deserialized OSI message type,
     // we need to cast the pointer during runtime to allow multiple different trace files to be read
@@ -79,11 +92,15 @@ void CastMsgAndPrintTimestamp(const std::optional<osi3::ReadResult>& reading_res
     }
 }
 
+/**
+ * \brief Parsed command-line options for this example.
+ */
 struct ProgramOptions {
-    std::filesystem::path file_path;
-    osi3::ReaderTopLevelMessage message_type = osi3::ReaderTopLevelMessage::kUnknown;
+    std::filesystem::path file_path;                                  /**< Input trace file path. */
+    osi3::ReaderTopLevelMessage message_type = osi3::ReaderTopLevelMessage::kUnknown; /**< Optional message type hint. */
 };
 
+/** \brief Map CLI message type names to OSI enum values. */
 const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kValidTypes = {{"GroundTruth", osi3::ReaderTopLevelMessage::kGroundTruth},
                                                                                   {"SensorData", osi3::ReaderTopLevelMessage::kSensorData},
                                                                                   {"SensorView", osi3::ReaderTopLevelMessage::kSensorView},
@@ -95,6 +112,9 @@ const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kValidTypes =
                                                                                   {"MotionRequest", osi3::ReaderTopLevelMessage::kMotionRequest},
                                                                                   {"StreamingUpdate", osi3::ReaderTopLevelMessage::kStreamingUpdate}};
 
+/**
+ * \brief Print CLI usage information.
+ */
 void printHelp() {
     std::cout << "Usage: example_txth_reader <file_path> [--type <message_type>]\n\n"
               << "Arguments:\n"
@@ -106,6 +126,12 @@ void printHelp() {
     }
 }
 
+/**
+ * \brief Parse CLI arguments into ProgramOptions.
+ * \param argc Argument count.
+ * \param argv Argument vector.
+ * \return Parsed options or nullopt on error/help.
+ */
 std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
     if (argc < 2 || std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
         printHelp();
@@ -132,6 +158,9 @@ std::optional<ProgramOptions> parseArgs(const int argc, const char** argv) {
     return options;
 }
 
+/**
+ * \brief Entry point for the TXTH reader example.
+ */
 int main(const int argc, const char** argv) {
     // Parse program options
     const auto options = parseArgs(argc, argv);

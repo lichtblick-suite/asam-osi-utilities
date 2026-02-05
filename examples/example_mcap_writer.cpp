@@ -2,6 +2,10 @@
 // Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
+/**
+ * \file
+ * \brief Write an example OSI MCAP trace file with metadata and channels.
+ */
 
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
@@ -10,10 +14,17 @@
 #include "osi_sensorview.pb.h"
 #include "osi_version.pb.h"
 
+/**
+ * \brief Generate a temporary output path for the example MCAP file.
+ * \return Temporary file path.
+ */
 std::filesystem::path GenerateTempFilePath() {
     return std::filesystem::temp_directory_path() / "sv_example.mcap";  // add sv to indicate sensor view as recommended by the OSI-specification
 }
 
+/**
+ * \brief Entry point for the MCAP writer example.
+ */
 int main(int argc, const char** argv) {
     std::cout << "Starting MCAP Writer example:" << std::endl;
 

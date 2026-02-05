@@ -2,6 +2,10 @@
 // Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 // SPDX-License-Identifier: MPL-2.0
 //
+/**
+ * \file
+ * \brief Write a single-channel binary OSI `.osi` trace file.
+ */
 
 #include <osi-utilities/tracefile/writer/SingleChannelBinaryTraceFileWriter.h>
 
@@ -10,6 +14,10 @@
 #include "osi_sensordata.pb.h"
 #include "osi_version.pb.h"
 
+/**
+ * \brief Get the current time in OSI filename format.
+ * \return Timestamp formatted as YYYYMMDDThhmmssZ.
+ */
 std::string GetCurrentTimeAsString() {
     const auto now = std::chrono::system_clock::now();
     const auto timer = std::chrono::system_clock::to_time_t(now);
@@ -20,6 +28,10 @@ std::string GetCurrentTimeAsString() {
     return oss.str();
 }
 
+/**
+ * \brief Generate a temporary output path for the `.osi` example.
+ * \return Temporary file path.
+ */
 std::filesystem::path GenerateTempFilePath() {
     // create a path which follows the OSI specification recommendation
     std::string file_name = GetCurrentTimeAsString();
@@ -32,6 +44,9 @@ std::filesystem::path GenerateTempFilePath() {
     return path;
 }
 
+/**
+ * \brief Entry point for the single-channel binary writer example.
+ */
 int main(int argc, const char** argv) {
     std::cout << "Starting single channel binary writer example:" << std::endl;
 

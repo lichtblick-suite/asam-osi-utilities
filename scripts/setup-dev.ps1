@@ -78,32 +78,6 @@ for arg in "$@"; do
     fi
 done
 
-# Check if VERSION file is staged and sync to other files (only in normal mode)
-if [ $RUN_ALL -eq 0 ] && git diff --cached --name-only | grep -q "^VERSION$"; then
-    echo "VERSION file changed, syncing to vcpkg.json and Doxyfile.in..."
-    VERSION=$(cat VERSION | tr -d '[:space:]')
-    
-    # Update vcpkg.json
-    if [ -f "vcpkg.json" ]; then
-        if command -v sed &> /dev/null; then
-            sed -i.bak "s/\"version-string\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"version-string\": \"$VERSION\"/" vcpkg.json
-            rm -f vcpkg.json.bak 2>/dev/null
-            git add vcpkg.json
-            echo "  ✓ Updated vcpkg.json"
-        fi
-    fi
-    
-    # Update Doxyfile.in
-    if [ -f "doc/Doxyfile.in" ]; then
-        if command -v sed &> /dev/null; then
-            sed -i.bak "s/^PROJECT_NUMBER[[:space:]]*=.*/PROJECT_NUMBER         = $VERSION/" doc/Doxyfile.in
-            rm -f doc/Doxyfile.in.bak 2>/dev/null
-            git add doc/Doxyfile.in
-            echo "  ✓ Updated Doxyfile.in"
-        fi
-    fi
-fi
-
 # Get list of C++ files to check
 if [ $RUN_ALL -eq 1 ]; then
     echo "Checking all C++ files..."
