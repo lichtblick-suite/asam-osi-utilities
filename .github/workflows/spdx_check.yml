@@ -2,7 +2,8 @@
 # Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 name: REUSE Compliance
 
-on: [push, pull_request]
+on:
+  pull_request:
 
 jobs:
   reuse-lint:
@@ -51,13 +52,9 @@ jobs:
               seen.add(pat)
               unique.append(pat)
           dep5 = [
-              "# SPDX-License-Identifier: MPL-2.0",
-              "# SPDX-FileCopyrightText: 2024-2026 BMW AG",
-              "",
               "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/",
               "Upstream-Name: ASAM OSI Utilities",
               "Source: https://github.com/Lichtblick-Suite/asam-osi-utilities",
-              "",
               "Files-Excluded:",
           ]
           dep5.extend([f" {pat}" for pat in unique])
