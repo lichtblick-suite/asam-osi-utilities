@@ -11,6 +11,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Provide SPDX license text
+        shell: bash
+        run: |
+          mkdir -p LICENSES
+          cp LICENSE LICENSES/MPL-2.0.txt
       - name: Generate REUSE excludes from .gitignore
         shell: bash
         run: |
