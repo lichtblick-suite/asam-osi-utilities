@@ -35,6 +35,17 @@ This project supports two methods for dependency management:
 - **Option A: vcpkg (Recommended)** - Automatic dependency management
 - **Option B: Manual** - System package managers or manual installation
 
+## Dependency Matrix
+
+| Build scenario | Install from `.github/dependencies.yml` | Notes |
+| --- | --- | --- |
+| System build (no tests/docs) | `dependencies.build` | Uses system protobuf/lz4/zstd. |
+| System build + tests | `dependencies.build` + `dependencies.test` | Adds GTest for unit tests. |
+| System docs-only | `dependencies.docs` | Use `-DOSIUTILITIES_DOCS_ONLY=ON`. |
+| System build + lint | `dependencies.build` + `dependencies.test` + `dependencies.lint` | Lint uses compile commands. |
+| vcpkg build | `dependencies.vcpkg_host` | Libraries come from `vcpkg.json`. |
+| vcpkg build + tests | `dependencies.vcpkg_host` | Set `-DVCPKG_MANIFEST_FEATURES=tests`. |
+
 ---
 
 ## Documentation (Doxygen)
@@ -313,9 +324,17 @@ When using vcpkg and `BUILD_TESTING=ON`, enable the `tests` manifest feature
 
 Dependency mapping (system packages vs vcpkg):
 
-- Default build (`BUILD_DOCS=OFF`, `BUILD_TESTING=OFF`): `dependencies.build.*` or `dependencies.vcpkg_host.*`
-- Tests (`BUILD_TESTING=ON` or `OSIUTILITIES_RUN_TESTS=ON`): add `dependencies.test.*` or vcpkg `tests` feature
-- Docs (`BUILD_DOCS=ON` or `OSIUTILITIES_DOCS_ONLY=ON`): add `dependencies.docs.*` or vcpkg `docs` feature
+- **System-package builds (no vcpkg):** use `dependencies.build.*`, plus `dependencies.test.*` and/or `dependencies.docs.*` as needed.
+- **vcpkg builds:** install only `dependencies.vcpkg_host.*` (tools). Library deps (protobuf/lz4/zstd/gtest) come from `vcpkg.json`.
+  Enable vcpkg features like `tests`/`docs` via `VCPKG_MANIFEST_FEATURES`.
+
+Build combinations (what you actually install):
+
+- **Linux system build (`cmake --preset base`):** `dependencies.build.apt|dnf`  
+  Add `dependencies.test.*` for tests, `dependencies.docs.*` for docs, `dependencies.lint.*` for clang-tidy, and `dependencies.coverage.*` for coverage.
+- **vcpkg build (Linux/macOS/Windows):** `dependencies.vcpkg_host.*` only (CMake, git, curl, zip/unzip, pkg-config).  
+  All C/C++ libraries (protobuf, lz4, zstd, gtest) come from `vcpkg.json`.
+- **CI note:** Ubuntu system-package jobs install from `ci_jobs.*.apt`. vcpkg jobs do **not** install protobuf/lz4/zstd via apt/dnf.
 
 ---
 

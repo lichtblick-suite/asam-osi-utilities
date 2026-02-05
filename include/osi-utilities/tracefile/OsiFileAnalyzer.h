@@ -12,6 +12,7 @@
 #include <mcap/mcap.hpp>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "TraceFileConfig.h"
 
@@ -27,9 +28,10 @@ struct OsiFileStatistics {
     // File information
     std::filesystem::path file_path;          ///< Path to the analyzed file
     uint64_t file_size_bytes = 0;             ///< Total file size in bytes
-    size_t message_count = 0;                 ///< Number of messages analyzed
-    bool is_sampled = false;                  ///< True if only a sample was analyzed
-    size_t total_message_count_estimate = 0;  ///< Estimated total messages (if sampled)
+    size_t message_count = 0;                 ///< Total number of messages scanned
+    size_t timestamp_sample_count = 0;        ///< Messages sampled for timestamp statistics
+    bool is_sampled = false;                  ///< True if timing stats are based on sampling
+    size_t total_message_count_estimate = 0;  ///< Estimated total messages (fallback if scan is incomplete)
 
     // Message size statistics (in bytes)
     size_t min_message_size = 0;       ///< Smallest message size
@@ -96,14 +98,14 @@ class OsiFileAnalyzer {
     /**
      * @brief Analyze an OSI trace file to gather statistics.
      *
-     * This method reads messages from the file to collect size and timing
-     * information. By default, it samples the first N messages for speed.
+     * This method scans message sizes across the full file and samples
+     * timestamps evenly across the file for timing statistics.
      *
      * @param file_path Path to the OSI trace file
-     * @param sample_size Number of messages to sample (0 for full scan)
+     * @param sample_size Number of messages to sample for timestamps (0 for full scan)
      * @return Statistics about the file, or nullopt if analysis failed
      */
-    std::optional<OsiFileStatistics> Analyze(const std::filesystem::path& file_path, size_t sample_size = tracefile::config::kAnalysisSampleSize) const;
+    static std::optional<OsiFileStatistics> Analyze(const std::filesystem::path& file_path, size_t sample_size = tracefile::config::kAnalysisSampleSize);
 
     /**
      * @brief Recommend MCAP writer options based on file statistics.
@@ -115,7 +117,7 @@ class OsiFileAnalyzer {
      * @param target_chunk_duration_seconds Target duration per chunk (default: 1.0s)
      * @return Recommended MCAP options with rationale
      */
-    RecommendedMcapOptions RecommendMcapOptions(const OsiFileStatistics& stats, double target_chunk_duration_seconds = tracefile::config::kTargetChunkDurationSeconds) const;
+    static RecommendedMcapOptions RecommendMcapOptions(const OsiFileStatistics& stats, double target_chunk_duration_seconds = tracefile::config::kTargetChunkDurationSeconds);
 
     /**
      * @brief Print analysis results to stdout.
@@ -163,7 +165,7 @@ class OsiFileAnalyzer {
      * @param data Serialized protobuf message
      * @return Timestamp in nanoseconds, or 0 if extraction failed
      */
-    static uint64_t ExtractTimestampNanoseconds(const std::vector<char>& data);
+    static std::optional<uint64_t> ExtractTimestampNanoseconds(const std::vector<char>& data);
 };
 
 }  // namespace osi3

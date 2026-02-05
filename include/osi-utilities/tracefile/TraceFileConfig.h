@@ -44,13 +44,13 @@ constexpr uint64_t kDefaultChunkSize = 1024 * 768;  // 786,432 bytes = 768 KiB
 constexpr uint64_t kMinChunkSize = 1024 * 1024;  // 1,048,576 bytes = 1 MiB
 
 /**
- * @brief Maximum allowed chunk size (64 MiB).
+ * @brief Maximum allowed chunk size (32 MiB).
  *
  * Very large chunks increase memory requirements for readers and may
- * cause issues with memory-constrained systems. This upper bound
- * ensures reasonable memory usage during playback.
+ * cause issues with memory-constrained systems and coarse buffering.
+ * This upper bound ensures reasonable memory usage and smoother playback.
  */
-constexpr uint64_t kMaxChunkSize = 64 * 1024 * 1024;  // 67,108,864 bytes = 64 MiB
+constexpr uint64_t kMaxChunkSize = 32 * 1024 * 1024;  // 33,554,432 bytes = 32 MiB
 
 /**
  * @brief Recommended chunk size for optimized playback (32 MiB).
@@ -97,8 +97,8 @@ constexpr double kMaxChunkDurationSeconds = 5.0;
  * @brief Number of messages to sample for statistics during analysis.
  *
  * When analyzing an OSI file to determine optimal settings, we sample
- * this many messages from the beginning of the file. This provides a
- * balance between accuracy and analysis speed.
+ * this many messages evenly across the file. This provides a balance
+ * between accuracy and analysis speed for variable-size traces.
  *
  * Set to 0 for full file scan (slower but more accurate for variable-rate traces).
  */

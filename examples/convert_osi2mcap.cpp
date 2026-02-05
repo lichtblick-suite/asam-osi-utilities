@@ -182,7 +182,8 @@ void printHelp() {
     }
     std::cout << "\n  --auto-optimize         Analyze input file and automatically determine optimal\n"
               << "                          chunk size and compression settings for playback.\n"
-              << "                          Targets ~1 second of data per chunk for efficient buffering.\n"
+              << "                          Targets ~1 second of data per chunk for efficient buffering,\n"
+              << "                          clamped to 1-32 MiB per chunk.\n"
               << "\n  --chunk_size <size>     Chunk size in bytes (default: " << osi3::tracefile::config::kDefaultChunkSize << ")\n"
               << "                          Overrides --auto-optimize if both are specified.\n"
               << "  --compression <type>    Compression type: none, lz4, zstd (default: zstd)\n"
@@ -193,7 +194,8 @@ void printHelp() {
               << "  may result in only 1-2 large OSI messages per chunk, causing excessive\n"
               << "  decompression overhead during playback.\n\n"
               << "  --auto-optimize analyzes your input file to calculate the optimal chunk size\n"
-              << "  that packs approximately 1 second of data per chunk. This significantly\n"
+              << "  based on uncompressed message sizes and timestamp samples across the file.\n"
+              << "  It packs approximately 1 second of data per chunk. This significantly\n"
               << "  improves playback performance in viewers like Lichtblick.\n";
 }
 
@@ -271,7 +273,7 @@ auto parseArgs(const int argc, const char** argv) -> std::optional<ProgramOption
  * \brief Entry point for the `.osi` to `.mcap` converter.
  */
 auto main(const int argc, const char** argv) -> int {
-    const auto options = parseArgs(argc, argv);
+    auto options = parseArgs(argc, argv);
     if (!options) {
         return 1;
     }
@@ -283,13 +285,12 @@ auto main(const int argc, const char** argv) -> int {
     if (options->auto_optimize) {
         std::cout << "\nAnalyzing input file for optimal MCAP settings..." << std::endl;
 
-        osi3::OsiFileAnalyzer analyzer;
-        auto stats = analyzer.Analyze(options->input_file_path);
+        auto stats = osi3::OsiFileAnalyzer::Analyze(options->input_file_path);
 
         if (stats && stats->IsValid()) {
             osi3::OsiFileAnalyzer::PrintStatistics(*stats);
 
-            auto recommended = analyzer.RecommendMcapOptions(*stats);
+            auto recommended = osi3::OsiFileAnalyzer::RecommendMcapOptions(*stats);
             osi3::OsiFileAnalyzer::PrintRecommendation(recommended);
 
             // Apply recommended settings (unless user explicitly set chunk_size)
