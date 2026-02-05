@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
 name: Build
 
@@ -27,14 +27,14 @@ jobs:
             cxx: clang++
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          YQ_VERSION=v4.44.3
+          YQ_VERSION=v4.52.2
           sudo curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
           yq -r '.ci_jobs.ubuntu_build.apt' .github/dependencies.yml | xargs sudo apt-get install -y
@@ -43,10 +43,10 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: cmake -B build -DCODE_COVERAGE=${{ matrix.compiler == 'gcc' && 'ON' || 'OFF' }}
+        run: cmake --preset base -DBUILD_TESTING=ON -DCODE_COVERAGE=${{ matrix.compiler == 'gcc' && 'ON' || 'OFF' }}
 
       - name: Build
-        run: cmake --build build -j$(nproc)
+        run: cmake --build --preset base --parallel $(nproc)
 
       - name: Run Tests
         working-directory: build
@@ -70,7 +70,7 @@ jobs:
     name: Ubuntu (vcpkg)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -80,10 +80,10 @@ jobs:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
       - name: Configure CMake
-        run: cmake --preset vcpkg-linux
+        run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
       - name: Build
-        run: cmake --build build -j$(nproc)
+        run: cmake --build --preset vcpkg --parallel $(nproc)
 
       - name: Run Tests
         working-directory: build
@@ -96,7 +96,7 @@ jobs:
     name: Windows (MSVC)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -106,49 +106,14 @@ jobs:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
       - name: Configure CMake
-        run: cmake --preset vcpkg-windows -DBUILD_DOCS=OFF
+        run: cmake --preset vcpkg -DBUILD_DOCS=OFF -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build --preset vcpkg --parallel
 
       - name: Run Tests
         working-directory: build
         run: ctest -C Release --output-on-failure --parallel
-
-  # ===========================================================================
-  # macOS with Homebrew
-  # ===========================================================================
-  macos:
-    name: macOS (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-15
-            arch: x64
-          - runner: macos-14
-            arch: arm64
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install dependencies
-        run: |
-          brew install yq
-          yq -r '.ci_jobs.macos_build.brew' .github/dependencies.yml | xargs brew install
-
-      - name: Configure CMake
-        run: cmake -B build
-
-      - name: Build
-        run: cmake --build build -j$(sysctl -n hw.ncpu)
-
-      - name: Run Tests
-        working-directory: build
-        run: ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
 
   # ==========================================================================
   # macOS with vcpkg
@@ -166,7 +131,7 @@ jobs:
             arch: arm64
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -176,10 +141,10 @@ jobs:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
       - name: Configure CMake
-        run: cmake --preset vcpkg
+        run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
       - name: Build
-        run: cmake --build build -j$(sysctl -n hw.ncpu)
+        run: cmake --build --preset vcpkg --parallel $(sysctl -n hw.ncpu)
 
       - name: Run Tests
         working-directory: build

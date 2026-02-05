@@ -73,6 +73,7 @@ if (NOT OSIUTILITIES_DOCS_ONLY)
     if (OSI_VERSION_MAJOR AND OSI_VERSION_MINOR AND OSI_VERSION_PATCH)
         set(OSI_VERSION "${OSI_VERSION_MAJOR}.${OSI_VERSION_MINOR}.${OSI_VERSION_PATCH}")
     endif ()
+
 endif ()
 
 # Trace file spec version implemented by this library (default matches OSI 3.8.0-rc1 tag used in submodule)

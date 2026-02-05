@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # Development Setup
 
 This page covers environment setup only. For day-to-day commands, see [Developer Workflow](workflow.md).
@@ -55,10 +60,19 @@ yq -r '(.dependencies.dev.winget + .dependencies.docs.winget) | unique | .[]' .g
 winget install --id Ninja-build.Ninja --source winget
 ```
 
-### macOS (Homebrew)
+### macOS (vcpkg only)
+
+macOS builds are supported only via vcpkg. Install the host tools first:
 
 ```bash
 brew install yq
+yq -r '.dependencies.vcpkg_host.brew | unique | .[]' .github/dependencies.yml | \
+  xargs brew install
+```
+
+Optional tooling (format/lint/docs):
+
+```bash
 yq -r '(.dependencies.dev.brew + .dependencies.lint.brew + .dependencies.docs.brew) | unique | .[]' .github/dependencies.yml | \
   xargs brew install
 
@@ -71,5 +85,12 @@ export PATH="$(brew --prefix llvm)/bin:$PATH"
 Hooks are generated into `.git/hooks/` by the setup scripts. Use them in the workflow page:
 
 - Run checks: `.git/hooks/pre-commit`
-- Run checks on all files: `.git/hooks/pre-commit --run-all`
-- Auto-fix: `.git/hooks/pre-commit --fix`
+- Run checks on all files: `.git/hooks/pre-commit --all-files`
+- Run clang-tidy: `.git/hooks/pre-commit --run-tidy`
+- Auto-fix formatting: `.git/hooks/pre-commit --fix-format`
+- Auto-fix clang-tidy: `.git/hooks/pre-commit --fix-tidy`
+- Skip tests: `.git/hooks/pre-commit --skip-tests`
+- Skip formatting: `.git/hooks/pre-commit --skip-format`
+- Skip clang-tidy: `.git/hooks/pre-commit --skip-tidy`
+
+Note: clang-tidy is disabled by default in the hook; use `--run-tidy` or `--fix-tidy` to enable it.

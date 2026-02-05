@@ -18,6 +18,7 @@ set_target_properties(unit_tests PROPERTIES
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
 )
+
 # Link to the OSIUtilities library instead of recompiling all sources
 target_link_libraries(unit_tests PRIVATE OSIUtilities)
 target_link_libraries(unit_tests PRIVATE GTest::gtest_main)

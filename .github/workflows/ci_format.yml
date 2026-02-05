@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
 name: Format Check
 
@@ -11,19 +11,20 @@ jobs:
     name: clang-format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: false
 
       - name: Install clang-format
         run: |
           sudo apt-get update
-          YQ_VERSION=v4.44.3
+          YQ_VERSION=v4.52.2
           sudo curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
           yq -r '.dependencies.dev.apt[]' .github/dependencies.yml | xargs sudo apt-get install -y
 
+      - name: Install Hooks
+        run: bash scripts/setup-dev.sh
+
       - name: Check C++ formatting
-        run: |
-          find src include tests examples -name "*.cpp" -o -name "*.h" | \
-            xargs clang-format-18 --dry-run --Werror
+        run: .git/hooks/pre-commit --all-files --skip-tidy

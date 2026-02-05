@@ -12,7 +12,7 @@
 
 namespace osi3::testing {
 
-std::filesystem::path MakeTempPath(const std::string& prefix, const std::string& extension) {
+auto MakeTempPath(const std::string& prefix, const std::string& extension) -> std::filesystem::path {
     const auto* test_info = ::testing::UnitTest::GetInstance()->current_test_info();
     std::string name = std::string(test_info->test_suite_name()) + "_" + test_info->name();
     for (auto& ch : name) {

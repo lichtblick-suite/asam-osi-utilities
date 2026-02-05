@@ -1,9 +1,16 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 ---
+
 name: Bug report
 about: Create a report to help us improve
 title: ""
 labels: bug
 assignees: ""
+
 ---
 
 #### Describe the bug

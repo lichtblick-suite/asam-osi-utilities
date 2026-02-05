@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 # SPDX-License-Identifier: MPL-2.0
 #
 # Setup development environment for ASAM OSI Utilities (Windows PowerShell)
@@ -63,128 +63,171 @@ $preCommitHook = @'
 # Works on Linux, macOS, and Windows (Git Bash)
 #
 # Usage:
-#   .git/hooks/pre-commit                     # Check staged files only (default)
-#   .git/hooks/pre-commit --run-all           # Check all C++ files in the project
-#   .git/hooks/pre-commit --fix               # Auto-fix staged files (clang-format -i)
-#   .git/hooks/pre-commit --run-all --fix     # Auto-fix all C++ files
+#   .git/hooks/pre-commit                               # Check staged files only (format only by default)
+#   .git/hooks/pre-commit --all-files                   # Check all C++ files in the project
+#   .git/hooks/pre-commit --run-tidy                    # Run clang-tidy (check only)
+#   .git/hooks/pre-commit --fix-format                  # Auto-fix formatting issues
+#   .git/hooks/pre-commit --fix-tidy                    # Auto-fix clang-tidy issues
+#   .git/hooks/pre-commit --skip-tests                  # Skip tests/ in checks
+#   .git/hooks/pre-commit --skip-format                 # Skip clang-format checks
+#   .git/hooks/pre-commit --skip-tidy                   # Skip clang-tidy checks
+#   .git/hooks/pre-commit --all-files --run-tidy --fix-format --fix-tidy --skip-tests
 
-RUN_ALL=0
-FIX=0
+ALL_FILES=0
+FIX_FORMAT=0
+FIX_TIDY=0
+RUN_TIDY=0
+SKIP_TESTS=0
+SKIP_FORMAT=0
+SKIP_TIDY=0
 for arg in "$@"; do
-    if [ "$arg" = "--run-all" ]; then
-        RUN_ALL=1
-    elif [ "$arg" = "--fix" ]; then
-        FIX=1
-    fi
+    case "$arg" in
+        --all-files) ALL_FILES=1 ;;
+        --run-tidy) RUN_TIDY=1 ;;
+        --fix-format) FIX_FORMAT=1 ;;
+        --fix-tidy) FIX_TIDY=1; RUN_TIDY=1 ;;
+        --skip-tests) SKIP_TESTS=1 ;;
+        --skip-format) SKIP_FORMAT=1 ;;
+        --skip-tidy) SKIP_TIDY=1 ;;
+    esac
 done
+if [ $SKIP_TIDY -eq 1 ]; then
+    RUN_TIDY=0
+fi
 
-# Check if VERSION file is staged and sync to other files (only in normal mode)
-if [ $RUN_ALL -eq 0 ] && git diff --cached --name-only | grep -q "^VERSION$"; then
-    echo "VERSION file changed, syncing to vcpkg.json and Doxyfile.in..."
-    VERSION=$(cat VERSION | tr -d '[:space:]')
-    
-    # Update vcpkg.json
-    if [ -f "vcpkg.json" ]; then
-        if command -v sed &> /dev/null; then
-            sed -i.bak "s/\"version-string\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"version-string\": \"$VERSION\"/" vcpkg.json
-            rm -f vcpkg.json.bak 2>/dev/null
-            git add vcpkg.json
-            echo "  ✓ Updated vcpkg.json"
-        fi
-    fi
-    
-    # Update Doxyfile.in
-    if [ -f "doc/Doxyfile.in" ]; then
-        if command -v sed &> /dev/null; then
-            sed -i.bak "s/^PROJECT_NUMBER[[:space:]]*=.*/PROJECT_NUMBER         = $VERSION/" doc/Doxyfile.in
-            rm -f doc/Doxyfile.in.bak 2>/dev/null
-            git add doc/Doxyfile.in
-            echo "  ✓ Updated Doxyfile.in"
-        fi
-    fi
+# Determine search roots based on skip flags
+if [ $SKIP_TESTS -eq 1 ]; then
+    SEARCH_DIRS="src include examples"
+    ROOT_REGEX="^(src|include|examples)/"
+else
+    SEARCH_DIRS="src include tests examples"
+    ROOT_REGEX="^(src|include|tests|examples)/"
 fi
 
 # Get list of C++ files to check
-if [ $RUN_ALL -eq 1 ]; then
-    echo "Checking all C++ files..."
-    FILES=$(find src include tests examples -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.c" \) 2>/dev/null | grep -v "^lib/")
-else
-    FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(cpp|h|hpp|c)$" | grep -v "^lib/")
-fi
-
-if [ -n "$FILES" ]; then
-    if [ $FIX -eq 1 ]; then
-        echo "Auto-fixing code formatting..."
+if [ $SKIP_FORMAT -eq 0 ]; then
+    if [ $ALL_FILES -eq 1 ]; then
+        if [ $SKIP_TESTS -eq 1 ]; then
+            echo "Checking all C++ files (excluding tests)..."
+        else
+            echo "Checking all C++ files..."
+        fi
+        FILES=$(find $SEARCH_DIRS -type f \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.c++" -o -name "*.h" -o -name "*.hpp" -o -name "*.c" \) 2>/dev/null | grep -v "^lib/")
     else
-        echo "Checking code formatting..."
+        FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "${ROOT_REGEX}.*\\.(cpp|cc|cxx|c\\+\\+|h|hpp|c)$" | grep -v "^lib/")
     fi
-    FAILED=0
-    for FILE in $FILES; do
-        if command -v clang-format &> /dev/null; then
-            if [ $FIX -eq 1 ]; then
-                clang-format -i "$FILE" 2>/dev/null
-                if [ $RUN_ALL -eq 0 ]; then
-                    git add "$FILE"
-                fi
-            else
-                if ! clang-format --dry-run --Werror "$FILE" 2>/dev/null; then
-                    echo "  ✗ $FILE needs formatting"
-                    FAILED=1
+
+    if [ -n "$FILES" ]; then
+        if [ $FIX_FORMAT -eq 1 ]; then
+            echo "Auto-fixing code formatting..."
+        else
+            echo "Checking code formatting..."
+        fi
+        FAILED=0
+        for FILE in $FILES; do
+            if command -v clang-format &> /dev/null; then
+                if [ $FIX_FORMAT -eq 1 ]; then
+                    clang-format -i "$FILE" 2>/dev/null
+                    if [ $ALL_FILES -eq 0 ]; then
+                        git add "$FILE"
+                    fi
+                else
+                    if ! clang-format --dry-run --Werror "$FILE" 2>/dev/null; then
+                        echo "  ✗ $FILE needs formatting"
+                        FAILED=1
+                    fi
                 fi
             fi
+        done
+        if [ $FIX_FORMAT -eq 1 ]; then
+            echo "✓ Code formatting fixed"
+        else
+            if [ $FAILED -ne 0 ]; then
+                echo ""
+                echo "Please run: .git/hooks/pre-commit --fix-format"
+                exit 1
+            fi
+            echo "✓ Code formatting OK"
         fi
-    done
-    if [ $FIX -eq 1 ]; then
-        echo "✓ Code formatting fixed"
     else
-        if [ $FAILED -ne 0 ]; then
-            echo ""
-            echo "Please run: .git/hooks/pre-commit --fix"
-            exit 1
+        if [ $ALL_FILES -eq 1 ]; then
+            echo "No C++ files found to check."
         fi
-        echo "✓ Code formatting OK"
     fi
 else
-    if [ $RUN_ALL -eq 1 ]; then
-        echo "No C++ files found to check."
-    fi
+    echo "Skipping clang-format checks (--skip-format)"
 fi
 
 # Run clang-tidy (lint) when available
-if command -v clang-tidy &> /dev/null; then
-    if [ -f "build/compile_commands.json" ]; then
-        COMPILE_DIR="build"
-    elif [ -f "build-ninja/compile_commands.json" ]; then
-        COMPILE_DIR="build-ninja"
-    else
-        COMPILE_DIR=""
-    fi
+if command -v clang-tidy-18 &> /dev/null; then
+    CLANG_TIDY_BIN="clang-tidy-18"
+elif command -v clang-tidy &> /dev/null; then
+    CLANG_TIDY_BIN="clang-tidy"
+else
+    CLANG_TIDY_BIN=""
+fi
 
-    if [ -n "$COMPILE_DIR" ]; then
-        if [ $RUN_ALL -eq 1 ]; then
-            TIDY_FILES=$(find src include tests examples -type f \( -name "*.cpp" \) 2>/dev/null | grep -v "^lib/")
+if [ $RUN_TIDY -eq 1 ]; then
+    if [ -n "$CLANG_TIDY_BIN" ]; then
+        if [ -f "build-tests/compile_commands.json" ]; then
+            COMPILE_DIR="build-tests"
+        elif [ -f "build/compile_commands.json" ]; then
+            COMPILE_DIR="build"
+        elif [ -f "build-ninja/compile_commands.json" ]; then
+            COMPILE_DIR="build-ninja"
         else
-            TIDY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.cpp$" | grep -v "^lib/")
+            COMPILE_DIR=""
         fi
 
-        if [ -n "$TIDY_FILES" ]; then
-            echo "Running clang-tidy..."
-            LINT_FAILED=0
-            for FILE in $TIDY_FILES; do
-                if ! clang-tidy -p "$COMPILE_DIR" --warnings-as-errors='*' "$FILE"; then
-                    LINT_FAILED=1
-                fi
-            done
-            if [ $LINT_FAILED -ne 0 ]; then
-                exit 1
+        if [ -n "$COMPILE_DIR" ]; then
+            if [ $ALL_FILES -eq 1 ]; then
+                TIDY_FILES=$(find $SEARCH_DIRS -type f \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.c++" \) 2>/dev/null | grep -v "^lib/")
+            else
+                TIDY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "${ROOT_REGEX}.*\\.(cpp|cc|cxx|c\\+\\+)$" | grep -v "^lib/")
             fi
-            echo "✓ clang-tidy OK"
+
+            if [ -n "$TIDY_FILES" ]; then
+                if [ $FIX_TIDY -eq 1 ]; then
+                    echo "Running clang-tidy (auto-fix)..."
+                else
+                    echo "Running clang-tidy..."
+                fi
+                LINT_FAILED=0
+                for FILE in $TIDY_FILES; do
+                    if [ $FIX_TIDY -eq 1 ]; then
+                        if ! "$CLANG_TIDY_BIN" -p "$COMPILE_DIR" --warnings-as-errors='*' --fix --fix-errors "$FILE"; then
+                            LINT_FAILED=1
+                        fi
+                        if [ $ALL_FILES -eq 0 ]; then
+                            git add "$FILE"
+                        fi
+                    else
+                        if ! "$CLANG_TIDY_BIN" -p "$COMPILE_DIR" --warnings-as-errors='*' "$FILE"; then
+                            LINT_FAILED=1
+                        fi
+                    fi
+                done
+                if [ $LINT_FAILED -ne 0 ]; then
+                    if [ $FIX_TIDY -eq 0 ]; then
+                        echo ""
+                        echo "Please run: .git/hooks/pre-commit --fix-tidy"
+                    fi
+                    exit 1
+                fi
+                echo "✓ clang-tidy OK"
+            fi
+        else
+            echo "clang-tidy skipped (no compile_commands.json found). Build once to generate it."
         fi
     else
-        echo "clang-tidy skipped (no compile_commands.json found). Build once to generate it."
+        echo "clang-tidy not found, skipping lint"
     fi
 else
-    echo "clang-tidy not found, skipping lint"
+    if [ $SKIP_TIDY -eq 1 ]; then
+        echo "Skipping clang-tidy checks (--skip-tidy)"
+    else
+        echo "Skipping clang-tidy checks (disabled by default; use --run-tidy or --fix-tidy)"
+    fi
 fi
 
 exit 0
@@ -292,4 +335,8 @@ Write-Host ""
 Write-Host "You can now start developing. Remember:"
 Write-Host "  - Sign off commits: git commit -s -m `"message`""
 Write-Host "  - GPG sign commits: git commit -S -s -m `"message`""
-Write-Host "  - Run format check on all files: .git/hooks/pre-commit --run-all"
+Write-Host "  - Run checks on all files: .git/hooks/pre-commit --all-files"
+Write-Host "  - Run clang-tidy checks: .git/hooks/pre-commit --run-tidy (or --all-files --run-tidy)"
+Write-Host "  - Auto-fix formatting: .git/hooks/pre-commit --fix-format (or --all-files --fix-format)"
+Write-Host "  - Auto-fix clang-tidy: .git/hooks/pre-commit --fix-tidy (or --all-files --fix-tidy)"
+Write-Host "  - Skip tests: .git/hooks/pre-commit --skip-tests"

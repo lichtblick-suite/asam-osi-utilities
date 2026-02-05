@@ -27,7 +27,6 @@ class MCAPTraceFileWriterTest : public ::testing::Test {
         osi3::testing::SafeRemoveTestFile(test_file_);
     }
 
-   protected:
     void AddRequiredMetadata() {
         auto required_metadata = osi3::MCAPTraceFileWriter::PrepareRequiredFileMetadata();
         required_metadata.metadata["description"] = "Example mcap trace file created with the ASAM OSI utilities library.";  // optional description

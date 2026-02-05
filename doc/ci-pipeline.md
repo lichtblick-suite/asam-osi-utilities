@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # CI/CD Pipeline
 
 This document describes the Continuous Integration and Continuous Deployment (CI/CD) pipeline for ASAM OSI Utilities.
@@ -56,13 +61,13 @@ xargs clang-format-18 --dry-run --Werror
 
 ### ci_lint.yml - Static Analysis
 
-Runs clang-tidy-18 for static analysis of C++ code.
+Runs clang-tidy via the pre-commit hook (clang-tidy is opt-in by default in hooks).
 
 ```yaml
-# Requires compile_commands.json from CMake
-cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-cmake --build build
-clang-tidy-18 -p build --warnings-as-errors='*' src/**/*.cpp
+cmake --preset base -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake --build --preset base --parallel
+bash scripts/setup-dev.sh
+.git/hooks/pre-commit --all-files --run-tidy --skip-format
 ```
 
 **Fails if:** Any clang-tidy warning is emitted.
@@ -79,8 +84,6 @@ Builds the project on multiple platforms and configurations:
 | Ubuntu 24.04     | Clang       | Manual deps |
 | Ubuntu Latest    | -           | vcpkg       |
 | Windows Latest   | MSVC        | vcpkg       |
-| macOS 15 (x64)   | Apple Clang | Homebrew    |
-| macOS 14 (arm64) | Apple Clang | Homebrew    |
 | macOS 15 (x64)   | Apple Clang | vcpkg       |
 | macOS 14 (arm64) | Apple Clang | vcpkg       |
 
@@ -111,7 +114,7 @@ On Ubuntu 24.04 with GCC, code coverage is collected and uploaded to Codecov.
 
 Builds Doxygen documentation and deploys to GitHub Pages:
 
-1. Configure CMake with `-DBUILD_TESTING=OFF`
+1. Configure CMake with `-DOSIUTILITIES_DOCS_ONLY=ON` (docs-only configuration)
 2. Build `library_api_doc` target
 3. Deploy `doc/html/` to GitHub Pages
 4. Available at: `https://lichtblick-suite.github.io/asam-osi-utilities/`
@@ -163,8 +166,8 @@ find src include tests examples -name "*.cpp" -o -name "*.h" | \
 ### Build and Test
 
 ```bash
-cmake --preset vcpkg-linux
-cmake --build build -j
+cmake --preset vcpkg
+cmake --build --preset vcpkg --parallel
 ctest --test-dir build --output-on-failure
 ```
 

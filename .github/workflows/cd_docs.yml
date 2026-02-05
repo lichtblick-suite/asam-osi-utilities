@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
 name: Documentation
 
@@ -23,27 +23,27 @@ jobs:
     name: Build Doxygen
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          YQ_VERSION=v4.44.3
+          YQ_VERSION=v4.52.2
           sudo curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
           yq -r '.ci_jobs.ubuntu_docs.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Configure CMake
-        run: cmake -B build -DBUILD_TESTING=OFF
+        run: cmake --preset base -DOSIUTILITIES_DOCS_ONLY=ON
 
       - name: Build Documentation
-        run: cmake --build build --target library_api_doc
+        run: cmake --build --preset base --target library_api_doc
 
       - name: Upload artifact for Pages
         if: inputs.deploy
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: doc/html
 
@@ -69,4 +69,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4.0.5
