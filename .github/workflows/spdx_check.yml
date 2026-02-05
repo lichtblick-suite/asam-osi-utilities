@@ -24,7 +24,7 @@ jobs:
       - name: REUSE lint (expected success)
         shell: bash
         run: |
-          python3 -m reuse lint --suppress-deprecation
+          python3 -m reuse lint
       - name: Enable invalid SPDX test file
         shell: bash
         run: |
@@ -38,7 +38,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          python3 -m reuse lint --suppress-deprecation
+          python3 -m reuse lint
           status=$?
           set -e
           if [ $status -eq 0 ]; then
