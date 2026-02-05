@@ -43,10 +43,10 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: cmake -B build -DBUILD_TESTING=ON -DCODE_COVERAGE=${{ matrix.compiler == 'gcc' && 'ON' || 'OFF' }}
+        run: cmake --preset base -DBUILD_TESTING=ON -DCODE_COVERAGE=${{ matrix.compiler == 'gcc' && 'ON' || 'OFF' }}
 
       - name: Build
-        run: cmake --build build -j$(nproc)
+        run: cmake --build --preset base --parallel $(nproc)
 
       - name: Run Tests
         working-directory: build
@@ -80,10 +80,10 @@ jobs:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
       - name: Configure CMake
-        run: cmake --preset vcpkg-linux -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+        run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
       - name: Build
-        run: cmake --build build -j$(nproc)
+        run: cmake --build --preset vcpkg --parallel $(nproc)
 
       - name: Run Tests
         working-directory: build
@@ -106,10 +106,10 @@ jobs:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
       - name: Configure CMake
-        run: cmake --preset vcpkg-windows -DBUILD_DOCS=OFF -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+        run: cmake --preset vcpkg -DBUILD_DOCS=OFF -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build --preset vcpkg --parallel
 
       - name: Run Tests
         working-directory: build
@@ -144,7 +144,7 @@ jobs:
         run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
       - name: Build
-        run: cmake --build build -j$(sysctl -n hw.ncpu)
+        run: cmake --build --preset vcpkg --parallel $(sysctl -n hw.ncpu)
 
       - name: Run Tests
         working-directory: build

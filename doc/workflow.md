@@ -17,13 +17,11 @@ git submodule update --init --recursive
 
 ## Build and Test
 
-**vcpkg presets:**
+**vcpkg preset:**
 
 ```bash
-cmake --preset vcpkg-linux    # Linux
-cmake --preset vcpkg-windows  # Windows
-cmake --preset vcpkg          # macOS
-cmake --build build -j
+cmake --preset vcpkg
+cmake --build --preset vcpkg --parallel
 ctest --test-dir build --output-on-failure
 ```
 

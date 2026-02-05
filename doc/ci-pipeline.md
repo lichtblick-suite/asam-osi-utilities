@@ -64,8 +64,8 @@ xargs clang-format-18 --dry-run --Werror
 Runs clang-tidy via the pre-commit hook (clang-tidy is opt-in by default in hooks).
 
 ```yaml
-cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-cmake --build build
+cmake --preset base -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake --build --preset base --parallel
 bash scripts/setup-dev.sh
 .git/hooks/pre-commit --all-files --run-tidy --skip-format
 ```
@@ -166,8 +166,8 @@ find src include tests examples -name "*.cpp" -o -name "*.h" | \
 ### Build and Test
 
 ```bash
-cmake --preset vcpkg-linux
-cmake --build build -j
+cmake --preset vcpkg
+cmake --build --preset vcpkg --parallel
 ctest --test-dir build --output-on-failure
 ```
 

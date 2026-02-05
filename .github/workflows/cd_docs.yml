@@ -36,10 +36,10 @@ jobs:
           yq -r '.ci_jobs.ubuntu_docs.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Configure CMake
-        run: cmake -B build -DOSIUTILITIES_DOCS_ONLY=ON
+        run: cmake --preset base -DOSIUTILITIES_DOCS_ONLY=ON
 
       - name: Build Documentation
-        run: cmake --build build --target library_api_doc
+        run: cmake --build --preset base --target library_api_doc
 
       - name: Upload artifact for Pages
         if: inputs.deploy

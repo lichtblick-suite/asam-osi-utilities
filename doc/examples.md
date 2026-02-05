@@ -22,8 +22,8 @@ This project ships small executables that demonstrate how to read/write OSI trac
 Examples are built as part of the normal build:
 
 ```bash
-cmake --preset vcpkg-linux    # or vcpkg-windows / vcpkg
-cmake --build build -j
+cmake --preset vcpkg
+cmake --build --preset vcpkg --parallel
 ```
 
 ## Run examples

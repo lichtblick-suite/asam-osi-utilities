@@ -13,8 +13,8 @@ The library implementation lives in `src/`, with public headers in `include/osi-
 
 - Update submodules: `git pull --recurse-submodules` (or `git submodule update --init --recursive`).
 - Install hooks/tools: `./scripts/setup-dev.sh` (Linux/macOS) or `.\scripts\setup-dev.ps1` (Windows).
-- Configure with vcpkg: `cmake --preset vcpkg-linux` or `cmake --preset vcpkg-windows` (macOS: `cmake --preset vcpkg`).
-- Build: `cmake --build build -j`.
+- Configure with vcpkg: `cmake --preset vcpkg`.
+- Build: `cmake --build --preset vcpkg --parallel`.
 - Run tests: `ctest --test-dir build --output-on-failure`.
 - For linting, ensure `build/compile_commands.json` exists (e.g., `cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON`).
 

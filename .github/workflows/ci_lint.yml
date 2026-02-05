@@ -24,10 +24,10 @@ jobs:
           yq -r '.ci_jobs.ubuntu_lint.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        run: cmake --preset base -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Build
-        run: cmake --build build -j$(nproc)
+        run: cmake --build --preset base --parallel $(nproc)
 
       - name: Install Hooks
         run: bash scripts/setup-dev.sh

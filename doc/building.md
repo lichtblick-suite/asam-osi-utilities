@@ -45,8 +45,8 @@ configuration (skips library, examples, and tests), use `OSIUTILITIES_DOCS_ONLY=
 
 ```bash
 git submodule update --init --recursive
-cmake -B build -DBUILD_DOCS=ON
-cmake --build build --target library_api_doc
+cmake --preset base -DBUILD_DOCS=ON
+cmake --build --preset base --target library_api_doc
 ```
 
 Generated HTML is written to `doc/html/index.html`.
@@ -105,8 +105,8 @@ source ~/.bashrc
 ```bash
 git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
 cd asam-osi-utilities
-cmake --preset vcpkg-linux
-cmake --build build -j$(nproc)
+cmake --preset vcpkg
+cmake --build --preset vcpkg --parallel $(nproc)
 ```
 
 #### (Linux) 4. Run Tests
@@ -155,8 +155,8 @@ yq -r '.dependencies.docs.dnf | unique | .[]' .github/dependencies.yml | xargs s
 ```bash
 git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
 cd asam-osi-utilities
-cmake -B build
-cmake --build build -j$(nproc)
+cmake --preset base
+cmake --build --preset base --parallel $(nproc)
 ```
 
 ---
@@ -228,8 +228,8 @@ Open a new terminal to pick up the environment variable.
 ```powershell
 git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
 cd asam-osi-utilities
-cmake --preset vcpkg-windows
-cmake --build build --config Release --parallel
+cmake --preset vcpkg
+cmake --build --preset vcpkg --parallel
 ```
 
 #### (Windows) 4. Run Tests
@@ -259,14 +259,14 @@ If you must use this approach, consider using [Conan](https://conan.io/) or buil
 macOS builds are supported **only via vcpkg**. Homebrew/system dependency builds
 are not supported.
 
-Follow the Linux vcpkg instructions, replacing the preset with `vcpkg`:
+Follow the Linux vcpkg instructions:
 
 ```bash
 git clone https://github.com/microsoft/vcpkg ~/vcpkg
 ~/vcpkg/bootstrap-vcpkg.sh
 export VCPKG_ROOT="$HOME/vcpkg"
 cmake --preset vcpkg
-cmake --build build -j$(sysctl -n hw.ncpu)
+cmake --build --preset vcpkg --parallel $(sysctl -n hw.ncpu)
 ```
 
 Configure with `-DBUILD_TESTING=ON` first (for vcpkg, set `VCPKG_MANIFEST_FEATURES=tests`).
@@ -277,18 +277,16 @@ Configure with `-DBUILD_TESTING=ON` first (for vcpkg, set `VCPKG_MANIFEST_FEATUR
 
 The project includes CMake presets for common configurations:
 
-| Preset          | Description                             |
-| --------------- | --------------------------------------- |
-| `default`       | Standard build without vcpkg            |
-| `vcpkg`         | Build with vcpkg (auto-detect platform) |
-| `vcpkg-linux`   | Build with vcpkg on Linux               |
-| `vcpkg-windows` | Build with vcpkg on Windows (x64)       |
+| Preset  | Description                                               |
+| ------- | --------------------------------------------------------- |
+| `base`  | Standard build without vcpkg (manual dependencies needed) |
+| `vcpkg` | Build with vcpkg (`VCPKG_ROOT` required)                  |
 
 Use presets with:
 
 ```bash
 cmake --preset <preset-name>
-cmake --build build
+cmake --build --preset <preset-name>
 ```
 
 ---
@@ -307,7 +305,7 @@ cmake --build build
 Example:
 
 ```bash
-cmake -B build -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=ON
+cmake --preset base -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=ON
 ```
 
 When using vcpkg and `BUILD_TESTING=ON`, enable the `tests` manifest feature
@@ -337,7 +335,7 @@ If cmake configure fails, try:
 
 ```powershell
 Remove-Item -Recurse -Force build
-cmake --preset vcpkg-windows
+cmake --preset vcpkg
 ```
 
 ### Corporate Proxy Issues
