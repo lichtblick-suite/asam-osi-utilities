@@ -25,13 +25,13 @@ jobs:
         shell: bash
         run: |
           python3 -m reuse lint
-      - name: Enable invalid SPDX test file
+      - name: Enable invalid SPDX test folder
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           dep5 = Path(".reuse/dep5").read_text(encoding="utf-8").splitlines()
-          filtered = [line for line in dep5 if line.strip() != "tests/reuse_spdx_invalid.cpp"]
+          filtered = [line for line in dep5 if line.strip() != "tests/intentional-failures/**"]
           Path(".reuse/dep5").write_text("\n".join(filtered) + "\n", encoding="utf-8")
           PY
       - name: REUSE lint (expected failure)

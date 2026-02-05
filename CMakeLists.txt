@@ -29,6 +29,12 @@ option(OSIUTILITIES_DOCS_ONLY "Build only documentation (skip library/examples/t
 option(OSIUTILITIES_RUN_TESTS "Run tests after build (implies BUILD_TESTING=ON)" OFF)
 option(LINK_WITH_SHARED_OSI "Link utils with shared OSI library instead of statically linking" OFF)
 
+if (APPLE AND NOT LINK_WITH_SHARED_OSI)
+    message(WARNING "Homebrew protobuf removed static library builds due to Abseil dependencies. "
+                    "See: https://github.com/Homebrew/homebrew-core/commit/5c6d1bc12fafdae166757e2efd6afb6142ff610a "
+                    "For Homebrew builds on macOS, prefer -DLINK_WITH_SHARED_OSI=ON.")
+endif ()
+
 if (OSIUTILITIES_DOCS_ONLY)
     set(BUILD_DOCS ON CACHE BOOL "Build Doxygen documentation" FORCE)
     set(BUILD_TESTING OFF CACHE BOOL "Build unit tests" FORCE)

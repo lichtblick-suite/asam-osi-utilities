@@ -3,7 +3,7 @@ Upstream-Name: ASAM OSI Utilities
 Source: https://github.com/Lichtblick-Suite/asam-osi-utilities
 Files-Excluded:
  build*/**
- tests/reuse_spdx_invalid.cpp
+ tests/intentional-failures/**
  lib/osi-cpp/**
  lib/mcap/**
  .git/**

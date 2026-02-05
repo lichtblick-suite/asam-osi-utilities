@@ -3,6 +3,7 @@ find_package(GTest CONFIG REQUIRED)
 include(GoogleTest)
 
 file(GLOB_RECURSE test_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+list(FILTER test_sources EXCLUDE REGEX "/intentional-failures/")
 
 add_executable(
         unit_tests
