@@ -91,8 +91,8 @@ jobs:
         run: |
           echo "FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:"
           grep -E '^FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:INTERNAL=' build-vcpkg/CMakeCache.txt
-          grep -q 'libprotobuf\\.a' build-vcpkg/CMakeCache.txt
-          if grep -q -E 'libprotobuf\\.(so|dylib)' build-vcpkg/CMakeCache.txt; then
+          grep -q 'libprotobuf\.a' build-vcpkg/CMakeCache.txt
+          if grep -q -E 'libprotobuf\.(so|dylib)' build-vcpkg/CMakeCache.txt; then
             echo "Unexpected shared protobuf linkage in vcpkg build"
             exit 1
           fi
@@ -105,10 +105,47 @@ jobs:
         run: ctest --output-on-failure --parallel $(nproc)
 
   # ===========================================================================
-  # Windows with vcpkg
+  # Windows with vcpkg (default preset / compatibility coverage)
   # ===========================================================================
-  windows:
-    name: Windows (MSVC)
+  windows-vcpkg:
+    name: Windows (MSVC, vcpkg default)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+
+      - name: Configure CMake
+        run: cmake --preset vcpkg -DBUILD_DOCS=OFF -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+
+      - name: Report vcpkg triplet (windows default)
+        shell: pwsh
+        run: |
+          $line = Select-String -Path "build-vcpkg/CMakeCache.txt" -Pattern '^VCPKG_TARGET_TRIPLET:STRING='
+          if ($line) {
+            $value = ($line.Line -split '=')[1]
+            Write-Host "Configured triplet: $value"
+          } else {
+            Write-Host "VCPKG_TARGET_TRIPLET not explicitly set in CMakeCache.txt"
+          }
+
+      - name: Build
+        run: cmake --build --preset vcpkg --parallel
+
+      - name: Run Tests
+        working-directory: build-vcpkg
+        run: ctest -C Release --output-on-failure --parallel
+
+  # ===========================================================================
+  # Windows with vcpkg static-md (preferred packaging path)
+  # ===========================================================================
+  windows-vcpkg-static-md:
+    name: Windows (MSVC, vcpkg static-md)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -173,8 +210,8 @@ jobs:
         run: |
           echo "FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:"
           grep -E '^FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:INTERNAL=' build-vcpkg/CMakeCache.txt
-          grep -q 'libprotobuf\\.a' build-vcpkg/CMakeCache.txt
-          if grep -q -E 'libprotobuf\\.(so|dylib)' build-vcpkg/CMakeCache.txt; then
+          grep -q 'libprotobuf\.a' build-vcpkg/CMakeCache.txt
+          if grep -q -E 'libprotobuf\.(so|dylib)' build-vcpkg/CMakeCache.txt; then
             echo "Unexpected shared protobuf linkage in vcpkg build"
             exit 1
           fi
