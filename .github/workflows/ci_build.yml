@@ -8,10 +8,10 @@ on:
 
 jobs:
   # ===========================================================================
-  # Ubuntu with system packages
+  # Ubuntu with system packages (compatibility path)
   # ===========================================================================
   ubuntu:
-    name: Ubuntu ${{ matrix.ubuntu }} (${{ matrix.compiler }})
+    name: Ubuntu ${{ matrix.ubuntu }} (${{ matrix.compiler }}, system-compat)
     runs-on: ubuntu-${{ matrix.ubuntu }}
     strategy:
       fail-fast: false
@@ -44,6 +44,11 @@ jobs:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
         run: cmake --preset base -DBUILD_TESTING=ON -DCODE_COVERAGE=${{ matrix.compiler == 'gcc' && 'ON' || 'OFF' }}
+
+      - name: Report protobuf linkage (system/base)
+        run: |
+          echo "FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:"
+          grep -E '^FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:INTERNAL=' build/CMakeCache.txt || true
 
       - name: Build
         run: cmake --build --preset base --parallel $(nproc)
@@ -82,11 +87,21 @@ jobs:
       - name: Configure CMake
         run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
+      - name: Verify protobuf linkage (vcpkg/static)
+        run: |
+          echo "FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:"
+          grep -E '^FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:INTERNAL=' build-vcpkg/CMakeCache.txt
+          grep -q 'libprotobuf\\.a' build-vcpkg/CMakeCache.txt
+          if grep -q -E 'libprotobuf\\.(so|dylib)' build-vcpkg/CMakeCache.txt; then
+            echo "Unexpected shared protobuf linkage in vcpkg build"
+            exit 1
+          fi
+
       - name: Build
         run: cmake --build --preset vcpkg --parallel $(nproc)
 
       - name: Run Tests
-        working-directory: build
+        working-directory: build-vcpkg
         run: ctest --output-on-failure --parallel $(nproc)
 
   # ===========================================================================
@@ -106,13 +121,24 @@ jobs:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
       - name: Configure CMake
-        run: cmake --preset vcpkg -DBUILD_DOCS=OFF -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+        run: cmake --preset vcpkg-windows-static-md -DBUILD_DOCS=OFF -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+
+      - name: Verify vcpkg triplet (windows)
+        shell: pwsh
+        run: |
+          $line = Select-String -Path "build-vcpkg/CMakeCache.txt" -Pattern '^VCPKG_TARGET_TRIPLET:STRING='
+          if (-not $line) { throw "VCPKG_TARGET_TRIPLET not found in CMakeCache.txt" }
+          $value = ($line.Line -split '=')[1]
+          Write-Host "Configured triplet: $value"
+          if ($value -ne "x64-windows-static-md") {
+            throw "Expected x64-windows-static-md, got $value"
+          }
 
       - name: Build
-        run: cmake --build --preset vcpkg --parallel
+        run: cmake --build --preset vcpkg-windows-static-md --parallel
 
       - name: Run Tests
-        working-directory: build
+        working-directory: build-vcpkg
         run: ctest -C Release --output-on-failure --parallel
 
   # ==========================================================================
@@ -143,9 +169,19 @@ jobs:
       - name: Configure CMake
         run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
+      - name: Verify protobuf linkage (vcpkg/static)
+        run: |
+          echo "FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:"
+          grep -E '^FIND_PACKAGE_MESSAGE_DETAILS_Protobuf:INTERNAL=' build-vcpkg/CMakeCache.txt
+          grep -q 'libprotobuf\\.a' build-vcpkg/CMakeCache.txt
+          if grep -q -E 'libprotobuf\\.(so|dylib)' build-vcpkg/CMakeCache.txt; then
+            echo "Unexpected shared protobuf linkage in vcpkg build"
+            exit 1
+          fi
+
       - name: Build
         run: cmake --build --preset vcpkg --parallel $(sysctl -n hw.ncpu)
 
       - name: Run Tests
-        working-directory: build
+        working-directory: build-vcpkg
         run: ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)

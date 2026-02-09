@@ -168,8 +168,10 @@ find src include tests examples -name "*.cpp" -o -name "*.h" | \
 ```bash
 cmake --preset vcpkg
 cmake --build --preset vcpkg --parallel
-ctest --test-dir build --output-on-failure
+ctest --test-dir build-vcpkg --output-on-failure
 ```
+
+On Windows, use `vcpkg-windows-static-md` instead of `vcpkg`.
 
 ## Troubleshooting
 

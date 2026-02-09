@@ -27,7 +27,7 @@ cmake --preset vcpkg
 cmake --build --preset vcpkg --parallel
 
 # Run tests (configure with -DBUILD_TESTING=ON to build them)
-ctest --test-dir build --output-on-failure
+ctest --test-dir build-vcpkg --output-on-failure
 ```
 
 > **Note:** First build takes 10-15 minutes as vcpkg compiles dependencies from source.

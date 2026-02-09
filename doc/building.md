@@ -35,6 +35,21 @@ This project supports two methods for dependency management:
 - **Option A: vcpkg (Recommended)** - Automatic dependency management
 - **Option B: Manual** - System package managers or manual installation
 
+## Build Policy and Linkage Expectations
+
+Build/test policy in this repository:
+
+- `base` (manual/system packages) is a compatibility path and CI smoke-check, not the preferred packaging path.
+- `vcpkg` (Linux/macOS) and `vcpkg-windows-static-md` (Windows) are the preferred paths for reproducible, redistribution-friendly builds.
+
+Linkage expectations:
+
+| Configuration                          | Intent                                       | Protobuf expectation |
+| -------------------------------------- | -------------------------------------------- | -------------------- |
+| `base` + system packages (Linux)       | Compatibility validation                     | Often shared (`.so`) |
+| `vcpkg` (Linux/macOS)                  | Preferred/release-oriented dependency model  | Static (`.a`)        |
+| `vcpkg-windows-static-md` (Windows)    | Preferred Windows static libs + dynamic CRT  | Static triplet model |
+
 ---
 
 ## Documentation (Doxygen)
@@ -114,7 +129,7 @@ cmake --build --preset vcpkg --parallel $(nproc)
 Configure with `-DBUILD_TESTING=ON` first (for vcpkg, set `VCPKG_MANIFEST_FEATURES=tests`).
 
 ```bash
-ctest --test-dir build --output-on-failure -j$(nproc)
+ctest --test-dir build-vcpkg --output-on-failure -j$(nproc)
 ```
 
 ### Option B (Linux): Manual Dependencies
@@ -228,8 +243,8 @@ Open a new terminal to pick up the environment variable.
 ```powershell
 git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
 cd asam-osi-utilities
-cmake --preset vcpkg
-cmake --build --preset vcpkg --parallel
+cmake --preset vcpkg-windows-static-md
+cmake --build --preset vcpkg-windows-static-md --parallel
 ```
 
 #### (Windows) 4. Run Tests
@@ -237,7 +252,7 @@ cmake --build --preset vcpkg --parallel
 Configure with `-DBUILD_TESTING=ON` first (for vcpkg, set `VCPKG_MANIFEST_FEATURES=tests`).
 
 ```powershell
-ctest --test-dir build -C Release --output-on-failure
+ctest --test-dir build-vcpkg -C Release --output-on-failure
 ```
 
 ### Option B (Windows): Manual Dependencies
@@ -277,10 +292,11 @@ Configure with `-DBUILD_TESTING=ON` first (for vcpkg, set `VCPKG_MANIFEST_FEATUR
 
 The project includes CMake presets for common configurations:
 
-| Preset  | Description                                               |
-| ------- | --------------------------------------------------------- |
-| `base`  | Standard build without vcpkg (manual dependencies needed) |
-| `vcpkg` | Build with vcpkg (`VCPKG_ROOT` required)                  |
+| Preset                     | Description                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `base`                     | Standard build without vcpkg (manual dependencies needed)                    |
+| `vcpkg`                    | Build with vcpkg (`VCPKG_ROOT` required), preferred on Linux/macOS           |
+| `vcpkg-windows-static-md`  | Windows vcpkg build with static libraries and dynamic MSVC runtime           |
 
 Use presets with:
 
@@ -334,8 +350,8 @@ If cmake configure fails, try:
 3. Run cmake configure again
 
 ```powershell
-Remove-Item -Recurse -Force build
-cmake --preset vcpkg
+Remove-Item -Recurse -Force build-vcpkg
+cmake --preset vcpkg-windows-static-md
 ```
 
 ### Corporate Proxy Issues
