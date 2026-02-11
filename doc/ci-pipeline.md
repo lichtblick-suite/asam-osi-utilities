@@ -76,16 +76,22 @@ bash scripts/setup-dev.sh
 
 Builds the project on multiple platforms and configurations:
 
-| Platform         | Compiler    | Method      |
-| ---------------- | ----------- | ----------- |
-| Ubuntu 22.04     | GCC         | Manual deps |
-| Ubuntu 22.04     | Clang       | Manual deps |
-| Ubuntu 24.04     | GCC         | Manual deps |
-| Ubuntu 24.04     | Clang       | Manual deps |
-| Ubuntu Latest    | -           | vcpkg       |
-| Windows Latest   | MSVC        | vcpkg       |
-| macOS 15 (x64)   | Apple Clang | vcpkg       |
-| macOS 14 (arm64) | Apple Clang | vcpkg       |
+| Platform         | Compiler    | Method                            |
+| ---------------- | ----------- | --------------------------------- |
+| Ubuntu 22.04     | GCC         | Manual deps                       |
+| Ubuntu 22.04     | Clang       | Manual deps                       |
+| Ubuntu 24.04     | GCC         | Manual deps                       |
+| Ubuntu 24.04     | Clang       | Manual deps                       |
+| Ubuntu Latest    | -           | vcpkg                             |
+| Windows Latest   | MSVC        | vcpkg (default preset)            |
+| Windows Latest   | MSVC        | vcpkg-windows-static-md (policy)  |
+| macOS 15 (x64)   | Apple Clang | vcpkg                             |
+| macOS 14 (arm64) | Apple Clang | vcpkg                             |
+
+Windows preset difference in CI:
+
+- `vcpkg` job: compatibility coverage using the default preset/triplet resolution on Windows runners.
+- `vcpkg-windows-static-md` job: explicit policy validation for static libraries with dynamic MSVC runtime.
 
 ### Unit Tests (in ci_build.yml)
 
@@ -168,8 +174,13 @@ find src include tests examples -name "*.cpp" -o -name "*.h" | \
 ```bash
 cmake --preset vcpkg
 cmake --build --preset vcpkg --parallel
-ctest --test-dir build --output-on-failure
+ctest --test-dir build-vcpkg --output-on-failure
 ```
+
+On Windows:
+
+- Use `vcpkg` when you want to match the compatibility CI path.
+- Use `vcpkg-windows-static-md` for the preferred static-md packaging path.
 
 ## Troubleshooting
 

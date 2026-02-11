@@ -13,8 +13,17 @@
       "name": "vcpkg",
       "description": "Build using vcpkg for dependency management",
       "inherits": "base",
+      "binaryDir": "${sourceDir}/build-vcpkg",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      }
+    },
+    {
+      "name": "vcpkg-windows-static-md",
+      "description": "Windows vcpkg build with static libraries and dynamic MSVC runtime",
+      "inherits": "vcpkg",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
       }
     }
   ],
@@ -27,6 +36,11 @@
     {
       "name": "vcpkg",
       "configurePreset": "vcpkg",
+      "configuration": "Release"
+    },
+    {
+      "name": "vcpkg-windows-static-md",
+      "configurePreset": "vcpkg-windows-static-md",
       "configuration": "Release"
     }
   ]
