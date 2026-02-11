@@ -11,5 +11,5 @@ This page is intentionally short. Use the focused pages below:
 - [Developer Workflow](workflow.md) — day-to-day commands
 - [Contributing](contributing.md) — compliance, DCO, GPG, and PR process
 - [Building](building.md) — build instructions
-- [CMake/vcpkg Audit (Issue #21)](cmake-vcpkg-audit-issue-21.md) — findings, recommendations, and implementation plan
+- [CI/CD Pipeline](ci-pipeline.md) — workflow structure and required checks
 - [Examples](examples.md) — purpose and usage
