@@ -40,7 +40,8 @@ This project supports two methods for dependency management:
 Build/test policy in this repository:
 
 - `base` (manual/system packages) is a compatibility path and CI smoke-check, not the preferred packaging path.
-- `vcpkg` (Linux/macOS) and `vcpkg-windows-static-md` (Windows) are the preferred paths for reproducible, redistribution-friendly builds.
+- `vcpkg` is the recommended default on Linux/macOS and the standard path on Windows for executable-focused development.
+- `vcpkg-windows-static-md` is an optional Windows preset for packaging scenarios that prefer static libraries with dynamic MSVC runtime.
 
 Linkage expectations:
 
@@ -48,7 +49,8 @@ Linkage expectations:
 | -------------------------------------- | -------------------------------------------- | -------------------- |
 | `base` + system packages (Linux)       | Compatibility validation                     | Often shared (`.so`) |
 | `vcpkg` (Linux/macOS)                  | Preferred/release-oriented dependency model  | Static (`.a`)        |
-| `vcpkg-windows-static-md` (Windows)    | Preferred Windows static libs + dynamic CRT  | Static triplet model |
+| `vcpkg` (Windows)                      | General executable-focused development       | Triplet-dependent    |
+| `vcpkg-windows-static-md` (Windows)    | Packaging/static-linkage-oriented workflows  | Static triplet model |
 
 ---
 
@@ -118,7 +120,7 @@ source ~/.bashrc
 #### (Linux) 3. Clone and Build
 
 ```bash
-git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
+git clone --recurse-submodules https://github.com/lichtblick-suite/asam-osi-utilities.git
 cd asam-osi-utilities
 cmake --preset vcpkg
 cmake --build --preset vcpkg --parallel $(nproc)
@@ -168,7 +170,7 @@ yq -r '.dependencies.docs.dnf | unique | .[]' .github/dependencies.yml | xargs s
 #### (Linux) 2. Clone and Build
 
 ```bash
-git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
+git clone --recurse-submodules https://github.com/lichtblick-suite/asam-osi-utilities.git
 cd asam-osi-utilities
 cmake --preset base
 cmake --build --preset base --parallel $(nproc)
@@ -241,8 +243,15 @@ Open a new terminal to pick up the environment variable.
 #### (Windows) 3. Clone and Build
 
 ```powershell
-git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
+git clone --recurse-submodules https://github.com/lichtblick-suite/asam-osi-utilities.git
 cd asam-osi-utilities
+cmake --preset vcpkg
+cmake --build --preset vcpkg --parallel
+```
+
+If you need static-library-oriented packaging behavior on Windows, use:
+
+```powershell
 cmake --preset vcpkg-windows-static-md
 cmake --build --preset vcpkg-windows-static-md --parallel
 ```
@@ -295,8 +304,8 @@ The project includes CMake presets for common configurations:
 | Preset                     | Description                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------- |
 | `base`                     | Standard build without vcpkg (manual dependencies needed)                    |
-| `vcpkg`                    | Build with vcpkg (`VCPKG_ROOT` required), preferred on Linux/macOS           |
-| `vcpkg-windows-static-md`  | Windows vcpkg build with static libraries and dynamic MSVC runtime           |
+| `vcpkg`                    | Build with vcpkg (`VCPKG_ROOT` required), default for Linux/macOS and common Windows executable workflows |
+| `vcpkg-windows-static-md`  | Windows vcpkg build for static-library-oriented packaging with dynamic MSVC runtime |
 
 Use presets with:
 
@@ -351,8 +360,10 @@ If cmake configure fails, try:
 
 ```powershell
 Remove-Item -Recurse -Force build-vcpkg
-cmake --preset vcpkg-windows-static-md
+cmake --preset vcpkg
 ```
+
+If you are using the static-md path, rerun configure with `cmake --preset vcpkg-windows-static-md`.
 
 ### Corporate Proxy Issues
 

@@ -84,14 +84,14 @@ Builds the project on multiple platforms and configurations:
 | Ubuntu 24.04     | Clang       | Manual deps                       |
 | Ubuntu Latest    | -           | vcpkg                             |
 | Windows Latest   | MSVC        | vcpkg (default preset)            |
-| Windows Latest   | MSVC        | vcpkg-windows-static-md (policy)  |
+| Windows Latest   | MSVC        | vcpkg-windows-static-md (packaging-oriented coverage) |
 | macOS 15 (x64)   | Apple Clang | vcpkg                             |
 | macOS 14 (arm64) | Apple Clang | vcpkg                             |
 
 Windows preset difference in CI:
 
 - `vcpkg` job: compatibility coverage using the default preset/triplet resolution on Windows runners.
-- `vcpkg-windows-static-md` job: explicit policy validation for static libraries with dynamic MSVC runtime.
+- `vcpkg-windows-static-md` job: additional coverage for static-library-oriented packaging with dynamic MSVC runtime.
 
 ### Unit Tests (in ci_build.yml)
 
@@ -155,7 +155,7 @@ For PRs to be mergeable, the following checks must pass:
 Add these badges to track CI status:
 
 ```markdown
-[![CI](https://github.com/Lichtblick-Suite/asam-osi-utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Lichtblick-Suite/asam-osi-utilities/actions/workflows/ci.yml)
+[![CI](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml)
 ```
 
 ## Local CI Validation
@@ -179,8 +179,8 @@ ctest --test-dir build-vcpkg --output-on-failure
 
 On Windows:
 
-- Use `vcpkg` when you want to match the compatibility CI path.
-- Use `vcpkg-windows-static-md` for the preferred static-md packaging path.
+- Use `vcpkg` for standard executable-focused development and to match the default CI path.
+- Use `vcpkg-windows-static-md` when you need static-library-oriented packaging behavior.
 
 ## Troubleshooting
 

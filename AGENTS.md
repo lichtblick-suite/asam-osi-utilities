@@ -30,6 +30,13 @@ Tests are written with GoogleTest and registered via CTest (`tests/CMakeLists.tx
 
 Recent history uses Conventional Commits (e.g., `feat: ...`, `fix: ...`, `ci(fix): ...`), and the project requires that format for all new commits. Use `<type>(<scope>): <description>` with optional scopes. All commits must be DCO signed-off and GPG signed: `git commit -S -s -m "feat: short description"`. PR titles should use the same conventional prefix, include a clear description, and pass format, lint, and test checks. At least one maintainer approval is required before merge.
 
+PR bodies must follow `.github/pull_request_template.md` and include all sections:
+
+- `Related Issue` with a valid reference (`closes #...`, `fixes #...`, or `refs #...`).
+- `Summary` describing what changed and why.
+- `Validation` listing local verification commands and outcomes.
+- `Checklist` completed accurately. If an item is not applicable, mark as N/A and provide a short reason in `Summary` or `Validation`.
+
 PR checklist:
 
 - Conventional Commit title and message.
@@ -37,6 +44,22 @@ PR checklist:
 - `.git/hooks/pre-commit` clean (format + lint).
 - `ctest --test-dir build --output-on-failure` passes.
 - Docs/tests updated when behavior changes.
+
+## Agent Workflow Guardrails
+
+When creating or updating PRs, agents should follow this sequence:
+
+1. Sync with `main` using rebase (avoid merge commits in PR branches).
+2. Ensure every commit is Conventional Commit compliant.
+3. Ensure every commit is signed (`-s` for DCO and `-S` for GPG).
+4. Fill the PR body using `.github/pull_request_template.md` headings verbatim.
+5. Verify repository links use the canonical path `https://github.com/lichtblick-suite/asam-osi-utilities`.
+
+Recommended pre-push checks for agents:
+
+- `git log --format=%H%x09%s origin/main..HEAD` (confirm commit subjects).
+- `git log --format=%H%x09%B origin/main..HEAD` (confirm `Signed-off-by` trailers).
+- `git rebase origin/main` (remove accidental merge commits before pushing).
 
 ## Versioning & Docs
 

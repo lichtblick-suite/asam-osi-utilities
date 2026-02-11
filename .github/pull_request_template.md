@@ -3,22 +3,27 @@ SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesel
 SPDX-License-Identifier: MPL-2.0
 -->
 
-#### Reference to a related issue in the repository
+## Related Issue
 
-<!-- Add the issue number that this PR is addressing -->
-
+<!-- Use one: closes #123, fixes #123, refs #123 -->
 closes #<issue_number>
 
-#### Add a description
+## Summary
 
-<!-- Add a description of the changes proposed in the pull request -->
+<!-- What changed and why? Keep this short and concrete. -->
 
-#### Self-Checks
+## Validation
 
-<!-- Take this checklist as orientation for yourself -->
+<!-- List what you ran locally (commands + outcome), e.g.:
+- cmake --build --preset vcpkg --parallel
+- ctest --test-dir build --output-on-failure
+-->
 
-- [ ] I have added unit tests for changed or added functions.
-- [ ] I have updated function documentation of changed or added functions.
-- [ ] My changes generate no errors when passing CI tests.
-- [ ] I have successfully implemented and tested my fix/feature locally.
-- [ ] Appropriate reviewer(s) are assigned.
+## Checklist
+
+<!-- Mark all that apply. Use N/A where appropriate and explain briefly in Summary or Validation. -->
+
+- [ ] Unit tests added/updated for behavior changes (or N/A with reason).
+- [ ] Documentation updated for user-visible/API changes (or N/A with reason).
+- [ ] Local checks pass (`pre-commit`, build, tests).
+- [ ] Reviewer(s) assigned.
