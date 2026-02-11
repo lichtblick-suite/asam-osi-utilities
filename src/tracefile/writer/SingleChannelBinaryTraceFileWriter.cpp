@@ -30,12 +30,6 @@ auto SingleChannelBinaryTraceFileWriter::Open(const std::filesystem::path& file_
         return false;
     }
 
-    // check if at least .osi ending is present
-    if (file_path.extension().string() != ".osi") {
-        std::cerr << "ERROR: The trace file '" << file_path << "' must have a '.osi' extension." << std::endl;
-        return false;
-    }
-
     trace_file_.open(file_path, std::ios::binary);
     if (!trace_file_) {
         std::cerr << "ERROR: Opening file " << file_path << std::endl;

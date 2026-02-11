@@ -5,6 +5,22 @@ SPDX-License-Identifier: MPL-2.0
 
 # Rust MCAP in C++: Strategy
 
+## Research Findings (2026-02)
+
+Source-level analysis of the Rust `mcap` crate (`WriteOptions`, `Writer::finish_chunk`) and the
+[Foxglove blog on MCAP design](https://foxglove.dev/blog/mcap-a-new-container-file-format-for-robotics)
+confirms:
+
+- The Rust MCAP library does **not** have auto-chunking. It uses the same fixed-threshold model
+  as the C++ library: accumulate messages until `chunk_size` bytes, then flush.
+- The only Rust advantage (`chunk_size(None)` to disable automatic flushing) is achievable in
+  C++ by calling `closeLastChunk()` manually and setting a large `chunkSize`.
+- **Conclusion:** Rust FFI is not justified solely for chunking control. The C++ writer with a
+  sensible default chunk size (16 MiB) and user-overridable `--chunk_size` covers all practical
+  use cases.
+
+---
+
 **Goal**
 Use the Rust MCAP implementation to gain finer control over chunk boundaries (e.g., flush/rotate chunks based on data volume per frame) while keeping the existing C++ conversion workflow.
 

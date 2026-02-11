@@ -85,7 +85,7 @@ auto TXTHTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
 auto TXTHTraceFileReader::ReadNextMessageFromFile() -> std::string {
     std::string message;
     std::string line;
-    unsigned int last_position = 0;
+    std::streampos last_position = 0;
 
     // make sure the first line starts with line_indicating_msg_start_
     // read everything until:

@@ -34,8 +34,9 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     std::cout << "Creating trace_file at " << trace_file_path << std::endl;
 
     mcap::McapWriterOptions mcap_options("osi");
-    // Adapt chunk size according to data and usecase:
-    // Example: ros2 is using 4 * 1024 * 1024)
+    // Adapt chunk size according to data and use case.
+    // Library default is 16 MiB (kDefaultChunkSize). Lichtblick plays back well
+    // with 4-32 MiB chunks; smaller chunks increase index overhead.
     mcap_options.chunkSize = static_cast<uint64_t>(4) * 1024 * 1024;
     // Default: zstd
     mcap_options.compression = mcap::Compression::Lz4;
