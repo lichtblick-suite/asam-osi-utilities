@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+SPDX-License-Identifier: MPL-2.0
+-->
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -62,20 +67,24 @@ Style: Google-based clang-format with **4-space indentation** and **180-column l
 - Three format implementations under `reader/` and `writer/`: `MCAPTraceFile*`, `SingleChannelBinaryTraceFile*`, `TXTHTraceFile*`
 
 **Key types:**
+
 - `ReaderTopLevelMessage` enum — 10 OSI message types (GroundTruth, SensorData, SensorView, etc.)
 - `ReadResult` — parsed message + type + channel name
 - `kFileNameMessageTypeMap` — maps filename patterns to message types
 
 **Configuration:**
+
 - `include/osi-utilities/tracefile/TraceFileConfig.h` — chunk size constants (default 16 MiB) and binary format constants
 
 **Submodules in `lib/`:**
+
 - `osi-cpp/` — OSI protobuf definitions (has nested `open-simulation-interface` submodule)
 - `mcap/` — MCAP C++ library
 
 ## Commit & PR Requirements
 
 All commits must use **Conventional Commits** format and be both **DCO signed-off** (`-s`) and **GPG signed** (`-S`):
+
 ```bash
 git commit -S -s -m "feat(tracefile): add new capability"
 ```
