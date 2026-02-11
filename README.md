@@ -5,7 +5,7 @@ SPDX-License-Identifier: MPL-2.0
 
 # ASAM OSI Utilities
 
-[![CI](https://github.com/Lichtblick-Suite/asam-osi-utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Lichtblick-Suite/asam-osi-utilities/actions/workflows/ci.yml)
+[![CI](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-doxygen-blue)](https://lichtblick-suite.github.io/asam-osi-utilities/)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 
@@ -15,11 +15,13 @@ A C++ utility library for working with [ASAM Open Simulation Interface (OSI)](ht
 
 ```bash
 # Clone with submodules
-git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
+git clone https://github.com/lichtblick-suite/asam-osi-utilities.git
 cd asam-osi-utilities
 
-# Init and update
+# Init submodules once after cloning
 git submodule update --init --recursive
+
+# Update after remote changes
 git pull --recurse-submodules
 
 # Build with vcpkg (recommended)
@@ -27,7 +29,7 @@ cmake --preset vcpkg
 cmake --build --preset vcpkg --parallel
 
 # Run tests (configure with -DBUILD_TESTING=ON to build them)
-ctest --test-dir build --output-on-failure
+ctest --test-dir build-vcpkg --output-on-failure
 ```
 
 > **Note:** First build takes 10-15 minutes as vcpkg compiles dependencies from source.

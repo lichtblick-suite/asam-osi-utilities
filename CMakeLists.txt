@@ -65,6 +65,13 @@ if (NOT OSIUTILITIES_DOCS_ONLY)
     if (NOT EXISTS "${OSI_CPP_DIR}/CMakeLists.txt")
         message(FATAL_ERROR "osi-cpp submodule not found. Run: git submodule update --init --recursive")
     endif ()
+    set(OSI_OPEN_SIM_INTERFACE_DIR "${OSI_CPP_DIR}/open-simulation-interface")
+    if (NOT EXISTS "${OSI_OPEN_SIM_INTERFACE_DIR}/VERSION"
+        OR NOT EXISTS "${OSI_OPEN_SIM_INTERFACE_DIR}/osi_version.proto.in")
+        message(FATAL_ERROR
+                "osi-cpp nested submodule open-simulation-interface is missing or incomplete. "
+                "Run: git submodule update --init --recursive")
+    endif ()
     message(STATUS "Using bundled osi-cpp submodule at ${OSI_CPP_DIR}")
     add_subdirectory(${OSI_CPP_DIR} ${CMAKE_BINARY_DIR}/osi-cpp EXCLUDE_FROM_ALL)
     get_directory_property(OSI_VERSION_MAJOR DIRECTORY ${OSI_CPP_DIR} DEFINITION VERSION_MAJOR)

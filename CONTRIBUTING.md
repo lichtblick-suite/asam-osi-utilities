@@ -41,7 +41,7 @@ All commits must:
 
 ```bash
 # Clone
-git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
+git clone --recurse-submodules https://github.com/lichtblick-suite/asam-osi-utilities.git
 cd asam-osi-utilities
 
 # Setup dev environment

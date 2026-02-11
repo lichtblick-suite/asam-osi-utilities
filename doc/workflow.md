@@ -22,11 +22,12 @@ git submodule update --init --recursive
 ```bash
 cmake --preset vcpkg
 cmake --build --preset vcpkg --parallel
-ctest --test-dir build --output-on-failure
+ctest --test-dir build-vcpkg --output-on-failure
 ```
 
 Notes:
 
+- On Windows, prefer `vcpkg-windows-static-md` for static libraries with dynamic MSVC runtime.
 - Tests are opt-in. Configure with `-DBUILD_TESTING=ON` and ensure GTest is available (for vcpkg: set `VCPKG_MANIFEST_FEATURES=tests`).
 
 ## Format and Lint

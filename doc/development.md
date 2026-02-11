@@ -11,4 +11,5 @@ This page is intentionally short. Use the focused pages below:
 - [Developer Workflow](workflow.md) — day-to-day commands
 - [Contributing](contributing.md) — compliance, DCO, GPG, and PR process
 - [Building](building.md) — build instructions
+- [CI/CD Pipeline](ci-pipeline.md) — workflow structure and required checks
 - [Examples](examples.md) — purpose and usage
