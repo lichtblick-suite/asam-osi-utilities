@@ -18,10 +18,6 @@ A C++ utility library for working with [ASAM Open Simulation Interface (OSI)](ht
 git clone --recurse-submodules https://github.com/Lichtblick-Suite/asam-osi-utilities.git
 cd asam-osi-utilities
 
-# Init and update
-git submodule update --init --recursive
-git pull --recurse-submodules
-
 # Build with vcpkg (recommended)
 cmake --preset vcpkg
 cmake --build --preset vcpkg --parallel
