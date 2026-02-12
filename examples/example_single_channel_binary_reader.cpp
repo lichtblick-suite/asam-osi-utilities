@@ -7,6 +7,7 @@
  * \brief Read single-channel binary OSI `.osi` trace files.
  */
 
+#include <osi-utilities/tracefile/TraceFileConfig.h>
 #include <osi-utilities/tracefile/reader/SingleChannelBinaryTraceFileReader.h>
 
 #include <optional>
@@ -28,7 +29,7 @@
  */
 template <typename T>
 void PrintTimestamp(T msg) {
-    auto timestamp = msg->timestamp().seconds() + msg->timestamp().nanos() / 1000000000.0;
+    auto timestamp = msg->timestamp().seconds() + msg->timestamp().nanos() / static_cast<double>(osi3::tracefile::config::kNanosecondsPerSecond);
     std::cout << "Type: " << msg->descriptor()->full_name() << " Timestamp " << timestamp << "\n";
 }
 

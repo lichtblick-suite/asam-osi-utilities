@@ -7,6 +7,7 @@
  * \brief Write a single-channel binary OSI `.osi` trace file.
  */
 
+#include <osi-utilities/tracefile/TraceFileConfig.h>
 #include <osi-utilities/tracefile/writer/SingleChannelBinaryTraceFileWriter.h>
 
 #include <filesystem>
@@ -78,12 +79,13 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     constexpr double kTimeStepSizeS = 0.1;  // NOLINT
     for (int i = 0; i < 10; ++i) {
         // manipulate the data so not every message is the same
-        auto timestamp = sensor_view.timestamp().seconds() * 1000000000 + sensor_view.timestamp().nanos();
-        timestamp += kTimeStepSizeS * 1000000000;  // 100000000;
-        sensor_view.mutable_timestamp()->set_nanos(timestamp % 1000000000);
-        sensor_view.mutable_timestamp()->set_seconds(timestamp / 1000000000);
-        ground_truth->mutable_timestamp()->set_nanos(timestamp % 1000000000);
-        ground_truth->mutable_timestamp()->set_seconds(timestamp / 1000000000);
+        constexpr auto kNsPerSec = osi3::tracefile::config::kNanosecondsPerSecond;
+        auto timestamp = sensor_view.timestamp().seconds() * kNsPerSec + sensor_view.timestamp().nanos();
+        timestamp += kTimeStepSizeS * kNsPerSec;
+        sensor_view.mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
+        sensor_view.mutable_timestamp()->set_seconds(timestamp / kNsPerSec);
+        ground_truth->mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
+        ground_truth->mutable_timestamp()->set_seconds(timestamp / kNsPerSec);
         const auto old_position = host_vehicle->base().position().x();
         const auto new_position = old_position + host_vehicle->base().velocity().x() * kTimeStepSizeS;
         host_vehicle->mutable_base()->mutable_position()->set_x(new_position);

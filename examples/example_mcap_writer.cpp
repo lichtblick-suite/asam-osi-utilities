@@ -7,6 +7,7 @@
  * \brief Write an example OSI MCAP trace file with metadata and channels.
  */
 
+#include <osi-utilities/tracefile/TraceFileConfig.h>
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
 #include <filesystem>
@@ -34,10 +35,9 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     std::cout << "Creating trace_file at " << trace_file_path << std::endl;
 
     mcap::McapWriterOptions mcap_options("osi");
-    // Adapt chunk size according to data and use case.
-    // Library default is 16 MiB (kDefaultChunkSize). Lichtblick plays back well
-    // with 4-32 MiB chunks; smaller chunks increase index overhead.
-    mcap_options.chunkSize = static_cast<uint64_t>(4) * 1024 * 1024;
+    // Use the library default chunk size (16 MiB). Lichtblick plays back well
+    // with 4-32 MiB chunks; adjust via kMinChunkSize / kMaxChunkSize bounds.
+    mcap_options.chunkSize = osi3::tracefile::config::kDefaultChunkSize;
     // Default: zstd
     mcap_options.compression = mcap::Compression::Lz4;
 
@@ -83,12 +83,13 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     constexpr double kTimeStepSizeS = 0.1;  // NOLINT
     for (int i = 0; i < 10; ++i) {
         // manipulate the data so not every message is the same
-        auto timestamp = sensor_view_1.timestamp().seconds() * 1000000000 + sensor_view_1.timestamp().nanos();
-        timestamp += kTimeStepSizeS * 1000000000;
-        sensor_view_1.mutable_timestamp()->set_nanos(timestamp % 1000000000);
-        sensor_view_1.mutable_timestamp()->set_seconds(timestamp / 1000000000);
-        ground_truth_1->mutable_timestamp()->set_nanos(timestamp % 1000000000);
-        ground_truth_1->mutable_timestamp()->set_seconds(timestamp / 1000000000);
+        constexpr auto kNsPerSec = osi3::tracefile::config::kNanosecondsPerSecond;
+        auto timestamp = sensor_view_1.timestamp().seconds() * kNsPerSec + sensor_view_1.timestamp().nanos();
+        timestamp += kTimeStepSizeS * kNsPerSec;
+        sensor_view_1.mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
+        sensor_view_1.mutable_timestamp()->set_seconds(timestamp / kNsPerSec);
+        ground_truth_1->mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
+        ground_truth_1->mutable_timestamp()->set_seconds(timestamp / kNsPerSec);
         const auto old_position = host_vehicle->base().position().x();
         const auto new_position = old_position + host_vehicle->base().velocity().x() + kTimeStepSizeS;
         host_vehicle->mutable_base()->mutable_position()->set_x(new_position);
