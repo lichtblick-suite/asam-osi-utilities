@@ -158,7 +158,7 @@ void PrintMetrics(const char* label, int frame_count, double bytes, double elaps
 // Modes
 // =============================================================================
 
-int RunSynthetic(int num_messages) {
+auto RunSynthetic(int num_messages) -> int {
     std::cout << "Generating " << num_messages << " SensorView messages (5 objects each)..." << std::endl;
     const auto messages = GenerateMessages(num_messages);
 
@@ -277,7 +277,7 @@ int RunSynthetic(int num_messages) {
     return 0;
 }
 
-int RunFile(const std::filesystem::path& input_path, osi3::ReaderTopLevelMessage message_type) {
+auto RunFile(const std::filesystem::path& input_path, osi3::ReaderTopLevelMessage message_type) -> int {
     std::error_code ec;
     const auto file_size = std::filesystem::file_size(input_path, ec);
     if (ec) {
