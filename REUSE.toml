@@ -14,6 +14,13 @@ SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "MPL-2.0"
 
 [[annotations]]
+path = "tests/data/**"
+precedence = "override"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "MPL-2.0"
+SPDX-FileComment = "Generated binary test fixtures (esmini/NCAP traces); cannot embed headers."
+
+[[annotations]]
 path = "tests/intentional-failures/**"
 precedence = "override"
 SPDX-FileCopyrightText = "NONE"
