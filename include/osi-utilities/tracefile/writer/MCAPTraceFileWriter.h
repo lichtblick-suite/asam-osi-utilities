@@ -10,7 +10,7 @@
 
 #include <mcap/mcap.hpp>
 
-#include "../Writer.h"
+#include "osi-utilities/tracefile/Writer.h"
 
 namespace osi3 {
 /**
@@ -18,9 +18,13 @@ namespace osi3 {
  *
  * Handles writing OSI messages to MCAP format files with support for
  * channels, schemas, and metadata.
+ *
+ * @note Thread Safety: Not thread-safe. External synchronization required for concurrent access.
  */
 class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
    public:
+    /** @brief Destructor, closes the file if still open */
+    ~MCAPTraceFileWriter() override;
     /**
      * @brief Opens a trace file for writing using default MCAP options
      * @param file_path Path to the file to be created/opened
@@ -48,7 +52,7 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
      * @return true if successful, false otherwise
      */
     template <typename T>
-    bool WriteMessage(const T& top_level_message, const std::string& topic = "");
+    bool WriteMessage(const T& top_level_message, const std::string& topic);
 
     /**
      * @brief Adds metadata for the trace file
@@ -114,19 +118,13 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
     mcap::McapWriter* GetMcapWriter() { return &mcap_writer_; }
 
    private:
-    std::ofstream trace_file_;                            /**< Trace file stream */
-    mcap::McapWriter mcap_writer_;                        /**< MCAP writer instance */
-    mcap::McapWriterOptions mcap_options_{"protobuf"};    /**< MCAP writer configuration */
-    std::vector<mcap::Schema> schemas_;                   /**< Registrated schemas */
-    std::map<std::string, uint16_t> topic_to_channel_id_; /**< Topic to channel ID mapping */
-    bool required_metadata_added_ = false;                /**< Flag to track if required metadata has been added */
-
-    /**
-     * @brief Adds standard metadata to the MCAP file
-     *
-     * Includes OSI version information and file creation timestamp
-     */
-    void AddVersionToFileMetadata();
+    std::ofstream trace_file_;                              /**< Trace file stream */
+    mcap::McapWriter mcap_writer_;                          /**< MCAP writer instance */
+    mcap::McapWriterOptions mcap_options_{"protobuf"};      /**< MCAP writer configuration */
+    std::unordered_map<std::string, mcap::Schema> schemas_; /**< Registered schemas (keyed by descriptor full name) */
+    std::map<std::string, uint16_t> topic_to_channel_id_;   /**< Topic to channel ID mapping */
+    bool required_metadata_added_ = false;                  /**< Flag to track if required metadata has been added */
+    std::string serialize_buffer_;                          /**< Reusable serialization buffer */
 };
 }  // namespace osi3
 #endif  // OSIUTILITIES_TRACEFILE_WRITER_MCAPTRACEFILEWRITER_H_

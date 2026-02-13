@@ -5,6 +5,7 @@
 
 #include "osi-utilities/tracefile/writer/TXTHTraceFileWriter.h"
 
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
 
 #include "osi_groundtruth.pb.h"
@@ -18,6 +19,12 @@
 #include "osi_trafficupdate.pb.h"
 
 namespace osi3 {
+
+TXTHTraceFileWriter::~TXTHTraceFileWriter() {
+    if (trace_file_.is_open()) {
+        Close();
+    }
+}
 
 auto TXTHTraceFileWriter::Open(const std::filesystem::path& file_path) -> bool {
     // check if at least .osi ending is present
@@ -45,17 +52,21 @@ void TXTHTraceFileWriter::Close() { trace_file_.close(); }
 template <typename T>
 auto TXTHTraceFileWriter::WriteMessage(const T& top_level_message) -> bool {
     if (!(trace_file_ && trace_file_.is_open())) {
-        std::cerr << "Error: Cannot write message, file is not open\n";
+        std::cerr << "ERROR: Cannot write message, file is not open\n";
         return false;
     }
 
-    std::string text_output;
-    if (!google::protobuf::TextFormat::PrintToString(top_level_message, &text_output)) {
-        std::cerr << "Error: Failed to convert message to text format\n";
+    google::protobuf::io::OstreamOutputStream output_stream(&trace_file_);
+    if (!google::protobuf::TextFormat::Print(top_level_message, &output_stream)) {
+        std::cerr << "ERROR: Failed to convert message to text format\n";
         return false;
     }
 
-    trace_file_ << text_output;
+    if (!trace_file_.good()) {
+        std::cerr << "ERROR: Failed to write text message to file\n";
+        return false;
+    }
+
     return true;
 }
 

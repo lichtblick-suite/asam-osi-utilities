@@ -20,7 +20,7 @@ namespace osi3 {
 enum class ReaderTopLevelMessage : uint8_t {
     kUnknown = 0,             /**< Unknown message type */
     kGroundTruth,             /**< OSI3::GroundTruth data */
-    kSensorData,              /**< OSI3::SensorSata */
+    kSensorData,              /**< OSI3::SensorData */
     kSensorView,              /**< OSI3::SensorView */
     kSensorViewConfiguration, /**< OSI3::SensorViewConfiguration */
     kHostVehicleData,         /**< OSI3::HostVehicleData */
@@ -34,16 +34,16 @@ enum class ReaderTopLevelMessage : uint8_t {
 /**
  * @brief Map of trace file names to their corresponding message type
  */
-const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kFileNameMessageTypeMap = {{"_gt_", osi3::ReaderTopLevelMessage::kGroundTruth},
-                                                                                              {"_sd_", osi3::ReaderTopLevelMessage::kSensorData},
-                                                                                              {"_sv_", osi3::ReaderTopLevelMessage::kSensorView},
-                                                                                              {"_svc_", osi3::ReaderTopLevelMessage::kSensorViewConfiguration},
-                                                                                              {"_hvd_", osi3::ReaderTopLevelMessage::kHostVehicleData},
-                                                                                              {"_tc_", osi3::ReaderTopLevelMessage::kTrafficCommand},
-                                                                                              {"_tcu_", osi3::ReaderTopLevelMessage::kTrafficCommandUpdate},
-                                                                                              {"_tu_", osi3::ReaderTopLevelMessage::kTrafficUpdate},
-                                                                                              {"_mr_", osi3::ReaderTopLevelMessage::kMotionRequest},
-                                                                                              {"_su_", osi3::ReaderTopLevelMessage::kStreamingUpdate}};
+inline const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kFileNameMessageTypeMap = {{"_gt_", osi3::ReaderTopLevelMessage::kGroundTruth},
+                                                                                                     {"_sd_", osi3::ReaderTopLevelMessage::kSensorData},
+                                                                                                     {"_sv_", osi3::ReaderTopLevelMessage::kSensorView},
+                                                                                                     {"_svc_", osi3::ReaderTopLevelMessage::kSensorViewConfiguration},
+                                                                                                     {"_hvd_", osi3::ReaderTopLevelMessage::kHostVehicleData},
+                                                                                                     {"_tc_", osi3::ReaderTopLevelMessage::kTrafficCommand},
+                                                                                                     {"_tcu_", osi3::ReaderTopLevelMessage::kTrafficCommandUpdate},
+                                                                                                     {"_tu_", osi3::ReaderTopLevelMessage::kTrafficUpdate},
+                                                                                                     {"_mr_", osi3::ReaderTopLevelMessage::kMotionRequest},
+                                                                                                     {"_su_", osi3::ReaderTopLevelMessage::kStreamingUpdate}};
 
 /**
  * @brief Structure containing the result of a read operation
@@ -56,6 +56,13 @@ struct ReadResult {
 
 /**
  * @brief Abstract base class for reading trace files in various formats
+ *
+ * @note Thread Safety: Instances are **not** thread-safe.
+ * Concurrent calls on the same reader must be externally synchronized.
+ *
+ * @note Error Strategy: `Open` returns `false` and logs to `std::cerr` on failure.
+ * `ReadMessage` returns `std::nullopt` when no messages remain, and throws
+ * `std::runtime_error` on deserialization or format errors.
  */
 class TraceFileReader {
    public:

@@ -19,6 +19,12 @@ namespace osi3 {
  *
  * @note The WriteMessage() function is intentionally omitted from this base class since it is format-specific.
  * Users should dynamically cast to the concrete implementation class to access the appropriate WriteMessage() function.
+ *
+ * @note Thread Safety: Instances are **not** thread-safe.
+ * Concurrent calls on the same writer must be externally synchronized.
+ *
+ * @note Error Strategy: `Open` returns `false` and logs to `std::cerr` on failure.
+ * `WriteMessage` returns `false` on write errors.
  */
 class TraceFileWriter {
    public:

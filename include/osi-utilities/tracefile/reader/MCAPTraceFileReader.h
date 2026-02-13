@@ -27,9 +27,14 @@ namespace osi3 {
  *
  * This class provides functionality to read and deserialize OSI messages from MCAP files.
  * It supports various OSI message types including GroundTruth, SensorData, SensorView, etc.
+ *
+ * @note Thread Safety: Instances are **not** thread-safe.
  */
 class MCAPTraceFileReader final : public TraceFileReader {
    public:
+    /** @brief Destructor, closes the file if still open */
+    ~MCAPTraceFileReader() override;
+
     /**
      * @brief Opens a trace file for reading with default options
      * @param file_path Path to the file to be opened
@@ -47,7 +52,7 @@ class MCAPTraceFileReader final : public TraceFileReader {
      * @param options Options for the MCAP writer
      * @return true if successful, false otherwise
      */
-    bool Open(const std::string& file_path, const mcap::ReadMessageOptions& options);
+    bool Open(const std::filesystem::path& file_path, const mcap::ReadMessageOptions& options);
 
     /**
      * @brief Reads the next OSI message from the trace file
@@ -107,7 +112,7 @@ class MCAPTraceFileReader final : public TraceFileReader {
      * which are part of the ReadResult struct.Used for dynamic message deserialization
      * based on channel schema which is defined by the OSI specification.
      */
-    const std::map<std::string, std::pair<DeserializeFunction, ReaderTopLevelMessage>> deserializer_map_ = {
+    const std::unordered_map<std::string, std::pair<DeserializeFunction, ReaderTopLevelMessage>> deserializer_map_ = {
         {"osi3.GroundTruth", {[this](const mcap::Message& msg) { return Deserialize<osi3::GroundTruth>(msg); }, ReaderTopLevelMessage::kGroundTruth}},
         {"osi3.SensorData", {[this](const mcap::Message& msg) { return Deserialize<osi3::SensorData>(msg); }, ReaderTopLevelMessage::kSensorData}},
         {"osi3.SensorView", {[this](const mcap::Message& msg) { return Deserialize<osi3::SensorView>(msg); }, ReaderTopLevelMessage::kSensorView}},

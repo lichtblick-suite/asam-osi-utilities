@@ -9,6 +9,12 @@
 
 namespace osi3 {
 
+TXTHTraceFileReader::~TXTHTraceFileReader() {
+    if (trace_file_.is_open()) {
+        Close();
+    }
+}
+
 auto TXTHTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
     // prevent opening again if already opened
     if (trace_file_.is_open()) {
@@ -50,7 +56,7 @@ auto TXTHTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
     // find top-level message delimiter by peeking into the file and assuming the first line
     // will be the pattern to indicate a new message
     std::getline(trace_file_, line_indicating_msg_start_);
-    trace_file_.seekg(std::ios_base::beg);
+    trace_file_.seekg(0);
 
     return trace_file_.is_open();
 }
@@ -84,6 +90,7 @@ auto TXTHTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
 
 auto TXTHTraceFileReader::ReadNextMessageFromFile() -> std::string {
     std::string message;
+    message.reserve(4096);
     std::string line;
     std::streampos last_position = 0;
 
@@ -96,7 +103,8 @@ auto TXTHTraceFileReader::ReadNextMessageFromFile() -> std::string {
     message += line;
     line = "";
     while (!trace_file_.eof() && line != line_indicating_msg_start_) {
-        message += line + "\n";
+        message += line;
+        message += '\n';
         // Get current position
         last_position = trace_file_.tellg();
         // read next line

@@ -11,7 +11,7 @@
 #include <fstream>
 #include <functional>
 
-#include "../Reader.h"
+#include "osi-utilities/tracefile/Reader.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_hostvehicledata.pb.h"
 #include "osi_motionrequest.pb.h"
@@ -30,6 +30,8 @@ namespace osi3 {
  *
  * This class provides functionality to read and parse OSI messages from text format files.
  * It supports various OSI message types and handles their parsing using Google's protobuf TextFormat.
+ *
+ * @note Thread Safety: Not thread-safe. External synchronization required for concurrent access.
  */
 class TXTHTraceFileReader final : public TraceFileReader {
     /**
@@ -38,6 +40,8 @@ class TXTHTraceFileReader final : public TraceFileReader {
     using MessageParserFunc = std::function<std::unique_ptr<google::protobuf::Message>(const std::string&)>;
 
    public:
+    /** @brief Destructor, closes the file if still open */
+    ~TXTHTraceFileReader() override;
     /**
      * @brief Opens a trace file for reading and infers message type from filename
      * @param file_path Path to the trace file

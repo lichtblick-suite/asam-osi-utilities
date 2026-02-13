@@ -9,6 +9,12 @@
 
 namespace osi3 {
 
+MCAPTraceFileReader::~MCAPTraceFileReader() {
+    if (trace_file_.is_open()) {
+        Close();
+    }
+}
+
 auto MCAPTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
     // prevent opening again if already opened
     if (message_view_ != nullptr) {
@@ -39,7 +45,7 @@ auto MCAPTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
     return true;
 }
 
-auto MCAPTraceFileReader::Open(const std::string& file_path, const mcap::ReadMessageOptions& options) -> bool {
+auto MCAPTraceFileReader::Open(const std::filesystem::path& file_path, const mcap::ReadMessageOptions& options) -> bool {
     mcap_options_ = options;
     return this->Open(file_path);
 }
@@ -48,8 +54,13 @@ auto MCAPTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
     while (this->HasNext()) {
         const auto& msg_view = **message_iterator_;
         const auto msg = msg_view.message;
-        const auto channel = msg_view.channel;
-        const auto schema = msg_view.schema;
+        const auto& channel = msg_view.channel;
+        const auto& schema = msg_view.schema;
+
+        if (!channel || !schema) {
+            ++*message_iterator_;
+            throw std::runtime_error("ERROR: MCAP message has null channel or schema pointer.");
+        }
 
         // this function only supports osi3 protobuf messages
         if (schema->encoding != "protobuf" || schema->name.size() < 5 || schema->name.substr(0, 5) != "osi3.") {
