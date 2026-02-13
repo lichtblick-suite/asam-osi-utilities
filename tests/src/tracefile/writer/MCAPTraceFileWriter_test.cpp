@@ -8,6 +8,8 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <fstream>
+#include <mcap/reader.hpp>
 #include <regex>
 #include <string>
 
@@ -252,4 +254,86 @@ TEST_F(MCAPTraceFileWriterTest, AddChannelReuseExistingSchema) {
     EXPECT_GT(channel_id1, 0);
     EXPECT_GT(channel_id2, 0);
     EXPECT_NE(channel_id1, channel_id2);
+}
+
+TEST_F(MCAPTraceFileWriterTest, WriteMultipleMessageTypes) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+    AddRequiredMetadata();
+
+    writer_.AddChannel("gt_topic", osi3::GroundTruth::descriptor());
+    writer_.AddChannel("sd_topic", osi3::SensorData::descriptor());
+
+    osi3::GroundTruth gt;
+    gt.mutable_timestamp()->set_seconds(1);
+    EXPECT_TRUE(writer_.WriteMessage(gt, "gt_topic"));
+
+    osi3::SensorData sd;
+    sd.mutable_timestamp()->set_seconds(2);
+    EXPECT_TRUE(writer_.WriteMessage(sd, "sd_topic"));
+
+    writer_.Close();
+    EXPECT_TRUE(std::filesystem::exists(test_file_));
+    EXPECT_GT(std::filesystem::file_size(test_file_), 0);
+}
+
+TEST_F(MCAPTraceFileWriterTest, AddChannelAutoOsiVersion) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+
+    const std::string topic = "/test_channel";
+    writer_.AddChannel(topic, osi3::GroundTruth::descriptor());
+
+    AddRequiredMetadata();
+    osi3::GroundTruth gt;
+    gt.mutable_timestamp()->set_seconds(1);
+    writer_.WriteMessage(gt, topic);
+    writer_.Close();
+
+    // Verify channel metadata by reading the MCAP file directly
+    std::ifstream file(test_file_, std::ios::binary);
+    mcap::McapReader mcap_reader;
+    ASSERT_TRUE(mcap_reader.open(file).ok());
+    ASSERT_TRUE(mcap_reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan).ok());
+
+    bool found_osi_version = false;
+    for (const auto& [channel_id, channel] : mcap_reader.channels()) {
+        if (channel->topic == topic) {
+            if (channel->metadata.count("net.asam.osi.trace.channel.osi_version")) {
+                found_osi_version = true;
+                EXPECT_FALSE(channel->metadata.at("net.asam.osi.trace.channel.osi_version").empty());
+            }
+        }
+    }
+    EXPECT_TRUE(found_osi_version);
+    mcap_reader.close();
+}
+
+TEST_F(MCAPTraceFileWriterTest, AddChannelAutoProtobufVersion) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+
+    const std::string topic = "/test_channel";
+    writer_.AddChannel(topic, osi3::GroundTruth::descriptor());
+
+    AddRequiredMetadata();
+    osi3::GroundTruth gt;
+    gt.mutable_timestamp()->set_seconds(1);
+    writer_.WriteMessage(gt, topic);
+    writer_.Close();
+
+    // Verify channel metadata
+    std::ifstream file(test_file_, std::ios::binary);
+    mcap::McapReader mcap_reader;
+    ASSERT_TRUE(mcap_reader.open(file).ok());
+    ASSERT_TRUE(mcap_reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan).ok());
+
+    bool found_protobuf_version = false;
+    for (const auto& [channel_id, channel] : mcap_reader.channels()) {
+        if (channel->topic == topic) {
+            if (channel->metadata.count("net.asam.osi.trace.channel.protobuf_version")) {
+                found_protobuf_version = true;
+                EXPECT_FALSE(channel->metadata.at("net.asam.osi.trace.channel.protobuf_version").empty());
+            }
+        }
+    }
+    EXPECT_TRUE(found_protobuf_version);
+    mcap_reader.close();
 }

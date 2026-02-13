@@ -232,3 +232,31 @@ TEST_F(McapTraceFileReaderTest, ThrowExceptionForNonOSIMessagesWhenSkipDisabled)
     // Third message (JSON) should throw an exception
     EXPECT_THROW({ reader_.ReadMessage(); }, std::runtime_error);
 }
+
+TEST_F(McapTraceFileReaderTest, ReadEmptyMcapFile) {
+    // Create a valid MCAP file with 0 messages
+    const auto empty_file = osi3::testing::MakeTempPath("empty", osi3::testing::FileExtensions::kMcap);
+    {
+        osi3::MCAPTraceFileWriter empty_writer;
+        ASSERT_TRUE(empty_writer.Open(empty_file));
+        empty_writer.AddFileMetadata(osi3::MCAPTraceFileWriter::PrepareRequiredFileMetadata());
+        empty_writer.Close();
+    }
+
+    osi3::MCAPTraceFileReader empty_reader;
+    ASSERT_TRUE(empty_reader.Open(empty_file));
+    EXPECT_FALSE(empty_reader.HasNext());
+    empty_reader.Close();
+    osi3::testing::SafeRemoveTestFile(empty_file);
+}
+
+TEST_F(McapTraceFileReaderTest, CloseAndReopenWithDifferentOptions) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+    reader_.Close();
+
+    mcap::ReadMessageOptions options;
+    options.startTime = 0;
+    options.endTime = 1;
+    EXPECT_TRUE(reader_.Open(test_file_, options));
+    reader_.Close();
+}
