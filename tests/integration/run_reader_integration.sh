@@ -34,7 +34,7 @@ if [ ! -f "$OUTPUT_FILE" ]; then
 fi
 
 echo "=== Running reader: $READER_EXE on $OUTPUT_FILE ${READER_EXTRA_ARGS[*]:-} ==="
-READER_OUTPUT=$("$READER_EXE" "$OUTPUT_FILE" "${READER_EXTRA_ARGS[@]}" 2>&1) || { echo "Reader failed"; echo "$READER_OUTPUT"; exit 1; }
+READER_OUTPUT=$("$READER_EXE" "$OUTPUT_FILE" ${READER_EXTRA_ARGS[@]+"${READER_EXTRA_ARGS[@]}"} 2>&1) || { echo "Reader failed"; echo "$READER_OUTPUT"; exit 1; }
 echo "$READER_OUTPUT"
 
 # Verify reader produced meaningful output
