@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -43,10 +44,21 @@ const std::filesystem::path kCblaSv = kTestDataDir / "cbla_sv_ncap.osi";
 const std::filesystem::path kCcrsGtMcap = kTestDataDir / "ccrs_gt_ncap.mcap";
 }  // namespace
 
+inline bool IsLfsPointer(const std::filesystem::path& p) {
+    if (std::filesystem::file_size(p) > 200) return false;
+    std::ifstream f(p);
+    std::string line;
+    std::getline(f, line);
+    return line.rfind("version https://git-lfs.github.com/spec/v1", 0) == 0;
+}
+
 #define SKIP_IF_FIXTURE_MISSING(path)                                                                                     \
     do {                                                                                                                  \
         if (!std::filesystem::exists(path)) {                                                                             \
             GTEST_SKIP() << "Fixture file not found: " << (path) << ". Run scripts/generate_test_traces.sh to generate."; \
+        }                                                                                                                 \
+        if (IsLfsPointer(path)) {                                                                                         \
+            GTEST_SKIP() << "Fixture is an LFS pointer (not fetched): " << (path) << ". Run: git lfs pull";               \
         }                                                                                                                 \
     } while (0)
 
