@@ -63,3 +63,8 @@ local_build_tools/*.html
 *.osi
 *.txth
 *.mcap
+
+# Allow committed test fixtures
+!tests/data/*.osi
+!tests/data/*.mcap
+!tests/data/*.txth

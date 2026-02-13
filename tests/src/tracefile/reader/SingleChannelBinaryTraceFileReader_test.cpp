@@ -198,3 +198,41 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadMessageAfterClose) {
     auto result = reader_.ReadMessage();
     EXPECT_FALSE(result.has_value());
 }
+
+TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadMultipleMessages) {
+    const auto multi_file = osi3::testing::MakeTempPath("multi_gt", osi3::testing::FileExtensions::kOsi);
+    {
+        std::ofstream file(multi_file, std::ios::binary);
+        for (int i = 0; i < 5; ++i) {
+            osi3::GroundTruth gt;
+            gt.mutable_timestamp()->set_seconds(i);
+            gt.mutable_timestamp()->set_nanos(i * 100);
+            std::string serialized = gt.SerializeAsString();
+            uint32_t size = serialized.size();
+            file.write(reinterpret_cast<char*>(&size), sizeof(size));
+            file.write(serialized.data(), size);
+        }
+    }
+
+    ASSERT_TRUE(reader_.Open(multi_file));
+    int count = 0;
+    while (reader_.HasNext()) {
+        const auto result = reader_.ReadMessage();
+        ASSERT_TRUE(result.has_value());
+        EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
+
+        auto* gt = dynamic_cast<osi3::GroundTruth*>(result->message.get());
+        ASSERT_NE(gt, nullptr);
+        EXPECT_EQ(gt->timestamp().seconds(), count);
+        ++count;
+    }
+    EXPECT_EQ(count, 5);
+    reader_.Close();
+    osi3::testing::SafeRemoveTestFile(multi_file);
+}
+
+TEST_F(SingleChannelBinaryTraceFileReaderTest, OpenWithMismatchedMessageType) {
+    // File named _gt_ but opened with kSensorView — should still work with a warning
+    EXPECT_TRUE(reader_.Open(test_file_gt_, osi3::ReaderTopLevelMessage::kSensorView));
+    reader_.Close();
+}

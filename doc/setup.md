@@ -11,17 +11,11 @@ This page covers environment setup only. For day-to-day commands, see [Developer
 
 Run the setup script to configure hooks and check tools. **No Python required**.
 
-**Linux/macOS:**
-
 ```bash
 ./scripts/setup-dev.sh
 ```
 
-**Windows PowerShell:**
-
-```powershell
-.\scripts\setup-dev.ps1
-```
+> **Windows:** Run from Git Bash, or use `bash scripts/setup-dev.sh` from PowerShell/CMD.
 
 The setup script installs native Git hooks (format checks and commit message validation).
 

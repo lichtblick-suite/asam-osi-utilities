@@ -43,8 +43,7 @@ Note: the `vcpkg` preset writes to `build-vcpkg/`, the `base` preset writes to `
 
 ```bash
 # Install pre-commit hooks (run once after clone)
-./scripts/setup-dev.sh          # Linux/macOS
-# .\scripts\setup-dev.ps1       # Windows
+./scripts/setup-dev.sh          # All platforms (use Git Bash on Windows)
 
 # Check formatting only
 .git/hooks/pre-commit --all-files --skip-tidy

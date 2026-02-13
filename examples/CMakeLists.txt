@@ -28,3 +28,5 @@ configure_example(example_single_channel_binary_writer example_single_channel_bi
 configure_example(example_txth_reader example_txth_reader.cpp)
 configure_example(example_txth_writer example_txth_writer.cpp)
 configure_example(convert_osi2mcap convert_osi2mcap.cpp)
+configure_example(convert_gt2sv convert_gt2sv.cpp)
+configure_example(benchmark benchmark.cpp)
