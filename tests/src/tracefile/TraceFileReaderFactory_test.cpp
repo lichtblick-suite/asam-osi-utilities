@@ -64,7 +64,6 @@ TEST_F(TraceFileReaderFactoryTest, FactoryThenOpenAndReadBinary) {
     const auto result = binary_reader->ReadMessage();
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
-
     binary_reader->Close();
     osi3::testing::SafeRemoveTestFile(file_path);
 }
@@ -88,7 +87,6 @@ TEST_F(TraceFileReaderFactoryTest, FactoryThenOpenAndReadMcap) {
     const auto result = reader->ReadMessage();
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
-
     reader->Close();
     osi3::testing::SafeRemoveTestFile(file_path);
 }
@@ -110,7 +108,6 @@ TEST_F(TraceFileReaderFactoryTest, FactoryThenOpenAndReadTxth) {
     const auto result = reader->ReadMessage();
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
-
     reader->Close();
     osi3::testing::SafeRemoveTestFile(file_path);
 }

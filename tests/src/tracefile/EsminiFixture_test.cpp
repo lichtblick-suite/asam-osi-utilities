@@ -44,8 +44,10 @@ const std::filesystem::path kCblaSv = kTestDataDir / "cbla_sv_ncap.osi";
 const std::filesystem::path kCcrsGtMcap = kTestDataDir / "ccrs_gt_ncap.mcap";
 }  // namespace
 
-inline bool IsLfsPointer(const std::filesystem::path& p) {
-    if (std::filesystem::file_size(p) > 200) return false;
+inline auto IsLfsPointer(const std::filesystem::path& p) -> bool {
+    if (std::filesystem::file_size(p) > 200) {
+        return false;
+    }
     std::ifstream f(p);
     std::string line;
     std::getline(f, line);

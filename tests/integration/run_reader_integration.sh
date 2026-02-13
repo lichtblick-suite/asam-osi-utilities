@@ -21,7 +21,7 @@ echo "$WRITER_OUTPUT"
 
 # Extract the output file path from writer stdout (looks for paths ending in .osi, .mcap, .txth)
 # Uses grep -oE instead of grep -oP for portability (BSD grep on macOS lacks -P)
-OUTPUT_FILE=$(echo "$WRITER_OUTPUT" | grep -oE '/[^ "]+\.(osi|mcap|txth)' | head -1)
+OUTPUT_FILE=$(echo "$WRITER_OUTPUT" | grep -oE '([A-Za-z]:[/\\]|/)[^ "]+\.(osi|mcap|txth)' | head -1)
 
 if [ -z "$OUTPUT_FILE" ]; then
     echo "ERROR: Could not determine output file from writer output"

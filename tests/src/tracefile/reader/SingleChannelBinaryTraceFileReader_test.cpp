@@ -220,7 +220,6 @@ TEST_F(SingleChannelBinaryTraceFileReaderTest, ReadMultipleMessages) {
         const auto result = reader_.ReadMessage();
         ASSERT_TRUE(result.has_value());
         EXPECT_EQ(result->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
-
         auto* gt = dynamic_cast<osi3::GroundTruth*>(result->message.get());
         ASSERT_NE(gt, nullptr);
         EXPECT_EQ(gt->timestamp().seconds(), count);

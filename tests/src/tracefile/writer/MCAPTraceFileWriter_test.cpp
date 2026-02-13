@@ -297,7 +297,7 @@ TEST_F(MCAPTraceFileWriterTest, AddChannelAutoOsiVersion) {
     bool found_osi_version = false;
     for (const auto& [channel_id, channel] : mcap_reader.channels()) {
         if (channel->topic == topic) {
-            if (channel->metadata.count("net.asam.osi.trace.channel.osi_version")) {
+            if (channel->metadata.count("net.asam.osi.trace.channel.osi_version") != 0) {
                 found_osi_version = true;
                 EXPECT_FALSE(channel->metadata.at("net.asam.osi.trace.channel.osi_version").empty());
             }
@@ -328,7 +328,7 @@ TEST_F(MCAPTraceFileWriterTest, AddChannelAutoProtobufVersion) {
     bool found_protobuf_version = false;
     for (const auto& [channel_id, channel] : mcap_reader.channels()) {
         if (channel->topic == topic) {
-            if (channel->metadata.count("net.asam.osi.trace.channel.protobuf_version")) {
+            if (channel->metadata.count("net.asam.osi.trace.channel.protobuf_version") != 0) {
                 found_protobuf_version = true;
                 EXPECT_FALSE(channel->metadata.at("net.asam.osi.trace.channel.protobuf_version").empty());
             }

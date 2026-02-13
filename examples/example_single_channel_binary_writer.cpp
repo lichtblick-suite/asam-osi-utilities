@@ -11,6 +11,11 @@
 #include <osi-utilities/tracefile/writer/SingleChannelBinaryTraceFileWriter.h>
 
 #include <filesystem>
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "osi_sensordata.pb.h"
 #include "osi_version.pb.h"
@@ -40,6 +45,11 @@ auto GenerateTempFilePath() -> std::filesystem::path {
     file_name += "_" + std::to_string(osi_version.version_major()) + "." + std::to_string(osi_version.version_minor()) + "." + std::to_string(osi_version.version_patch());
     file_name += "_" + google::protobuf::internal::VersionString(GOOGLE_PROTOBUF_VERSION);
     file_name += "_10";  // 10 frames
+#ifdef _WIN32
+    file_name += "_" + std::to_string(_getpid());
+#else
+    file_name += "_" + std::to_string(getpid());
+#endif
     file_name += "_example_single_channel_binary_writer.osi";
     auto path = std::filesystem::temp_directory_path() / file_name;
     return path;
@@ -54,7 +64,7 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     // Create writer and open file
     auto trace_file_writer = osi3::SingleChannelBinaryTraceFileWriter();
     const auto trace_file_path = GenerateTempFilePath();
-    std::cout << "Creating trace file at " << trace_file_path << std::endl;
+    std::cout << "Creating trace file at " << trace_file_path.string() << std::endl;
     trace_file_writer.Open(trace_file_path);
 
     // create OSI data to store

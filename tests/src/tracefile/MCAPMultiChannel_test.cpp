@@ -56,12 +56,10 @@ TEST_F(MCAPMultiChannelTest, WriteAndReadTwoChannelsSameType) {
     ASSERT_TRUE(result1.has_value());
     EXPECT_EQ(result1->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
     EXPECT_EQ(result1->channel_name, "gt_channel_1");
-
     const auto result2 = reader_.ReadMessage();
     ASSERT_TRUE(result2.has_value());
     EXPECT_EQ(result2->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
     EXPECT_EQ(result2->channel_name, "gt_channel_2");
-
     EXPECT_FALSE(reader_.HasNext());
 }
 
@@ -170,7 +168,6 @@ TEST_F(MCAPMultiChannelTest, SkipNonOSIInMultiChannel) {
     const auto result1 = reader_.ReadMessage();
     ASSERT_TRUE(result1.has_value());
     EXPECT_EQ(result1->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
-
     // JSON message should be skipped
     const auto result2 = reader_.ReadMessage();
     EXPECT_FALSE(result2.has_value());
@@ -196,7 +193,7 @@ TEST_F(MCAPMultiChannelTest, MetadataRoundTrip) {
     bool found_custom_metadata = false;
     for (const auto& [name, metadata_index] : mcap_reader.metadataIndexes()) {
         if (name == "custom_metadata") {
-            mcap::Record record;
+            mcap::Record record{};
             const auto read_status = mcap::McapReader::ReadRecord(*mcap_reader.dataSource(), metadata_index.offset, &record);
             ASSERT_TRUE(read_status.ok());
             mcap::Metadata metadata;

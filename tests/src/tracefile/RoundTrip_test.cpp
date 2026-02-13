@@ -32,7 +32,7 @@ namespace {
 constexpr int64_t kTestTimestampSeconds = 42;
 constexpr int32_t kTestTimestampNanos = 123456;
 
-std::string GetTypeShortCode(osi3::ReaderTopLevelMessage type) {
+auto GetTypeShortCode(osi3::ReaderTopLevelMessage type) -> std::string {
     switch (type) {
         case osi3::ReaderTopLevelMessage::kGroundTruth:
             return "gt";
@@ -59,7 +59,7 @@ std::string GetTypeShortCode(osi3::ReaderTopLevelMessage type) {
     }
 }
 
-std::unique_ptr<google::protobuf::Message> CreateMinimalMessage(osi3::ReaderTopLevelMessage type) {
+auto CreateMinimalMessage(osi3::ReaderTopLevelMessage type) -> std::unique_ptr<google::protobuf::Message> {
     switch (type) {
         case osi3::ReaderTopLevelMessage::kGroundTruth: {
             auto msg = std::make_unique<osi3::GroundTruth>();
@@ -120,82 +120,82 @@ std::unique_ptr<google::protobuf::Message> CreateMinimalMessage(osi3::ReaderTopL
     }
 }
 
-bool WriteBinaryMessage(osi3::SingleChannelBinaryTraceFileWriter& writer, osi3::ReaderTopLevelMessage type, const google::protobuf::Message& msg) {
+auto WriteBinaryMessage(osi3::SingleChannelBinaryTraceFileWriter& writer, osi3::ReaderTopLevelMessage type, const google::protobuf::Message& msg) -> bool {
     switch (type) {
         case osi3::ReaderTopLevelMessage::kGroundTruth:
-            return writer.WriteMessage(static_cast<const osi3::GroundTruth&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::GroundTruth&>(msg));
         case osi3::ReaderTopLevelMessage::kSensorData:
-            return writer.WriteMessage(static_cast<const osi3::SensorData&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::SensorData&>(msg));
         case osi3::ReaderTopLevelMessage::kSensorView:
-            return writer.WriteMessage(static_cast<const osi3::SensorView&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::SensorView&>(msg));
         case osi3::ReaderTopLevelMessage::kHostVehicleData:
-            return writer.WriteMessage(static_cast<const osi3::HostVehicleData&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::HostVehicleData&>(msg));
         case osi3::ReaderTopLevelMessage::kTrafficCommand:
-            return writer.WriteMessage(static_cast<const osi3::TrafficCommand&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::TrafficCommand&>(msg));
         case osi3::ReaderTopLevelMessage::kTrafficCommandUpdate:
-            return writer.WriteMessage(static_cast<const osi3::TrafficCommandUpdate&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::TrafficCommandUpdate&>(msg));
         case osi3::ReaderTopLevelMessage::kTrafficUpdate:
-            return writer.WriteMessage(static_cast<const osi3::TrafficUpdate&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::TrafficUpdate&>(msg));
         case osi3::ReaderTopLevelMessage::kMotionRequest:
-            return writer.WriteMessage(static_cast<const osi3::MotionRequest&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::MotionRequest&>(msg));
         case osi3::ReaderTopLevelMessage::kStreamingUpdate:
-            return writer.WriteMessage(static_cast<const osi3::StreamingUpdate&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::StreamingUpdate&>(msg));
         default:
             return false;
     }
 }
 
-bool WriteTxthMessage(osi3::TXTHTraceFileWriter& writer, osi3::ReaderTopLevelMessage type, const google::protobuf::Message& msg) {
+auto WriteTxthMessage(osi3::TXTHTraceFileWriter& writer, osi3::ReaderTopLevelMessage type, const google::protobuf::Message& msg) -> bool {
     switch (type) {
         case osi3::ReaderTopLevelMessage::kGroundTruth:
-            return writer.WriteMessage(static_cast<const osi3::GroundTruth&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::GroundTruth&>(msg));
         case osi3::ReaderTopLevelMessage::kSensorData:
-            return writer.WriteMessage(static_cast<const osi3::SensorData&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::SensorData&>(msg));
         case osi3::ReaderTopLevelMessage::kSensorView:
-            return writer.WriteMessage(static_cast<const osi3::SensorView&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::SensorView&>(msg));
         case osi3::ReaderTopLevelMessage::kHostVehicleData:
-            return writer.WriteMessage(static_cast<const osi3::HostVehicleData&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::HostVehicleData&>(msg));
         case osi3::ReaderTopLevelMessage::kTrafficCommand:
-            return writer.WriteMessage(static_cast<const osi3::TrafficCommand&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::TrafficCommand&>(msg));
         case osi3::ReaderTopLevelMessage::kTrafficCommandUpdate:
-            return writer.WriteMessage(static_cast<const osi3::TrafficCommandUpdate&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::TrafficCommandUpdate&>(msg));
         case osi3::ReaderTopLevelMessage::kTrafficUpdate:
-            return writer.WriteMessage(static_cast<const osi3::TrafficUpdate&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::TrafficUpdate&>(msg));
         case osi3::ReaderTopLevelMessage::kMotionRequest:
-            return writer.WriteMessage(static_cast<const osi3::MotionRequest&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::MotionRequest&>(msg));
         case osi3::ReaderTopLevelMessage::kStreamingUpdate:
-            return writer.WriteMessage(static_cast<const osi3::StreamingUpdate&>(msg));
+            return writer.WriteMessage(dynamic_cast<const osi3::StreamingUpdate&>(msg));
         default:
             return false;
     }
 }
 
-bool WriteMcapMessage(osi3::MCAPTraceFileWriter& writer, osi3::ReaderTopLevelMessage type, const google::protobuf::Message& msg, const std::string& topic) {
+auto WriteMcapMessage(osi3::MCAPTraceFileWriter& writer, osi3::ReaderTopLevelMessage type, const google::protobuf::Message& msg, const std::string& topic) -> bool {
     switch (type) {
         case osi3::ReaderTopLevelMessage::kGroundTruth:
-            return writer.WriteMessage(static_cast<const osi3::GroundTruth&>(msg), topic);
+            return writer.WriteMessage(dynamic_cast<const osi3::GroundTruth&>(msg), topic);
         case osi3::ReaderTopLevelMessage::kSensorData:
-            return writer.WriteMessage(static_cast<const osi3::SensorData&>(msg), topic);
+            return writer.WriteMessage(dynamic_cast<const osi3::SensorData&>(msg), topic);
         case osi3::ReaderTopLevelMessage::kSensorView:
-            return writer.WriteMessage(static_cast<const osi3::SensorView&>(msg), topic);
+            return writer.WriteMessage(dynamic_cast<const osi3::SensorView&>(msg), topic);
         case osi3::ReaderTopLevelMessage::kHostVehicleData:
-            return writer.WriteMessage(static_cast<const osi3::HostVehicleData&>(msg), topic);
+            return writer.WriteMessage(dynamic_cast<const osi3::HostVehicleData&>(msg), topic);
         case osi3::ReaderTopLevelMessage::kTrafficCommand:
-            return writer.WriteMessage(static_cast<const osi3::TrafficCommand&>(msg), topic);
+            return writer.WriteMessage(dynamic_cast<const osi3::TrafficCommand&>(msg), topic);
         case osi3::ReaderTopLevelMessage::kTrafficCommandUpdate:
-            return writer.WriteMessage(static_cast<const osi3::TrafficCommandUpdate&>(msg), topic);
+            return writer.WriteMessage(dynamic_cast<const osi3::TrafficCommandUpdate&>(msg), topic);
         case osi3::ReaderTopLevelMessage::kTrafficUpdate:
-            return writer.WriteMessage(static_cast<const osi3::TrafficUpdate&>(msg), topic);
+            return writer.WriteMessage(dynamic_cast<const osi3::TrafficUpdate&>(msg), topic);
         case osi3::ReaderTopLevelMessage::kMotionRequest:
-            return writer.WriteMessage(static_cast<const osi3::MotionRequest&>(msg), topic);
+            return writer.WriteMessage(dynamic_cast<const osi3::MotionRequest&>(msg), topic);
         case osi3::ReaderTopLevelMessage::kStreamingUpdate:
-            return writer.WriteMessage(static_cast<const osi3::StreamingUpdate&>(msg), topic);
+            return writer.WriteMessage(dynamic_cast<const osi3::StreamingUpdate&>(msg), topic);
         default:
             return false;
     }
 }
 
-const google::protobuf::Descriptor* GetDescriptor(osi3::ReaderTopLevelMessage type) {
+auto GetDescriptor(osi3::ReaderTopLevelMessage type) -> const google::protobuf::Descriptor* {
     switch (type) {
         case osi3::ReaderTopLevelMessage::kGroundTruth:
             return osi3::GroundTruth::descriptor();
@@ -260,7 +260,6 @@ TEST_P(RoundTripTest, BinaryRoundTrip) {
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(result->message_type, msg_type);
     VerifyMessage(*result);
-
     EXPECT_FALSE(reader.HasNext());
     reader.Close();
     osi3::testing::SafeRemoveTestFile(file_path);
@@ -289,7 +288,6 @@ TEST_P(RoundTripTest, TXTHRoundTrip) {
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(result->message_type, msg_type);
     VerifyMessage(*result);
-
     reader.Close();
     osi3::testing::SafeRemoveTestFile(file_path);
 }
@@ -321,7 +319,6 @@ TEST_P(RoundTripTest, MCAPRoundTrip) {
     EXPECT_EQ(result->message_type, msg_type);
     EXPECT_EQ(result->channel_name, topic);
     VerifyMessage(*result);
-
     EXPECT_FALSE(reader.HasNext());
     reader.Close();
     osi3::testing::SafeRemoveTestFile(file_path);

@@ -22,7 +22,7 @@ echo "$WRITER_OUTPUT"
 
 # Extract the output file path from writer stdout
 # Uses grep -oE instead of grep -oP for portability (BSD grep on macOS lacks -P)
-OSI_FILE=$(echo "$WRITER_OUTPUT" | grep -oE '/[^ "]+\.osi' | head -1)
+OSI_FILE=$(echo "$WRITER_OUTPUT" | grep -oE '([A-Za-z]:[/\\]|/)[^ "]+\.osi' | head -1)
 if [ -z "$OSI_FILE" ] || [ ! -f "$OSI_FILE" ]; then
     echo "ERROR: Could not find binary writer output file"
     exit 1
