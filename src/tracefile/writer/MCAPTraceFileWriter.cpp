@@ -109,8 +109,8 @@ auto MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::st
     msg.channelId = topic_channel_id->second;
 
     // msg.logTime should be now in nanoseconds
-    msg.logTime = static_cast<uint64_t>(top_level_message.timestamp().seconds()) * tracefile::config::kNanosecondsPerSecond +
-                  static_cast<uint64_t>(top_level_message.timestamp().nanos());
+    msg.logTime =
+        static_cast<uint64_t>(top_level_message.timestamp().seconds()) * tracefile::config::kNanosecondsPerSecond + static_cast<uint64_t>(top_level_message.timestamp().nanos());
     msg.publishTime = msg.logTime;
     msg.data = reinterpret_cast<const std::byte*>(serialize_buffer_.data());
     msg.dataSize = serialize_buffer_.size();
