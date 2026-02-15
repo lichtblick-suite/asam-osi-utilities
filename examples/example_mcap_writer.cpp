@@ -87,9 +87,9 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
         auto timestamp = sensor_view_1.timestamp().seconds() * kNsPerSec + sensor_view_1.timestamp().nanos();
         timestamp += kTimeStepSizeS * kNsPerSec;
         sensor_view_1.mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
-        sensor_view_1.mutable_timestamp()->set_seconds(timestamp / kNsPerSec);
+        sensor_view_1.mutable_timestamp()->set_seconds(static_cast<int64_t>(timestamp / kNsPerSec));
         ground_truth_1->mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
-        ground_truth_1->mutable_timestamp()->set_seconds(timestamp / kNsPerSec);
+        ground_truth_1->mutable_timestamp()->set_seconds(static_cast<int64_t>(timestamp / kNsPerSec));
         const auto old_position = host_vehicle->base().position().x();
         const auto new_position = old_position + host_vehicle->base().velocity().x() + kTimeStepSizeS;
         host_vehicle->mutable_base()->mutable_position()->set_x(new_position);
