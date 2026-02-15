@@ -7,6 +7,8 @@
 
 #include <filesystem>
 
+#include "osi-utilities/tracefile/TraceFileConfig.h"
+
 namespace osi3 {
 
 TXTHTraceFileReader::~TXTHTraceFileReader() {
@@ -90,7 +92,7 @@ auto TXTHTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
 
 auto TXTHTraceFileReader::ReadNextMessageFromFile() -> std::string {
     std::string message;
-    message.reserve(4096);
+    message.reserve(tracefile::config::kTxthReadBufferReserveSize);
     std::string line;
     std::streampos last_position = 0;
 
