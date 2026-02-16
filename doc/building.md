@@ -315,8 +315,8 @@ Configure with `-DBUILD_TESTING=ON` first (for vcpkg, set `VCPKG_MANIFEST_FEATUR
 ## Generating Test Fixtures
 
 Some tests (e.g. NCAP scenario and esmini fixture tests) require binary `.osi` and `.mcap` trace
-files that are not checked into the repository. These are generated on-demand by a script that
-downloads [esmini](https://github.com/esmini/esmini) and runs headless simulations.
+files that are checked into the repository via Git LFS. If you need to regenerate them locally,
+a script downloads [esmini](https://github.com/esmini/esmini) and runs headless simulations.
 
 **Prerequisites:** Build the project with examples enabled first, then run the script:
 
