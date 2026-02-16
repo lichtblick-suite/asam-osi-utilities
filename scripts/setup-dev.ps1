@@ -72,6 +72,9 @@ $preCommitHook = @'
 #   .git/hooks/pre-commit --skip-format                 # Skip clang-format checks
 #   .git/hooks/pre-commit --skip-tidy                   # Skip clang-tidy checks
 #   .git/hooks/pre-commit --all-files --run-tidy --fix-format --fix-tidy --skip-tests
+#
+# Notes:
+#   - When using --run-tidy/--fix-tidy, clang-format is skipped unless --fix-format is provided.
 
 ALL_FILES=0
 FIX_FORMAT=0
@@ -95,6 +98,15 @@ if [ $SKIP_TIDY -eq 1 ]; then
     RUN_TIDY=0
 fi
 
+RUN_FORMAT=1
+if [ $SKIP_FORMAT -eq 1 ]; then
+    RUN_FORMAT=0
+fi
+# If the user explicitly requested clang-tidy, only run formatting when asked.
+if [ $RUN_TIDY -eq 1 ] && [ $FIX_FORMAT -eq 0 ]; then
+    RUN_FORMAT=0
+fi
+
 # Determine search roots based on skip flags
 if [ $SKIP_TESTS -eq 1 ]; then
     SEARCH_DIRS="src include examples"
@@ -105,7 +117,7 @@ else
 fi
 
 # Get list of C++ files to check
-if [ $SKIP_FORMAT -eq 0 ]; then
+if [ $RUN_FORMAT -eq 1 ]; then
     if [ $ALL_FILES -eq 1 ]; then
         if [ $SKIP_TESTS -eq 1 ]; then
             echo "Checking all C++ files (excluding tests)..."
@@ -155,7 +167,11 @@ if [ $SKIP_FORMAT -eq 0 ]; then
         fi
     fi
 else
-    echo "Skipping clang-format checks (--skip-format)"
+    if [ $SKIP_FORMAT -eq 1 ]; then
+        echo "Skipping clang-format checks (--skip-format)"
+    else
+        echo "Skipping clang-format checks (tidy-only run; use --fix-format to include)"
+    fi
 fi
 
 # Run clang-tidy (lint) when available
@@ -340,3 +356,4 @@ Write-Host "  - Run clang-tidy checks: .git/hooks/pre-commit --run-tidy (or --al
 Write-Host "  - Auto-fix formatting: .git/hooks/pre-commit --fix-format (or --all-files --fix-format)"
 Write-Host "  - Auto-fix clang-tidy: .git/hooks/pre-commit --fix-tidy (or --all-files --fix-tidy)"
 Write-Host "  - Skip tests: .git/hooks/pre-commit --skip-tests"
+Write-Host "  - Note: --run-tidy/--fix-tidy skips clang-format unless --fix-format is also set"

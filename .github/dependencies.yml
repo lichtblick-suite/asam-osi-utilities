@@ -14,6 +14,8 @@
 dependencies:
   # =========================================================================
   # Core build dependencies (library compilation)
+  # NOTE: These are for manual/system-package builds only.
+  # vcpkg builds should use vcpkg_host.* (tools only) and vcpkg.json for libraries.
   # =========================================================================
   build:
     apt:
@@ -31,10 +33,6 @@ dependencies:
       - lz4-devel
       - libzstd-devel
       - pkgconf-pkg-config
-    vcpkg:
-      - protobuf
-      - lz4
-      - zstd
     winget:
       - Kitware.CMake
       - Git.Git
@@ -77,8 +75,6 @@ dependencies:
       - libgtest-dev
     dnf:
       - gtest-devel
-    vcpkg:
-      - gtest
 
   # =========================================================================
   # Documentation dependencies (Doxygen)
@@ -148,7 +144,7 @@ dependencies:
 # ===========================================================================
 # Use these combinations in CI workflows:
 #
-# ci_build.yml (Ubuntu):     build + test + docs + coverage
+# ci_build.yml (Ubuntu):     build + test + coverage
 # ci_build.yml (macOS):      build + test
 # ci_build.yml (vcpkg):      (vcpkg handles all via vcpkg.json)
 # ci_lint.yml:               build + test + lint

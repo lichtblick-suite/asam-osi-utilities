@@ -7,6 +7,8 @@
 
 #include <filesystem>
 
+#include "osi-utilities/tracefile/TraceFileConfig.h"
+
 namespace osi3 {
 
 auto SingleChannelBinaryTraceFileReader::Open(const std::filesystem::path& file_path, const ReaderTopLevelMessage message_type) -> bool {
@@ -99,6 +101,9 @@ auto SingleChannelBinaryTraceFileReader::ReadNextMessageFromFile() -> std::vecto
 
     if (!trace_file_.read(reinterpret_cast<char*>(&message_size), sizeof(message_size))) {
         throw std::runtime_error("ERROR: Failed to read message size from file.");
+    }
+    if (message_size == 0 || message_size > tracefile::config::kMaxExpectedMessageSize) {
+        throw std::runtime_error("ERROR: Invalid message size: " + std::to_string(message_size));
     }
     std::vector<char> serialized_msg(message_size);
     if (!trace_file_.read(serialized_msg.data(), message_size)) {

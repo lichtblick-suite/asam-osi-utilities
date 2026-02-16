@@ -8,6 +8,7 @@
 #include <google/protobuf/stubs/common.h>
 
 #include "google/protobuf/descriptor.pb.h"
+#include "osi-utilities/tracefile/TraceFileConfig.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_hostvehicledata.pb.h"
 #include "osi_motionrequest.pb.h"
@@ -95,7 +96,7 @@ auto MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::st
     msg.channelId = topic_channel_id->second;
 
     // msg.logTime should be now in nanoseconds
-    msg.logTime = top_level_message.timestamp().seconds() * 1000000000 + top_level_message.timestamp().nanos();
+    msg.logTime = top_level_message.timestamp().seconds() * tracefile::config::kNanosecondsPerSecond + top_level_message.timestamp().nanos();
     msg.publishTime = msg.logTime;
     msg.data = reinterpret_cast<const std::byte*>(data.data());
     msg.dataSize = data.size();

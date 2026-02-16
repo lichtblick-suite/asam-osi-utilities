@@ -7,6 +7,7 @@
  * \brief Convert single-channel binary OSI traces to MCAP.
  */
 
+#include <osi-utilities/tracefile/TraceFileConfig.h>
 #include <osi-utilities/tracefile/reader/SingleChannelBinaryTraceFileReader.h>
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
@@ -149,7 +150,7 @@ struct ProgramOptions {
     std::filesystem::path input_file_path;                                            /**< Input `.osi` trace file. */
     std::filesystem::path output_file_path;                                           /**< Output `.mcap` file. */
     osi3::ReaderTopLevelMessage message_type = osi3::ReaderTopLevelMessage::kUnknown; /**< Optional message type hint. */
-    size_t chunk_size = static_cast<size_t>(1024 * 768);                              /**< MCAP chunk size in bytes. */
+    size_t chunk_size = osi3::tracefile::config::kDefaultChunkSize;                   /**< MCAP chunk size in bytes. */
     mcap::Compression compression = mcap::Compression::Zstd;                          /**< MCAP compression type. */
     mcap::CompressionLevel compression_level = mcap::CompressionLevel::Default;       /**< MCAP compression level. */
 };
@@ -166,18 +167,20 @@ const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kValidTypes =
  * \brief Print CLI usage information.
  */
 void printHelp() {
-    std::cout << "Usage: convert_osi2mcap <input_file> <output_file> [--input-type <message_type>]\n\n"
+    std::cout << "Usage: convert_osi2mcap <input_file> <output_file> [options]\n\n"
               << "Arguments:\n"
               << "  input_file              Path to the input OSI trace file\n"
-              << "  output_file             Path to the output MCAP file\n"
-              << "  --input-type <message_type>   Optional: Specify input message type if not stated in filename\n\n"
-              << "\tValid message types:\n";
+              << "  output_file             Path to the output MCAP file\n\n"
+              << "Options:\n"
+              << "  --input-type <type>     Specify input message type if not stated in filename\n";
+    std::cout << "\tValid message types:\n";
     for (const auto& [type, _] : kValidTypes) {
         std::cout << "\t\t" << type << "\n";
     }
-    std::cout << "  --chunk_size <size>           Optional: Chunk size in bytes (default: 786432)\n"
-              << "  --compression <type>          Optional: Compression type (none, lz4, zstd) (default: zstd)\n"
-              << "  --compression_level <type>    Optional: Compression level (fastest, fast, default) (default: default)\n\n";
+    std::cout << "\n  --chunk_size <size>     Chunk size in bytes (default: " << osi3::tracefile::config::kDefaultChunkSize << " = 16 MiB)\n"
+              << "                          Lichtblick plays back well with 4-32 MiB chunks.\n"
+              << "  --compression <type>    Compression type: none, lz4, zstd (default: zstd)\n"
+              << "  --compression_level <l> Compression level: fastest, fast, default (default: default)\n";
 }
 
 /**
@@ -251,7 +254,7 @@ auto parseArgs(const int argc, const char** argv) -> std::optional<ProgramOption
  * \brief Entry point for the `.osi` to `.mcap` converter.
  */
 auto main(const int argc, const char** argv) -> int {
-    const auto options = parseArgs(argc, argv);
+    auto options = parseArgs(argc, argv);
     if (!options) {
         return 1;
     }
@@ -277,7 +280,7 @@ auto main(const int argc, const char** argv) -> int {
 
     // print information about chunk size and compression
     std::cout << "MCAP options:" << "\n";
-    std::cout << "\tchunk size: " << mcap_options.chunkSize << "\n";
+    std::cout << "\tchunk size: " << mcap_options.chunkSize << " bytes (" << (static_cast<double>(mcap_options.chunkSize) / (1024.0 * 1024.0)) << " MiB)" << "\n";
 
     std::cout << "\tcompression: " << kCompressionEnumStringMap.at(mcap_options.compression) << "\n";
     std::cout << "\tcompression level: " << kCompressionLevelEnumStringMap.at(mcap_options.compressionLevel) << "\n";
