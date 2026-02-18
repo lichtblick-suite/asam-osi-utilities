@@ -41,12 +41,22 @@ auto fdSet(const google::protobuf::Descriptor* descriptor) -> std::string {
     std::unordered_set<std::string> files;
     google::protobuf::FileDescriptorSet fd_set;
     fdSetInternal(fd_set, files, descriptor->file());
-    return fd_set.SerializeAsString();
+    std::string result;
+    if (!fd_set.SerializeToString(&result)) {
+        throw std::runtime_error("ERROR: Failed to serialize FileDescriptorSet");
+    }
+    return result;
 }
 
 }  // namespace
 
 namespace osi3 {
+
+MCAPTraceFileWriter::~MCAPTraceFileWriter() {
+    if (trace_file_.is_open()) {
+        Close();
+    }
+}
 
 auto MCAPTraceFileWriter::Open(const std::filesystem::path& file_path) -> bool {
     // prevent opening again if already opened
@@ -91,15 +101,19 @@ auto MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::st
         return false;
     }
 
-    const std::string data = top_level_message.SerializeAsString();
+    if (!top_level_message.SerializeToString(&serialize_buffer_)) {
+        std::cerr << "ERROR: Failed to serialize protobuf message\n";
+        return false;
+    }
     mcap::Message msg;
     msg.channelId = topic_channel_id->second;
 
     // msg.logTime should be now in nanoseconds
-    msg.logTime = top_level_message.timestamp().seconds() * tracefile::config::kNanosecondsPerSecond + top_level_message.timestamp().nanos();
+    msg.logTime =
+        static_cast<uint64_t>(top_level_message.timestamp().seconds()) * tracefile::config::kNanosecondsPerSecond + static_cast<uint64_t>(top_level_message.timestamp().nanos());
     msg.publishTime = msg.logTime;
-    msg.data = reinterpret_cast<const std::byte*>(data.data());
-    msg.dataSize = data.size();
+    msg.data = reinterpret_cast<const std::byte*>(serialize_buffer_.data());
+    msg.dataSize = serialize_buffer_.size();
     if (const auto status = mcap_writer_.write(msg); status.code != mcap::StatusCode::Success) {
         std::cerr << "ERROR: Failed to write message " << status.message;
         return false;
@@ -119,7 +133,7 @@ auto MCAPTraceFileWriter::AddFileMetadata(const mcap::Metadata& metadata) -> boo
         constexpr std::array<const char*, 5> kRequiredFields = {"version", "min_osi_version", "max_osi_version", "min_protobuf_version", "max_protobuf_version"};
         for (const auto& field : kRequiredFields) {
             if (metadata.metadata.find(field) == metadata.metadata.end()) {
-                std::cerr << "ERROR: cannot add net.asam.osi.trac meta-data record without a " << field << " field.\n";
+                std::cerr << "ERROR: cannot add net.asam.osi.trace metadata record without a " << field << " field.\n";
                 return false;
             }
         }
@@ -144,6 +158,8 @@ auto MCAPTraceFileWriter::AddFileMetadata(const std::string& name, const std::un
 void MCAPTraceFileWriter::Close() {
     mcap_writer_.close();
     trace_file_.close();
+    serialize_buffer_.clear();
+    serialize_buffer_.shrink_to_fit();
 }
 
 auto MCAPTraceFileWriter::PrepareRequiredFileMetadata() -> mcap::Metadata {
@@ -165,8 +181,8 @@ auto MCAPTraceFileWriter::PrepareRequiredFileMetadata() -> mcap::Metadata {
 auto MCAPTraceFileWriter::AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor,
                                      std::unordered_map<std::string, std::string> channel_metadata) -> uint16_t {
     // Check if the schema for this descriptor's full name already exists
-    mcap::Schema path_schema;
-    const auto it_schema = std::find_if(schemas_.begin(), schemas_.end(), [&](const mcap::Schema& schema) { return schema.name == descriptor->full_name(); });
+    const auto schema_name = descriptor->full_name();
+    auto it_schema = schemas_.find(schema_name);
 
     // Check if topic already exists
     if (topic_to_channel_id_.find(topic) != topic_to_channel_id_.end()) {
@@ -179,14 +195,15 @@ auto MCAPTraceFileWriter::AddChannel(const std::string& topic, const google::pro
     }
 
     // for a new topic, check if the schema exists or must be added first
+    mcap::Schema path_schema;
     if (it_schema == schemas_.end()) {
         // Schema doesn't exist, create a new one
-        path_schema = mcap::Schema(descriptor->full_name(), "protobuf", fdSet(descriptor));
+        path_schema = mcap::Schema(schema_name, "protobuf", fdSet(descriptor));
         mcap_writer_.addSchema(path_schema);
-        schemas_.push_back(path_schema);
+        schemas_.emplace(schema_name, path_schema);
     } else {
         // Schema already exists, use the existing one
-        path_schema = *it_schema;
+        path_schema = it_schema->second;
     }
 
     // add osi version (if not present) to channel metadata as required by spec.
@@ -215,7 +232,12 @@ auto MCAPTraceFileWriter::GetCurrentTimeAsString() -> std::string {
     const auto now = std::chrono::system_clock::now();
     const auto now_in_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
     const auto timer = std::chrono::system_clock::to_time_t(now);
-    const std::tm utc_time_structure = *std::gmtime(&timer);
+    std::tm utc_time_structure{};
+#ifdef _WIN32
+    gmtime_s(&utc_time_structure, &timer);
+#else
+    gmtime_r(&timer, &utc_time_structure);
+#endif
     // Greenwich Mean Time (GMT) is in Coordinated Universal Time (UTC) zone
     std::ostringstream oss;
     oss << std::put_time(&utc_time_structure, "%Y-%m-%dT%H:%M:%S");

@@ -15,7 +15,7 @@ echo "=============================================="
 echo "ASAM OSI Utilities - Development Setup"
 echo "=============================================="
 echo ""
-echo "Note: This script targets Linux/macOS. On Windows, use scripts/setup-dev.ps1."
+echo "Note: On Windows, run this script from Git Bash or via: bash scripts/setup-dev.sh"
 echo ""
 
 # Check for required C++ tools

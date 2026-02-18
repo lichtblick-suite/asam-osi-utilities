@@ -80,6 +80,13 @@ constexpr size_t kBinaryOsiMessageLengthPrefixSize = sizeof(uint32_t);
  */
 constexpr size_t kMaxExpectedMessageSize = 512 * 1024 * 1024;  // 512 MiB
 
+// ============================================================================
+// TXTH Format Constants
+// ============================================================================
+
+/** @brief Initial string reserve size when reading a TXTH text message. */
+constexpr size_t kTxthReadBufferReserveSize = 4096;
+
 }  // namespace config
 }  // namespace tracefile
 }  // namespace osi3

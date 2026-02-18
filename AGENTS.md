@@ -12,7 +12,7 @@ The library implementation lives in `src/`, with public headers in `include/osi-
 ## Build, Test, and Development Commands
 
 - Update submodules: `git pull --recurse-submodules` (or `git submodule update --init --recursive`).
-- Install hooks/tools: `./scripts/setup-dev.sh` (Linux/macOS) or `.\scripts\setup-dev.ps1` (Windows).
+- Install hooks/tools: `./scripts/setup-dev.sh` (all platforms; use Git Bash on Windows).
 - Configure with vcpkg: `cmake --preset vcpkg`.
 - Build: `cmake --build --preset vcpkg --parallel`.
 - Run tests: `ctest --test-dir build --output-on-failure`.

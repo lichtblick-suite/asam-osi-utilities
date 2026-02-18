@@ -45,8 +45,10 @@ git clone --recurse-submodules https://github.com/lichtblick-suite/asam-osi-util
 cd asam-osi-utilities
 
 # Setup dev environment
-./scripts/setup-dev.sh  # Linux/macOS
-.\scripts\setup-dev.ps1  # Windows
+./scripts/setup-dev.sh  # All platforms (use Git Bash on Windows)
+
+# Generate test fixtures (optional — tests skip gracefully without them)
+./scripts/generate_test_traces.sh
 
 # Make changes, then commit
 git commit -S -s -m "feat: your feature description"

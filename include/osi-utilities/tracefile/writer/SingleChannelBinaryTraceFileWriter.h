@@ -18,10 +18,14 @@ namespace osi3 {
  * This class provides functionality to write OSI messages in the single binary channel format.
  * It stores messages in their serialized protobuf binary representation in a single channel.
  * Messages are separated by a length specification before each message.
- * The length is represented by a four-byte, little-endian, unsigned integer. T
+ * The length is represented by a four-byte, little-endian, unsigned integer.
+ *
+ * @note Thread Safety: Not thread-safe. External synchronization required for concurrent access.
  */
 class SingleChannelBinaryTraceFileWriter final : public TraceFileWriter {
    public:
+    /** @brief Destructor, closes the file if still open */
+    ~SingleChannelBinaryTraceFileWriter() override;
     /**
      * @brief Opens a file for binary trace output
      * @param file_path Path to the file to be created/opened
@@ -45,7 +49,6 @@ class SingleChannelBinaryTraceFileWriter final : public TraceFileWriter {
 
    private:
     std::ofstream trace_file_; /**< Output file stream. */
-    bool file_open_ = false;   /**< Whether the file is currently open. */
 };
 
 }  // namespace osi3

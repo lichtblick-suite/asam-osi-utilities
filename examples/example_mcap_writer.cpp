@@ -11,6 +11,11 @@
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
 #include <filesystem>
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "osi_sensorview.pb.h"
 #include "osi_version.pb.h"
@@ -20,7 +25,12 @@
  * \return Temporary file path.
  */
 auto GenerateTempFilePath() -> std::filesystem::path {
-    return std::filesystem::temp_directory_path() / "sv_example.mcap";  // add sv to indicate sensor view as recommended by the OSI-specification
+#ifdef _WIN32
+    const auto pid = std::to_string(_getpid());
+#else
+    const auto pid = std::to_string(getpid());
+#endif
+    return std::filesystem::temp_directory_path() / ("sv_example_" + pid + ".mcap");  // add sv to indicate sensor view as recommended by the OSI-specification
 }
 
 /**
@@ -32,7 +42,7 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     // Create writer and open file
     auto trace_file_writer = osi3::MCAPTraceFileWriter();
     const auto trace_file_path = GenerateTempFilePath();
-    std::cout << "Creating trace_file at " << trace_file_path << std::endl;
+    std::cout << "Creating trace_file at " << trace_file_path.string() << std::endl;
 
     mcap::McapWriterOptions mcap_options("osi");
     // Use the library default chunk size (16 MiB). Lichtblick plays back well

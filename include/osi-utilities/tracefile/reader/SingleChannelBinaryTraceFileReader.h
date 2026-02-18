@@ -9,7 +9,7 @@
 #include <fstream>
 #include <functional>
 
-#include "../Reader.h"
+#include "osi-utilities/tracefile/Reader.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_hostvehicledata.pb.h"
 #include "osi_motionrequest.pb.h"
@@ -27,9 +27,14 @@ namespace osi3 {
  * @brief Implementation of TraceFileReader for binary format files containing OSI messages
  *
  * This class provides functionality to read OSI messages in the single binary channel format.
+ *
+ * @note Thread Safety: Instances are **not** thread-safe.
  */
 class SingleChannelBinaryTraceFileReader final : public osi3::TraceFileReader {
    public:
+    /** @brief Destructor, closes the file if still open */
+    ~SingleChannelBinaryTraceFileReader() override;
+
     /**
      * @brief Opens a trace file for reading and infers message type from filename
      * @param file_path Path to the trace file
@@ -76,12 +81,13 @@ class SingleChannelBinaryTraceFileReader final : public osi3::TraceFileReader {
     std::ifstream trace_file_;                                            /**< File stream for reading */
     MessageParserFunc parser_;                                            /**< Message parsing function */
     ReaderTopLevelMessage message_type_{ReaderTopLevelMessage::kUnknown}; /**< Current message type */
+    std::vector<char> read_buffer_;                                       /**< Reusable read buffer to avoid per-message allocation */
 
     /**
-     * @brief Reads raw binary message data from file
-     * @return Vector containing the raw message bytes
+     * @brief Reads raw binary message data from file into the internal buffer
+     * @return Reference to the internal buffer containing the raw message bytes
      */
-    std::vector<char> ReadNextMessageFromFile();
+    const std::vector<char>& ReadNextMessageFromFile();
 
     /**
      * @brief Parses a binary buffer into the requested protobuf message type

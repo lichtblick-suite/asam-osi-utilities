@@ -11,6 +11,12 @@
 
 namespace osi3 {
 
+SingleChannelBinaryTraceFileReader::~SingleChannelBinaryTraceFileReader() {
+    if (trace_file_.is_open()) {
+        Close();
+    }
+}
+
 auto SingleChannelBinaryTraceFileReader::Open(const std::filesystem::path& file_path, const ReaderTopLevelMessage message_type) -> bool {
     message_type_ = message_type;
     return this->Open(file_path);
@@ -72,7 +78,11 @@ auto SingleChannelBinaryTraceFileReader::Open(const std::filesystem::path& file_
     return true;
 }
 
-void SingleChannelBinaryTraceFileReader::Close() { trace_file_.close(); }
+void SingleChannelBinaryTraceFileReader::Close() {
+    trace_file_.close();
+    read_buffer_.clear();
+    read_buffer_.shrink_to_fit();
+}
 
 auto SingleChannelBinaryTraceFileReader::HasNext() -> bool { return (trace_file_ && trace_file_.is_open() && trace_file_.peek() != EOF); }
 
@@ -83,7 +93,7 @@ auto SingleChannelBinaryTraceFileReader::ReadMessage() -> std::optional<ReadResu
         return std::nullopt;
     }
 
-    const auto serialized_msg = ReadNextMessageFromFile();
+    const auto& serialized_msg = ReadNextMessageFromFile();
 
     if (serialized_msg.empty()) {
         throw std::runtime_error("Failed to read message");
@@ -96,7 +106,7 @@ auto SingleChannelBinaryTraceFileReader::ReadMessage() -> std::optional<ReadResu
     return result;
 }
 
-auto SingleChannelBinaryTraceFileReader::ReadNextMessageFromFile() -> std::vector<char> {
+auto SingleChannelBinaryTraceFileReader::ReadNextMessageFromFile() -> const std::vector<char>& {
     uint32_t message_size = 0;
 
     if (!trace_file_.read(reinterpret_cast<char*>(&message_size), sizeof(message_size))) {
@@ -105,11 +115,11 @@ auto SingleChannelBinaryTraceFileReader::ReadNextMessageFromFile() -> std::vecto
     if (message_size == 0 || message_size > tracefile::config::kMaxExpectedMessageSize) {
         throw std::runtime_error("ERROR: Invalid message size: " + std::to_string(message_size));
     }
-    std::vector<char> serialized_msg(message_size);
-    if (!trace_file_.read(serialized_msg.data(), message_size)) {
+    read_buffer_.resize(message_size);
+    if (!trace_file_.read(read_buffer_.data(), message_size)) {
         throw std::runtime_error("ERROR: Failed to read message from file");
     }
-    return serialized_msg;
+    return read_buffer_;
 }
 
 }  // namespace osi3

@@ -5,6 +5,8 @@
 
 #include "osi-utilities/tracefile/writer/SingleChannelBinaryTraceFileWriter.h"
 
+#include <limits>
+
 #include "osi_groundtruth.pb.h"
 #include "osi_hostvehicledata.pb.h"
 #include "osi_motionrequest.pb.h"
@@ -16,6 +18,12 @@
 #include "osi_trafficupdate.pb.h"
 
 namespace osi3 {
+
+SingleChannelBinaryTraceFileWriter::~SingleChannelBinaryTraceFileWriter() {
+    if (trace_file_.is_open()) {
+        Close();
+    }
+}
 
 auto SingleChannelBinaryTraceFileWriter::Open(const std::filesystem::path& file_path) -> bool {
     // check if at least .osi ending is present
@@ -47,7 +55,15 @@ auto SingleChannelBinaryTraceFileWriter::WriteMessage(const T& top_level_message
         return false;
     }
 
-    const std::string serialized_message = top_level_message.SerializeAsString();
+    std::string serialized_message;
+    if (!top_level_message.SerializeToString(&serialized_message)) {
+        std::cerr << "ERROR: Failed to serialize protobuf message\n";
+        return false;
+    }
+    if (serialized_message.size() > std::numeric_limits<uint32_t>::max()) {
+        std::cerr << "ERROR: Serialized message size exceeds uint32_t maximum\n";
+        return false;
+    }
     const auto message_size = static_cast<uint32_t>(serialized_message.size());
 
     trace_file_.write(reinterpret_cast<const char*>(&message_size), sizeof(message_size));

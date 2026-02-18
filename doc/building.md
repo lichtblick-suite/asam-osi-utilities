@@ -312,6 +312,28 @@ Configure with `-DBUILD_TESTING=ON` first (for vcpkg, set `VCPKG_MANIFEST_FEATUR
 
 ---
 
+## Generating Test Fixtures
+
+Some tests (e.g. NCAP scenario and esmini fixture tests) require binary `.osi` and `.mcap` trace
+files that are checked into the repository via Git LFS. If you need to regenerate them locally,
+a script downloads [esmini](https://github.com/esmini/esmini) and runs headless simulations.
+
+**Prerequisites:** Build the project with examples enabled first, then run the script:
+
+```bash
+# Build with examples (needed for convert_gt2sv and convert_osi2mcap)
+cmake --preset vcpkg -DBUILD_TESTING=ON -DBUILD_EXAMPLES=ON -DVCPKG_MANIFEST_FEATURES=tests
+cmake --build --preset vcpkg --parallel
+
+# Generate fixtures (downloads esmini + NCAP scenarios into a temp dir)
+./scripts/generate_test_traces.sh
+```
+
+The script produces 11 fixture files in `tests/data/` (tracked via Git LFS).
+Without these files the fixture-based tests will skip gracefully via `GTEST_SKIP`.
+
+---
+
 ## CMake Presets
 
 The project includes CMake presets for common configurations:

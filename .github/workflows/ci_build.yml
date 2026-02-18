@@ -53,6 +53,13 @@ jobs:
       - name: Build
         run: cmake --build --preset base --parallel $(nproc)
 
+      - name: Validate shell scripts
+        run: |
+          bash -n scripts/setup-dev.sh
+          bash -n scripts/generate_test_traces.sh
+          bash -n tests/integration/run_reader_integration.sh
+          bash -n tests/integration/run_converter_integration.sh
+
       - name: Run Tests
         working-directory: build
         run: ctest --output-on-failure --parallel $(nproc)
