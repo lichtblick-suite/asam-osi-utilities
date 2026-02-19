@@ -92,6 +92,13 @@ Valid types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `perf`, `
 
 PR bodies must follow `.github/pull_request_template.md` with sections: Related Issue, Summary, Validation, Checklist.
 
+When generating PR descriptions or commit messages, save them as markdown files in `.playground/`:
+
+- PR descriptions: `.playground/pr-description.md`
+- Commit messages: `.playground/commit-message.md`
+
+The `.playground/` folder is gitignored and serves as a scratch space for agent-generated artifacts.
+
 ## Naming Conventions (from .clang-tidy)
 
 - Classes/Structs: `CamelCase`

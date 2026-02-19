@@ -55,6 +55,13 @@ When creating or updating PRs, agents should follow this sequence:
 4. Fill the PR body using `.github/pull_request_template.md` headings verbatim.
 5. Verify repository links use the canonical path `https://github.com/lichtblick-suite/asam-osi-utilities`.
 
+When generating PR descriptions or commit messages, save them as markdown files in `.playground/`:
+
+- PR descriptions: `.playground/pr-description.md`
+- Commit messages: `.playground/commit-message.md`
+
+The `.playground/` folder is gitignored and serves as a scratch space for agent-generated artifacts.
+
 Recommended pre-push checks for agents:
 
 - `git log --format=%H%x09%s origin/main..HEAD` (confirm commit subjects).

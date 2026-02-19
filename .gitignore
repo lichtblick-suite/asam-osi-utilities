@@ -9,7 +9,7 @@ doc/latex
 osi/
 osi3/
 vcpkg_installed/
-_untracked_/
+.playground/
 
 # Specific extensions
 *.egg-info
