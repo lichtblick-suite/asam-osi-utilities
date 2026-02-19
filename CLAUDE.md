@@ -92,6 +92,13 @@ Valid types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `perf`, `
 
 PR bodies must follow `.github/pull_request_template.md` with sections: Related Issue, Summary, Validation, Checklist.
 
+When generating PR descriptions or commit messages, save them as markdown files in `.playground/`:
+
+- PR descriptions: `.playground/pr-description.md`
+- Commit messages: `.playground/commit-message.md`
+
+The `.playground/` folder is gitignored and serves as a scratch space for agent-generated artifacts.
+
 ## Naming Conventions (from .clang-tidy)
 
 - Classes/Structs: `CamelCase`
@@ -103,3 +110,14 @@ PR bodies must follow `.github/pull_request_template.md` with sections: Related 
 ## Testing
 
 GoogleTest framework. Tests in `tests/src/` following `*_test.cpp` pattern. Common helpers in `tests/src/TestUtilities.h`. Test target name: `unit_tests`.
+
+## Releasing
+
+Releases are triggered via the **Release** workflow (manual dispatch in GitHub Actions):
+
+1. Update `vcpkg.json` with the new version
+2. Commit: `git commit -S -s -m "chore: bump version to X.Y.Z"`
+3. Push to `main`
+4. Trigger **Actions → Release** with the version string
+
+The workflow builds artifacts for all platforms, generates a changelog from conventional commits, creates a Git tag, and publishes a GitHub Release. See `doc/releasing.md` for full details.

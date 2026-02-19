@@ -216,12 +216,14 @@ Use conventional commit prefixes in your PR title:
 - Delete your feature branch
 - Pull the latest changes from upstream
 
-## Version Updates
+## Releases
 
-The project version is managed in `vcpkg.json` (`version-string`). When preparing a release:
+See [Releasing](releasing.md) for the full release workflow. Quick summary:
 
-1. Update `vcpkg.json` with the new version
-2. Commit the version change
+1. Ensure all changes are merged to `main`
+2. Update `vcpkg.json` with the new version
+3. Commit: `git commit -S -s -m "chore: bump version to X.Y.Z"`
+4. Trigger the **Release** workflow from GitHub Actions
 
 ## Questions?
 

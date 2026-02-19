@@ -55,12 +55,21 @@ When creating or updating PRs, agents should follow this sequence:
 4. Fill the PR body using `.github/pull_request_template.md` headings verbatim.
 5. Verify repository links use the canonical path `https://github.com/lichtblick-suite/asam-osi-utilities`.
 
+When generating PR descriptions or commit messages, save them as markdown files in `.playground/`:
+
+- PR descriptions: `.playground/pr-description.md`
+- Commit messages: `.playground/commit-message.md`
+
+The `.playground/` folder is gitignored and serves as a scratch space for agent-generated artifacts.
+
 Recommended pre-push checks for agents:
 
 - `git log --format=%H%x09%s origin/main..HEAD` (confirm commit subjects).
 - `git log --format=%H%x09%B origin/main..HEAD` (confirm `Signed-off-by` trailers).
 - `git rebase origin/main` (remove accidental merge commits before pushing).
 
-## Versioning & Docs
+## Versioning & Releases
 
-Release versions are stored in `vcpkg.json` (`version-string`). API docs are generated via the `library_api_doc` CMake target and published from `doc/`.
+Release versions are stored in `vcpkg.json` (`version-string`). The project follows Semantic Versioning. Releases are triggered via the **Release** workflow (manual dispatch). See `doc/releasing.md` for full details.
+
+API docs are generated via the `library_api_doc` CMake target and published from `doc/`.
