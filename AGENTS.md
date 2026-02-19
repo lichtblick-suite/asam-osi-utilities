@@ -61,6 +61,8 @@ Recommended pre-push checks for agents:
 - `git log --format=%H%x09%B origin/main..HEAD` (confirm `Signed-off-by` trailers).
 - `git rebase origin/main` (remove accidental merge commits before pushing).
 
-## Versioning & Docs
+## Versioning & Releases
 
-Release versions are stored in `vcpkg.json` (`version-string`). API docs are generated via the `library_api_doc` CMake target and published from `doc/`.
+Release versions are stored in `vcpkg.json` (`version-string`). The project follows Semantic Versioning. Releases are triggered via the **Release** workflow (manual dispatch). See `doc/releasing.md` for full details.
+
+API docs are generated via the `library_api_doc` CMake target and published from `doc/`.
