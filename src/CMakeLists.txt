@@ -57,7 +57,10 @@ endif ()
 
 # get mcap and its dependencies
 set(MCAP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../lib/mcap/cpp/mcap/include)
-target_include_directories(OSIUtilities PRIVATE ${MCAP_INCLUDE_DIR})
+target_include_directories(OSIUtilities
+    PUBLIC
+        $<BUILD_INTERFACE:${MCAP_INCLUDE_DIR}>
+)
 
 # Find compression libraries (LZ4, ZSTD)
 include(FindCompression)
@@ -76,3 +79,4 @@ install(TARGETS OSIUtilities
 )
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY ${MCAP_INCLUDE_DIR}/mcap DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
