@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 # Add subdirectories for organized modules
 include_directories(tracefile)
+include(GNUInstallDirs)
 
 # specify library source files
 set(OSIUtilities_SRCS
@@ -31,8 +32,12 @@ set_target_properties(OSIUtilities PROPERTIES
 target_compile_definitions(OSIUtilities PRIVATE OSI_TRACE_FILE_SPEC_VERSION="${OSI_TRACE_FILE_SPEC_VERSION}")
 
 
-# Specify the public headers for the library for clean access
-target_include_directories(OSIUtilities PUBLIC ${PROJECT_SOURCE_DIR}/include)
+# Specify include paths for build and install usage
+target_include_directories(OSIUtilities
+    PUBLIC
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
 # MCAP is header-only with a single implementation TU. On Windows, its default
 # visibility uses dllimport/dllexport which causes LNK4217/LNK4286 warnings
@@ -52,7 +57,7 @@ endif ()
 
 # get mcap and its dependencies
 set(MCAP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../lib/mcap/cpp/mcap/include)
-target_include_directories(OSIUtilities PUBLIC ${MCAP_INCLUDE_DIR})
+target_include_directories(OSIUtilities PRIVATE ${MCAP_INCLUDE_DIR})
 
 # Find compression libraries (LZ4, ZSTD)
 include(FindCompression)
@@ -63,3 +68,11 @@ if (COMPRESSION_FOUND)
 else ()
     message(FATAL_ERROR "Could not find LZ4 and ZSTD compression libraries")
 endif ()
+
+install(TARGETS OSIUtilities
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
