@@ -28,7 +28,7 @@ Tests are written with GoogleTest and registered via CTest (`tests/CMakeLists.tx
 
 ## Commit & Pull Request Guidelines
 
-Recent history uses Conventional Commits (e.g., `feat: ...`, `fix: ...`, `ci(fix): ...`), and the project requires that format for all new commits. Use `<type>(<scope>): <description>` with optional scopes. All commits must be DCO signed-off and GPG signed: `git commit -S -s -m "feat: short description"`. PR titles should use the same conventional prefix, include a clear description, and pass format, lint, and test checks. At least one maintainer approval is required before merge.
+Recent history uses Conventional Commits (e.g., `feat: ...`, `fix: ...`, `ci(fix): ...`), and the project requires that format for all new commits. Use `<type>(<scope>): <description>` with optional scopes. All commits must be DCO signed-off and GPG signed: `git commit -S -s -m "feat: short description"`. PR titles should use the same conventional prefix, include a clear description, and pass format, lint, and test checks. At least one maintainer approval is required before merge. Do not include AI agent mentions, bot attribution, or `Co-authored-by` trailers in commit messages or PR descriptions.
 
 PR bodies must follow `.github/pull_request_template.md` and include all sections:
 
@@ -54,10 +54,11 @@ When creating or updating PRs, agents should follow this sequence:
 3. Ensure every commit is signed (`-s` for DCO and `-S` for GPG).
 4. Fill the PR body using `.github/pull_request_template.md` headings verbatim.
 5. Verify repository links use the canonical path `https://github.com/lichtblick-suite/asam-osi-utilities`.
+6. Keep `.playground/commit-message.md` and `.playground/pre-description.md` updated for every change before committing and before opening/updating a PR.
 
-When generating PR descriptions or commit messages, save them as markdown files in `.playground/`:
+When generating PR descriptions or commit messages, keep these markdown files in `.playground/` updated:
 
-- PR descriptions: `.playground/pr-description.md`
+- PR diff description (detailed `main..HEAD` summary): `.playground/pre-description.md`
 - Commit messages: `.playground/commit-message.md`
 
 The `.playground/` folder is gitignored and serves as a scratch space for agent-generated artifacts.
