@@ -14,6 +14,7 @@ set(OSIUtilities_SRCS
         tracefile/writer/TXTHTraceFileWriter.cpp
         tracefile/reader/MCAPTraceFileReader.cpp
         tracefile/writer/MCAPTraceFileWriter.cpp
+        tracefile/writer/MCAPTraceFileChannel.cpp
 )
 
 # Create a library target for the entire library

@@ -8,6 +8,7 @@ Checks: >
   -readability-identifier-length,
   -readability-magic-numbers,
   -readability-math-missing-parentheses,
+  -readability-convert-member-functions-to-static,
   cppcoreguidelines-*,
   -cppcoreguidelines-init-variables,
   -cppcoreguidelines-non-private-member-variables-in-classes,

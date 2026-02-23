@@ -37,6 +37,22 @@ It creates the example file `sv_example.mcap` in the temp directory of your oper
 ./example_mcap_writer
 ```
 
+### example_mcap_multi_channel_writer
+
+This example demonstrates two approaches for writing multi-channel MCAP files:
+
+**Part 1 — MCAPTraceFileWriter (pure OSI, multi-topic):**
+Uses the high-level `MCAPTraceFileWriter` API to register multiple OSI channels (including two channels sharing the same SensorView schema for automatic deduplication) and writes messages in a simulation loop.
+
+**Part 2 — MCAPTraceFileChannel (mixed OSI / non-OSI):**
+Uses an externally-managed `mcap::McapWriter` together with the `MCAPTraceFileChannel` helper to mix OSI and non-OSI channels (JSON) in a single MCAP file, then reads it back with non-OSI message filtering via `SetSkipNonOSIMsgs(true)`.
+
+The example also highlights best practices: zstd compression, chunk sizing, metadata-before-messages ordering, and descriptive channel naming.
+
+```bash
+./example_mcap_multi_channel_writer
+```
+
 ### example_single_channel_binary_reader
 
 This example demonstrates how to read a native binary trace file into your application.

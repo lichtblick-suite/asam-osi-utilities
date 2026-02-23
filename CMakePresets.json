@@ -19,6 +19,20 @@
       }
     },
     {
+      "name": "ninja",
+      "description": "Ninja build with compile_commands.json for clang-tidy",
+      "inherits": "vcpkg",
+      "binaryDir": "${sourceDir}/build-ninja",
+      "generator": "Ninja",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
       "name": "vcpkg-windows-static-md",
       "description": "Windows vcpkg build with static libraries and dynamic MSVC runtime",
       "inherits": "vcpkg",
@@ -42,6 +56,10 @@
       "name": "vcpkg-windows-static-md",
       "configurePreset": "vcpkg-windows-static-md",
       "configuration": "Release"
+    },
+    {
+      "name": "ninja",
+      "configurePreset": "ninja"
     }
   ]
 }

@@ -22,6 +22,7 @@ endfunction()
 
 # Add examples using the function above
 configure_example(example_mcap_writer example_mcap_writer.cpp)
+configure_example(example_mcap_multi_channel_writer example_mcap_multi_channel_writer.cpp)
 configure_example(example_mcap_reader example_mcap_reader.cpp)
 configure_example(example_single_channel_binary_reader example_single_channel_binary_reader.cpp)
 configure_example(example_single_channel_binary_writer example_single_channel_binary_writer.cpp)

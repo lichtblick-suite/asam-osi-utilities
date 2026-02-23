@@ -24,17 +24,17 @@
 #include "osi_trafficcommandupdate.pb.h"
 #include "osi_trafficupdate.pb.h"
 
+namespace {
+
 /** \brief Map compression enum values to string names. */
-static const std::map<mcap::Compression, std::string> kCompressionEnumStringMap = {
-    {mcap::Compression::None, "none"}, {mcap::Compression::Lz4, "lz4"}, {mcap::Compression::Zstd, "zstd"}};
+const std::map<mcap::Compression, std::string> kCompressionEnumStringMap = {{mcap::Compression::None, "none"}, {mcap::Compression::Lz4, "lz4"}, {mcap::Compression::Zstd, "zstd"}};
 /** \brief Map compression string names to enum values. */
-static const std::map<std::string, mcap::Compression> kCompressionStringEnumMap = {
-    {"none", mcap::Compression::None}, {"lz4", mcap::Compression::Lz4}, {"zstd", mcap::Compression::Zstd}};
+const std::map<std::string, mcap::Compression> kCompressionStringEnumMap = {{"none", mcap::Compression::None}, {"lz4", mcap::Compression::Lz4}, {"zstd", mcap::Compression::Zstd}};
 /** \brief Map compression level enum values to string names. */
-static const std::map<mcap::CompressionLevel, std::string> kCompressionLevelEnumStringMap = {
+const std::map<mcap::CompressionLevel, std::string> kCompressionLevelEnumStringMap = {
     {mcap::CompressionLevel::Fastest, "fastest"}, {mcap::CompressionLevel::Fast, "fast"}, {mcap::CompressionLevel::Default, "default"}};
 /** \brief Map compression level string names to enum values. */
-static const std::map<std::string, mcap::CompressionLevel> kCompressionLevelStringEnumMap = {
+const std::map<std::string, mcap::CompressionLevel> kCompressionLevelStringEnumMap = {
     {"fastest", mcap::CompressionLevel::Fastest}, {"fast", mcap::CompressionLevel::Fast}, {"default", mcap::CompressionLevel::Default}};
 
 /**
@@ -249,6 +249,8 @@ auto parseArgs(const int argc, const char** argv) -> std::optional<ProgramOption
     }
     return options;
 }
+
+}  // namespace
 
 /**
  * \brief Entry point for the `.osi` to `.mcap` converter.

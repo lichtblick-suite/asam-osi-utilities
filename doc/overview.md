@@ -117,6 +117,12 @@ The library supports all OSI top-level message types:
 | `osi3::SingleChannelBinaryTraceFileWriter` | Write `.osi` binary files |
 | `osi3::TXTHTraceFileWriter`                | Write `.txth` text files  |
 
+### Integration Helpers
+
+| Class                        | Description                                           |
+| ---------------------------- | ----------------------------------------------------- |
+| `osi3::MCAPTraceFileChannel` | OSI channel helper for external MCAP writer integration |
+
 ## Example Usage
 
 ```cpp
