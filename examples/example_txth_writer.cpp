@@ -20,6 +20,8 @@
 #include "osi_sensordata.pb.h"
 #include "osi_version.pb.h"
 
+namespace {
+
 /**
  * \brief Get the current time in OSI filename format.
  * \return Timestamp formatted as YYYYMMDDThhmmssZ.
@@ -54,6 +56,8 @@ auto GenerateTempFilePath() -> std::filesystem::path {
     auto path = std::filesystem::temp_directory_path() / file_name;
     return path;
 }
+
+}  // namespace
 
 /**
  * \brief Entry point for the TXTH writer example.

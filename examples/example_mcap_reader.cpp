@@ -23,6 +23,8 @@
 #include "osi_trafficcommandupdate.pb.h"
 #include "osi_trafficupdate.pb.h"
 
+namespace {
+
 /**
  * \brief Print the timestamp of a decoded OSI message.
  * \tparam T Protobuf message pointer type.
@@ -57,6 +59,8 @@ auto parseArgs(const int argc, const char** argv) -> std::filesystem::path {
 
     return std::filesystem::path{argv[1]};
 }
+
+}  // namespace
 
 /**
  * \brief Entry point for the MCAP reader example.

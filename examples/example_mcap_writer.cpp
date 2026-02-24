@@ -20,6 +20,8 @@
 #include "osi_sensorview.pb.h"
 #include "osi_version.pb.h"
 
+namespace {
+
 /**
  * \brief Generate a temporary output path for the example MCAP file.
  * \return Temporary file path.
@@ -32,6 +34,8 @@ auto GenerateTempFilePath() -> std::filesystem::path {
 #endif
     return std::filesystem::temp_directory_path() / ("sv_example_" + pid + ".mcap");  // add sv to indicate sensor view as recommended by the OSI-specification
 }
+
+}  // namespace
 
 /**
  * \brief Entry point for the MCAP writer example.

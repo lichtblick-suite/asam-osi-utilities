@@ -122,15 +122,19 @@ dependencies:
     apt:
       - clang-format-18
       - git
+      - ninja-build
     dnf:
       - clang-tools-extra
       - git
+      - ninja-build
     brew:
       - clang-format
       - git
+      - ninja
     winget:
       - LLVM.LLVM
       - Git.Git
+      - Ninja-build.Ninja
 
   # =========================================================================
   # Coverage reporting

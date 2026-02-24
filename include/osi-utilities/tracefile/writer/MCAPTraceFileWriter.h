@@ -11,6 +11,7 @@
 #include <mcap/mcap.hpp>
 
 #include "osi-utilities/tracefile/Writer.h"
+#include "osi-utilities/tracefile/writer/MCAPTraceFileChannel.h"
 
 namespace osi3 {
 /**
@@ -87,7 +88,7 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
      * @brief Adds a new channel to the MCAP file
      * @param topic Name of the channel/topic
      * @param descriptor Protobuf descriptor for the message type
-     * @param channel_metadata Additional metadata for the channel
+     * @param channel_metadata Additional metadata for the channel (passed by value; OSI metadata is added in-place)
      * @return Channel ID for the newly created channel
      */
     uint16_t AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor, std::unordered_map<std::string, std::string> channel_metadata = {});
@@ -118,13 +119,11 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
     mcap::McapWriter* GetMcapWriter() { return &mcap_writer_; }
 
    private:
-    std::ofstream trace_file_;                              /**< Trace file stream */
-    mcap::McapWriter mcap_writer_;                          /**< MCAP writer instance */
-    mcap::McapWriterOptions mcap_options_{"protobuf"};      /**< MCAP writer configuration */
-    std::unordered_map<std::string, mcap::Schema> schemas_; /**< Registered schemas (keyed by descriptor full name) */
-    std::map<std::string, uint16_t> topic_to_channel_id_;   /**< Topic to channel ID mapping */
-    bool required_metadata_added_ = false;                  /**< Flag to track if required metadata has been added */
-    std::string serialize_buffer_;                          /**< Reusable serialization buffer */
+    std::ofstream trace_file_;                         /**< Trace file stream */
+    mcap::McapWriter mcap_writer_;                     /**< MCAP writer instance */
+    mcap::McapWriterOptions mcap_options_{"protobuf"}; /**< MCAP writer configuration */
+    MCAPTraceFileChannel channel_{mcap_writer_};       /**< Delegated channel/schema management */
+    bool required_metadata_added_ = false;             /**< Flag to track if required metadata has been added */
 };
 }  // namespace osi3
 #endif  // OSIUTILITIES_TRACEFILE_WRITER_MCAPTRACEFILEWRITER_H_
