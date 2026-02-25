@@ -2,14 +2,19 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 #
 # Centralized dependency manifest for CI workflows and documentation.
-# This file is the single source of truth for build dependencies.
+#
+# Sources of truth:
+#   - vcpkg.json:       C++ library dependencies for vcpkg builds (protobuf, lz4, zstd, gtest, doxygen, graphviz)
+#   - This file:        System package names (apt/dnf/brew/winget) and host tools for non-vcpkg builds
 #
 # Roles:
-#   - build: Required to compile the library and examples
-#   - test:  Required to run unit tests (includes build deps)
-#   - docs:  Required to generate documentation
-#   - lint:  Required for static analysis (includes build deps)
-#   - dev:   Additional tools for development (formatting, etc.)
+#   - build:      System packages to compile the library (non-vcpkg path)
+#   - vcpkg_host: Host tools only when vcpkg manages libraries (cmake, git, etc.)
+#   - test:       Additional packages for unit tests
+#   - docs:       Documentation generation (doxygen, graphviz)
+#   - lint:       Static analysis tools (clang-tidy)
+#   - dev:        Development tools (clang-format, ninja)
+#   - coverage:   Code coverage reporting (gcovr)
 
 dependencies:
   # =========================================================================
