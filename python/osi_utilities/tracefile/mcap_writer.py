@@ -34,6 +34,16 @@ from osi_utilities.tracefile.writer import TraceFileWriter
 logger = logging.getLogger(__name__)
 
 
+def _get_package_version() -> str:
+    """Get the package version from importlib.metadata, falling back to vcpkg.json."""
+    try:
+        from importlib.metadata import version
+
+        return version("asam-osi-utilities")
+    except Exception:
+        return "0.0.0"
+
+
 def _build_file_descriptor_set(message_class: type[Message]) -> FileDescriptorSet:
     """Build a FileDescriptorSet for a protobuf message class, including all dependencies."""
     fds = FileDescriptorSet()
@@ -56,7 +66,7 @@ def prepare_required_file_metadata() -> dict[str, str]:
     Returns a dict with required keys populated with placeholder/current values.
     """
     return {
-        "version": "1.0.0",
+        "version": _get_package_version(),
         "min_osi_version": "",
         "max_osi_version": "",
         "min_protobuf_version": google.protobuf.__version__,

@@ -1,0 +1,15 @@
+# Vendored osi3 bindings (copied from submodule at build time via 'make vendor-osi3')
+/osi3/
+
+# Build and test artifacts
+/dist/
+/build/
+*.egg-info/
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+test-results.xml
+__pycache__/
+*.pyc

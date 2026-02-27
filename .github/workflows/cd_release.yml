@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   # ===========================================================================
@@ -26,7 +27,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       tag: v${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -60,7 +61,7 @@ jobs:
           fi
 
   # ===========================================================================
-  # Build with release artifacts (reuses ci_build.yml)
+  # Build with release artifacts (reuses ci_cpp.yml)
   # ===========================================================================
   build:
     name: Build
@@ -80,7 +81,7 @@ jobs:
     env:
       VERSION: ${{ needs.validate.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -165,3 +166,36 @@ jobs:
           files: |
             artifacts/*
           fail_on_unmatched_files: true
+
+  # ===========================================================================
+  # Publish Python package to PyPI
+  # ===========================================================================
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [validate, release]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/asam-osi-utilities
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build Python package
+        working-directory: python
+        run: make package
+        env:
+          CI: "1"
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist/

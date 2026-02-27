@@ -54,6 +54,27 @@ cd asam-osi-utilities
 git commit -S -s -m "feat: your feature description"
 ```
 
+### Python Development
+
+```bash
+cd python
+
+# Setup virtual environment and install in editable mode
+make setup
+
+# Run tests
+make test
+
+# Run linter + formatter
+make lint
+make format
+
+# Type checking
+make typecheck
+```
+
+The Makefile in `python/` is the single entry point for all Python development tasks. Run `make help` for a full list of targets.
+
 ## Documentation
 
 - [Full Contributing Guide](doc/contributing.md) - Complete guidelines

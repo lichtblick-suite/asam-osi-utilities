@@ -9,9 +9,11 @@ SPDX-License-Identifier: MPL-2.0
 [![Documentation](https://img.shields.io/badge/docs-doxygen-blue)](https://lichtblick-suite.github.io/asam-osi-utilities/)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 
-A C++ utility library for working with [ASAM Open Simulation Interface (OSI)](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/specification/index.html) trace files in MCAP and other formats.
+A C++ and Python utility library for working with [ASAM Open Simulation Interface (OSI)](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/specification/index.html) trace files in MCAP and other formats.
 
 ## Quick Start
+
+### C++
 
 ```bash
 # Clone with submodules
@@ -34,12 +36,36 @@ ctest --test-dir build-vcpkg --output-on-failure
 
 > **Note:** First build takes 10-15 minutes as vcpkg compiles dependencies from source.
 
+### Python
+
+```bash
+pip install asam-osi-utilities
+```
+
+Or from source:
+
+```bash
+cd python
+make setup  # creates venv + installs in editable mode
+make test   # run tests
+```
+
+```python
+from osi_utilities.tracefile import open_trace_file
+
+with open_trace_file("trace.mcap") as reader:
+    for result in reader:
+        print(result.message_type, result.channel_name)
+```
+
 ## Features
 
 - Read/write OSI trace files in [MCAP format](https://mcap.dev/) with lz4/zstd compression
 - Read/write single-channel binary (`.osi`) and text (`.txth`) trace files
 - Convert between trace file formats
 - Cross-platform: Linux, Windows, macOS
+- **C++ library** with CMake/vcpkg integration
+- **Python SDK** available on [PyPI](https://pypi.org/p/asam-osi-utilities/) (`pip install asam-osi-utilities`)
 
 ## Documentation
 
@@ -57,18 +83,27 @@ ctest --test-dir build-vcpkg --output-on-failure
 
 ## Examples
 
-See [cpp/examples/](cpp/examples/README.md) for usage examples:
+See [cpp/examples/](cpp/examples/README.md) for C++ usage examples:
 
 - `example_mcap_reader` / `example_mcap_writer` - MCAP trace file I/O
 - `example_single_channel_binary_reader` / `example_single_channel_binary_writer` - Binary `.osi` files
 - `example_txth_reader` / `example_txth_writer` - Human-readable `.txth` files
 - `convert_osi2mcap` - Convert `.osi` files to `.mcap` format
 
+See [python/README.md](python/README.md) for Python SDK usage.
+
 ## Requirements
+
+### C++
 
 - C++17 compatible compiler
 - CMake 3.16+
 - vcpkg (recommended) or manual dependency installation
+
+### Python
+
+- Python 3.10+
+- `pip install asam-osi-utilities`
 
 ## Contributing
 

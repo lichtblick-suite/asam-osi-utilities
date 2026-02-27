@@ -6,8 +6,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "osi-utilities"
-version = "0.1.0"
+name = "asam-osi-utilities"
+dynamic = ["version"]
 description = "Python utilities for reading and writing ASAM OSI trace files (MCAP, binary .osi, text .txth)"
 readme = "README.md"
 license = {text = "MPL-2.0"}
@@ -27,7 +27,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "protobuf>=4.21",
+    "protobuf>=6.30.2",
     "mcap>=1.1",
     "mcap-protobuf-support>=0.5",
 ]
@@ -46,6 +46,34 @@ Homepage = "https://github.com/lichtblick-suite/asam-osi-utilities"
 Repository = "https://github.com/lichtblick-suite/asam-osi-utilities"
 Issues = "https://github.com/lichtblick-suite/asam-osi-utilities/issues"
 
+# ---------------------------------------------------------------------------
+# Version: single source of truth is vcpkg.json at repository root
+# ---------------------------------------------------------------------------
+[tool.hatch.version]
+source = "regex"
+path = "../vcpkg.json"
+pattern = '"version-string":\s*"(?P<version>[^"]+)"'
+
+# ---------------------------------------------------------------------------
+# Hatch build: include vendored osi3 protobuf bindings
+# The 'make vendor-osi3' target copies osi3/ from the submodule before build.
+# ---------------------------------------------------------------------------
+[tool.hatch.build.targets.wheel]
+packages = ["osi_utilities"]
+exclude = ["*.proto"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"osi3" = "osi3"
+
+[tool.hatch.build.targets.sdist]
+include = ["osi_utilities/", "tests/", "README.md", "pyproject.toml"]
+
+[tool.hatch.build.targets.sdist.force-include]
+"osi3" = "osi3"
+
+# ---------------------------------------------------------------------------
+# Tool configuration
+# ---------------------------------------------------------------------------
 [tool.ruff]
 target-version = "py310"
 line-length = 120

@@ -54,7 +54,7 @@ ifndef CI
 endif
 endef
 
-.PHONY: all setup install install-dev ci-install lint format format-check test test-cov package clean help
+.PHONY: all setup install install-dev ci-install lint format format-check typecheck test test-ci test-cov package package-verify vendor-osi3 clean help
 
 # Default target
 all: lint test
@@ -175,9 +175,21 @@ test-cov:
 	@echo "[OK] Coverage run complete"
 
 # ---------------------------------------------------------------------------
+# Vendoring: copy osi3 bindings from submodule into package source
+# ---------------------------------------------------------------------------
+vendor-osi3:
+	@echo "[INFO] Vendoring osi3 protobuf bindings from submodule..."
+	@rm -rf osi3/
+	@mkdir -p osi3
+	@cp ../submodules/osi-python/osi3/__init__.py osi3/
+	@cp ../submodules/osi-python/osi3/*_pb2.py osi3/
+	@cp ../submodules/osi-python/osi3/*_pb2.pyi osi3/ 2>/dev/null || true
+	@echo "[OK] Vendored osi3 (version: $$(grep __version__ osi3/__init__.py))"
+
+# ---------------------------------------------------------------------------
 # Package build
 # ---------------------------------------------------------------------------
-package:
+package: vendor-osi3
 	@echo "[INFO] Building Python package..."
 	$(PIP) install build
 	$(PYTHON) -m build
@@ -187,6 +199,7 @@ package-verify: package
 	@echo "[INFO] Verifying package installation..."
 	$(PIP) install dist/*.whl
 	$(PYTHON) -c "from osi_utilities import MessageType, TraceFileReaderFactory; print('[OK] Package import OK')"
+	$(PYTHON) -c "import osi3; print('[OK] Bundled osi3 version:', osi3.__version__)"
 
 # ---------------------------------------------------------------------------
 # Cleaning
@@ -194,6 +207,7 @@ package-verify: package
 clean:
 	@echo "[INFO] Cleaning generated files and caches..."
 	@rm -rf build/ dist/ *.egg-info/
+	@rm -rf osi3/
 	@rm -rf .pytest_cache/ .mypy_cache/ .ruff_cache/
 	@rm -rf htmlcov/ test-results.xml
 	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
