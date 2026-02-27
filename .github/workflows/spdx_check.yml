@@ -44,7 +44,7 @@ jobs:
               blocks.append(current)
           filtered_blocks = []
           for block in blocks:
-              if any('path = "tests/intentional-failures/**"' in line for line in block):
+              if any('path = "cpp/tests/intentional-failures/**"' in line for line in block):
                   continue
               filtered_blocks.append(block)
           out_lines = []
