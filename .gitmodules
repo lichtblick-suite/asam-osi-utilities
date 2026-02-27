@@ -6,3 +6,6 @@
 [submodule "submodules/osi-cpp"]
 	path = submodules/osi-cpp
 	url = https://github.com/OpenSimulationInterface/osi-cpp.git
+[submodule "submodules/osi-python"]
+	path = submodules/osi-python
+	url = https://github.com/OpenSimulationInterface/osi-python.git

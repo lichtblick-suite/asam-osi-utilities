@@ -59,6 +59,9 @@ cmake-build-*/
 # Local build tool output
 local_build_tools/*.html
 
+# Allow Python SDK Makefile
+!python/Makefile
+
 # trace file
 *.osi
 *.txth
