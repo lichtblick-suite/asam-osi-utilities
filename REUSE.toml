@@ -22,6 +22,12 @@ SPDX-License-Identifier = "MPL-2.0"
 SPDX-FileComment = "Package readme; comment headers would render in PyPI."
 
 [[annotations]]
+path = "python/.gitignore"
+precedence = "override"
+SPDX-FileCopyrightText = "Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)"
+SPDX-License-Identifier = "MPL-2.0"
+
+[[annotations]]
 path = ["CMakePresets.json", "vcpkg.json", "vcpkg-configuration.json"]
 precedence = "closest"
 SPDX-FileCopyrightText = "NONE"
