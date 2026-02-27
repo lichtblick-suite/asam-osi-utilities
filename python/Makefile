@@ -103,6 +103,7 @@ ci-install:
 	$(PIP) install ../submodules/osi-python
 	$(PYTHON) -c "import pathlib; pathlib.Path('osi3').mkdir(exist_ok=True); (pathlib.Path('osi3')/'__init__.py').touch()"
 	$(PIP) install -e ".[dev]"
+	$(PYTHON) -c "import shutil; shutil.rmtree('osi3', ignore_errors=True)"
 	@echo "[OK] CI dependencies installed"
 
 # ---------------------------------------------------------------------------
