@@ -19,9 +19,9 @@ from osi_utilities import (
     MCAPTraceFileReader,
     MCAPTraceFileWriter,
     MessageType,
+    TraceFileReaderFactory,
     TXTHTraceFileReader,
     TXTHTraceFileWriter,
-    TraceFileReaderFactory,
     open_trace_file,
 )
 from osi_utilities.tracefile._types import (
@@ -31,7 +31,6 @@ from osi_utilities.tracefile._types import (
     infer_message_type_from_filename,
     parse_osi_trace_filename,
 )
-
 
 # ===========================================================================
 # Fixtures
@@ -294,12 +293,21 @@ class TestFactory:
 # ===========================================================================
 
 
+def _is_lfs_pointer(path: Path) -> bool:
+    """Check if a file is a Git LFS pointer (not actual content)."""
+    try:
+        header = path.read_bytes()[:20]
+        return header.startswith(b"version https://git-lfs")
+    except (OSError, ValueError):
+        return False
+
+
 @pytest.mark.skipif(not TEST_DATA_DIR.exists(), reason="test-data/ not available")
 class TestCrossLanguageValidation:
     def test_read_binary_5frames(self):
         path = TEST_DATA_DIR / "5frames_gt_esmini.osi"
-        if not path.exists():
-            pytest.skip("Test file not found")
+        if not path.exists() or _is_lfs_pointer(path):
+            pytest.skip("Test file not found or is LFS pointer")
         with open_trace_file(path) as reader:
             results = list(reader)
             assert len(results) == 5
@@ -308,8 +316,8 @@ class TestCrossLanguageValidation:
 
     def test_read_mcap_5frames(self):
         path = TEST_DATA_DIR / "5frames_gt_esmini.mcap"
-        if not path.exists():
-            pytest.skip("Test file not found")
+        if not path.exists() or _is_lfs_pointer(path):
+            pytest.skip("Test file not found or is LFS pointer")
         with open_trace_file(path) as reader:
             results = list(reader)
             assert len(results) == 5
@@ -319,8 +327,8 @@ class TestCrossLanguageValidation:
     def test_binary_mcap_content_match(self):
         osi_path = TEST_DATA_DIR / "5frames_gt_esmini.osi"
         mcap_path = TEST_DATA_DIR / "5frames_gt_esmini.mcap"
-        if not osi_path.exists() or not mcap_path.exists():
-            pytest.skip("Test files not found")
+        if not osi_path.exists() or not mcap_path.exists() or _is_lfs_pointer(osi_path) or _is_lfs_pointer(mcap_path):
+            pytest.skip("Test files not found or are LFS pointers")
 
         with open_trace_file(osi_path) as r:
             osi_msgs = [res.message for res in r]

@@ -8,7 +8,7 @@ on:
 
 jobs:
   # ===========================================================================
-  # Lint & Format (ruff)
+  # Lint & Format (ruff) via Make
   # ===========================================================================
   lint:
     name: Lint (ruff)
@@ -16,22 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          submodules: false
+          submodules: recursive
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install ruff
-        run: pip install ruff
-
-      - name: Check formatting
+      - name: Install dependencies
         working-directory: python
-        run: ruff format --check .
+        run: make ci-install
+        env:
+          CI: "1"
 
-      - name: Check lint
+      - name: Check formatting and lint
         working-directory: python
-        run: ruff check .
+        run: make format-check
+        env:
+          CI: "1"
 
   # ===========================================================================
   # Test Matrix (Linux, Windows, macOS × Python 3.10–3.12)
@@ -50,21 +52,27 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+          lfs: true
 
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install make (Windows)
+        if: runner.os == 'Windows'
+        run: choco install make -y --no-progress
+
       - name: Install dependencies
         working-directory: python
-        run: |
-          python -m pip install --upgrade pip
-          pip install ../submodules/osi-python
-          pip install -e ".[dev]"
+        run: make ci-install
+        env:
+          CI: "1"
 
       - name: Run tests
         working-directory: python
-        run: python -m pytest tests/ -v --tb=short --junitxml=test-results.xml
+        run: make test-ci
+        env:
+          CI: "1"
 
       - name: Upload test results
         if: always()
@@ -90,19 +98,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install build tools
-        run: pip install build
-
-      - name: Build package
+      - name: Install dependencies
         working-directory: python
-        run: python -m build
+        run: make ci-install
+        env:
+          CI: "1"
 
-      - name: Verify package contents
+      - name: Build and verify package
         working-directory: python
-        run: |
-          pip install ../submodules/osi-python
-          pip install dist/*.whl
-          python -c "from osi_utilities import MessageType, TraceFileReaderFactory; print('Package import OK')"
+        run: make package-verify
+        env:
+          CI: "1"
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@v4
