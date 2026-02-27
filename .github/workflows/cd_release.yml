@@ -65,7 +65,7 @@ jobs:
   build:
     name: Build
     needs: validate
-    uses: ./.github/workflows/ci_build.yml
+    uses: ./.github/workflows/ci_cpp.yml
     with:
       release: true
       version: ${{ needs.validate.outputs.version }}

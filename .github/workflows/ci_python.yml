@@ -1,0 +1,112 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+
+name: Python
+
+on:
+  workflow_call:
+
+jobs:
+  # ===========================================================================
+  # Lint & Format (ruff)
+  # ===========================================================================
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Check formatting
+        working-directory: python
+        run: ruff format --check .
+
+      - name: Check lint
+        working-directory: python
+        run: ruff check .
+
+  # ===========================================================================
+  # Test Matrix (Linux, Windows, macOS × Python 3.10–3.12)
+  # ===========================================================================
+  test:
+    name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.10', '3.12']
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        working-directory: python
+        run: |
+          python -m pip install --upgrade pip
+          pip install ../submodules/osi-python
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        working-directory: python
+        run: python -m pytest tests/ -v --tb=short --junitxml=test-results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: python/test-results.xml
+          retention-days: 7
+
+  # ===========================================================================
+  # Package build verification
+  # ===========================================================================
+  package:
+    name: Package build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build package
+        working-directory: python
+        run: python -m build
+
+      - name: Verify package contents
+        working-directory: python
+        run: |
+          pip install ../submodules/osi-python
+          pip install dist/*.whl
+          python -c "from osi_utilities import MessageType, TraceFileReaderFactory; print('Package import OK')"
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: python/dist/
+          retention-days: 7

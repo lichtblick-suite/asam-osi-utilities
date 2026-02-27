@@ -134,7 +134,7 @@ class MCAPTraceFileReader(TraceFileReader):
         """Return file-level metadata entries."""
         if self._reader is None:
             return []
-        return [{"name": m.metadata.name, "data": dict(m.metadata.metadata)} for m in self._reader.iter_metadata()]
+        return [{"name": m.name, "data": dict(m.metadata)} for m in self._reader.iter_metadata()]
 
     def get_channel_metadata(self, topic: str) -> dict[str, str] | None:
         """Return metadata for a specific channel/topic."""
