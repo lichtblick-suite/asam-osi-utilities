@@ -101,6 +101,7 @@ ci-install:
 	@echo "[INFO] CI: Installing dependencies..."
 	$(PIP) install --upgrade pip
 	$(PIP) install ../submodules/osi-python
+	$(PYTHON) -c "import pathlib; pathlib.Path('osi3').mkdir(exist_ok=True); (pathlib.Path('osi3')/'__init__.py').touch()"
 	$(PIP) install -e ".[dev]"
 	@echo "[OK] CI dependencies installed"
 
