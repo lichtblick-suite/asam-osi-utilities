@@ -32,26 +32,26 @@ endif
 
 # Check if dev environment is set up (skipped in CI)
 define check_dev_setup
-ifndef CI
-	@if [ ! -x "$(PYTHON)" ]; then \
-		echo ""; \
-		echo "[ERR] Development environment not set up."; \
-		echo ""; \
-		echo "Please run first:"; \
-		echo "  make setup"; \
-		echo ""; \
-		exit 1; \
+	@if [ -z "$$CI" ]; then \
+		if [ ! -x "$(PYTHON)" ]; then \
+			echo ""; \
+			echo "[ERR] Development environment not set up."; \
+			echo ""; \
+			echo "Please run first:"; \
+			echo "  make setup"; \
+			echo ""; \
+			exit 1; \
+		fi; \
+		if ! $(PYTHON) -c "import mcap, google.protobuf" 2>/dev/null; then \
+			echo ""; \
+			echo "[ERR] Dev dependencies not installed."; \
+			echo ""; \
+			echo "Please run:"; \
+			echo "  make setup"; \
+			echo ""; \
+			exit 1; \
+		fi; \
 	fi
-	@if ! $(PYTHON) -c "import mcap, google.protobuf" 2>/dev/null; then \
-		echo ""; \
-		echo "[ERR] Dev dependencies not installed."; \
-		echo ""; \
-		echo "Please run:"; \
-		echo "  make setup"; \
-		echo ""; \
-		exit 1; \
-	fi
-endif
 endef
 
 .PHONY: all setup install install-dev ci-install lint format format-check typecheck test test-ci test-cov package package-verify vendor-osi3 clean help
