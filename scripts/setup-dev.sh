@@ -108,11 +108,11 @@ fi
 
 # Determine search roots based on skip flags
 if [ $SKIP_TESTS -eq 1 ]; then
-    SEARCH_DIRS="src include examples"
-    ROOT_REGEX="^(src|include|examples)/"
+    SEARCH_DIRS="cpp/src cpp/include cpp/examples"
+    ROOT_REGEX="^cpp/(src|include|examples)/"
 else
-    SEARCH_DIRS="src include tests examples"
-    ROOT_REGEX="^(src|include|tests|examples)/"
+    SEARCH_DIRS="cpp/src cpp/include cpp/tests cpp/examples"
+    ROOT_REGEX="^cpp/(src|include|tests|examples)/"
 fi
 
 # Get list of C++ files to check
@@ -123,9 +123,9 @@ if [ $RUN_FORMAT -eq 1 ]; then
         else
             echo "Checking all C++ files..."
         fi
-        FILES=$(find $SEARCH_DIRS -type f \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.c++" -o -name "*.h" -o -name "*.hpp" -o -name "*.c" \) 2>/dev/null | grep -v "^lib/")
+        FILES=$(find $SEARCH_DIRS -type f \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.c++" -o -name "*.h" -o -name "*.hpp" -o -name "*.c" \) 2>/dev/null | grep -v "^submodules/")
     else
-        FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "${ROOT_REGEX}.*\\.(cpp|cc|cxx|c\\+\\+|h|hpp|c)$" | grep -v "^lib/")
+        FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "${ROOT_REGEX}.*\\.(cpp|cc|cxx|c\\+\\+|h|hpp|c)$" | grep -v "^submodules/")
     fi
 
     if [ -n "$FILES" ]; then
@@ -196,9 +196,9 @@ if [ $RUN_TIDY -eq 1 ]; then
 
         if [ -n "$COMPILE_DIR" ]; then
             if [ $ALL_FILES -eq 1 ]; then
-                TIDY_FILES=$(find $SEARCH_DIRS -type f \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.c++" \) 2>/dev/null | grep -v "^lib/")
+                TIDY_FILES=$(find $SEARCH_DIRS -type f \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.c++" \) 2>/dev/null | grep -v "^submodules/")
             else
-                TIDY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "${ROOT_REGEX}.*\\.(cpp|cc|cxx|c\\+\\+)$" | grep -v "^lib/")
+                TIDY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "${ROOT_REGEX}.*\\.(cpp|cc|cxx|c\\+\\+)$" | grep -v "^submodules/")
             fi
 
             if [ -n "$TIDY_FILES" ]; then

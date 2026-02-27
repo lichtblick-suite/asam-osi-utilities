@@ -36,7 +36,7 @@ target_compile_definitions(OSIUtilities PRIVATE OSI_TRACE_FILE_SPEC_VERSION="${O
 # Specify include paths for build and install usage
 target_include_directories(OSIUtilities
     PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/cpp/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
@@ -57,7 +57,7 @@ endif ()
 
 
 # get mcap and its dependencies
-set(MCAP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../lib/mcap/cpp/mcap/include)
+set(MCAP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../submodules/mcap/cpp/mcap/include)
 target_include_directories(OSIUtilities
     PUBLIC
         $<BUILD_INTERFACE:${MCAP_INCLUDE_DIR}>
@@ -79,5 +79,5 @@ install(TARGETS OSIUtilities
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/cpp/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(DIRECTORY ${MCAP_INCLUDE_DIR}/mcap DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

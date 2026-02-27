@@ -24,23 +24,23 @@
 #   ./scripts/generate_test_traces.sh [--esmini-version <version>]
 #
 # Output (11 files):
-#   tests/data/5frames_gt_esmini.osi       # Phase A - legacy
-#   tests/data/5frames_gt_esmini.mcap      # Phase A - legacy
-#   tests/data/ccrs_gt_ncap.osi            # Phase B - NCAP GroundTruth
-#   tests/data/ccrs_sv_ncap.osi            # Phase B - NCAP SensorView
-#   tests/data/ccftap_gt_ncap.osi
-#   tests/data/ccftap_sv_ncap.osi
-#   tests/data/cpna_gt_ncap.osi
-#   tests/data/cpna_sv_ncap.osi
-#   tests/data/cbla_gt_ncap.osi
-#   tests/data/cbla_sv_ncap.osi
-#   tests/data/ccrs_gt_ncap.mcap           # Phase B - one MCAP
+#   test-data/5frames_gt_esmini.osi       # Phase A - legacy
+#   test-data/5frames_gt_esmini.mcap      # Phase A - legacy
+#   test-data/ccrs_gt_ncap.osi            # Phase B - NCAP GroundTruth
+#   test-data/ccrs_sv_ncap.osi            # Phase B - NCAP SensorView
+#   test-data/ccftap_gt_ncap.osi
+#   test-data/ccftap_sv_ncap.osi
+#   test-data/cpna_gt_ncap.osi
+#   test-data/cpna_sv_ncap.osi
+#   test-data/cbla_gt_ncap.osi
+#   test-data/cbla_sv_ncap.osi
+#   test-data/ccrs_gt_ncap.mcap           # Phase B - one MCAP
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-OUTPUT_DIR="$PROJECT_ROOT/tests/data"
+OUTPUT_DIR="$PROJECT_ROOT/test-data"
 TMP_DIR=$(mktemp -d)
 
 ESMINI_VERSION="2.59.0"
@@ -93,8 +93,10 @@ ESMINI_URL="https://github.com/esmini/esmini/releases/download/v${ESMINI_VERSION
 find_executable() {
     local name="$1"
     for candidate in \
+        "$PROJECT_ROOT/build-vcpkg/cpp/examples/${name}" \
         "$PROJECT_ROOT/build-vcpkg/examples/${name}" \
         "$PROJECT_ROOT/build-vcpkg/${name}" \
+        "$PROJECT_ROOT/build/cpp/examples/${name}" \
         "$PROJECT_ROOT/build/examples/${name}" \
         "$PROJECT_ROOT/build/${name}"; do
         if [ -x "$candidate" ]; then

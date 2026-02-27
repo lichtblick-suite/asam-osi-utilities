@@ -17,7 +17,7 @@ function(configure_example TARGET_NAME SOURCE_FILE)
     endif ()
 
     target_link_libraries(${TARGET_NAME} PRIVATE OSIUtilities)
-    target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
+    target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/cpp/include)
 endfunction()
 
 # Add examples using the function above

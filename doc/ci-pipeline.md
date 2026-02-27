@@ -52,8 +52,8 @@ When code is pushed to `main`:
 Verifies C++ code formatting using clang-format-18.
 
 ```yaml
-# Checks files in: src/, include/, tests/, examples/
-find src include tests examples -name "*.cpp" -o -name "*.h" | \
+# Checks files in: cpp/src/, cpp/include/, cpp/tests/, cpp/examples/
+find cpp/src cpp/include cpp/tests cpp/examples -name "*.cpp" -o -name "*.h" | \
 xargs clang-format-18 --dry-run --Werror
 ```
 
@@ -165,7 +165,7 @@ Before pushing, you can run most CI checks locally:
 ### Format Check
 
 ```bash
-find src include tests examples -name "*.cpp" -o -name "*.h" | \
+find cpp/src cpp/include cpp/tests cpp/examples -name "*.cpp" -o -name "*.h" | \
   xargs clang-format --dry-run --Werror
 ```
 

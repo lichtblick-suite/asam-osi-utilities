@@ -57,7 +57,7 @@ ctest --test-dir build-vcpkg --output-on-failure
 
 ## Examples
 
-See [examples/](examples/README.md) for usage examples:
+See [cpp/examples/](cpp/examples/README.md) for usage examples:
 
 - `example_mcap_reader` / `example_mcap_writer` - MCAP trace file I/O
 - `example_single_channel_binary_reader` / `example_single_channel_binary_writer` - Binary `.osi` files

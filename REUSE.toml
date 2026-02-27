@@ -1,7 +1,7 @@
 version = 1
 
 [[annotations]]
-path = ["lib/osi-cpp/**", "lib/mcap/**"]
+path = ["submodules/osi-cpp/**", "submodules/mcap/**"]
 precedence = "override"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "NOASSERTION"
@@ -14,14 +14,14 @@ SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "MPL-2.0"
 
 [[annotations]]
-path = "tests/data/**"
+path = "test-data/**"
 precedence = "override"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "MPL-2.0"
 SPDX-FileComment = "Generated binary test fixtures (esmini/NCAP traces); cannot embed headers."
 
 [[annotations]]
-path = "tests/intentional-failures/**"
+path = "cpp/tests/intentional-failures/**"
 precedence = "override"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "MPL-2.0"

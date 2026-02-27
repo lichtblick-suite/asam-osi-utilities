@@ -58,10 +58,10 @@ Linkage expectations:
 
 | Flag | Default | Effect |
 | --- | --- | --- |
-| `BUILD_TESTING` | `OFF` | Builds unit tests (`tests/`). |
+| `BUILD_TESTING` | `OFF` | Builds unit tests (`cpp/tests/`). |
 | `OSIUTILITIES_RUN_TESTS` | `OFF` | Runs tests after build (implies `BUILD_TESTING=ON`). |
 | `BUILD_DOCS` | `OFF` | Builds Doxygen docs. |
-| `BUILD_EXAMPLES` | `ON` | Builds example programs (`examples/`). |
+| `BUILD_EXAMPLES` | `ON` | Builds example programs (`cpp/examples/`). |
 | `OSIUTILITIES_DOCS_ONLY` | `OFF` | Docs-only build (skips library/examples/tests). |
 | `LINK_WITH_SHARED_OSI` | `OFF` | Link utils with shared OSI library instead of static. |
 
@@ -329,7 +329,7 @@ cmake --build --preset vcpkg --parallel
 ./scripts/generate_test_traces.sh
 ```
 
-The script produces 11 fixture files in `tests/data/` (tracked via Git LFS).
+The script produces 11 fixture files in `test-data/` (tracked via Git LFS).
 Without these files the fixture-based tests will skip gracefully via `GTEST_SKIP`.
 
 ---
@@ -444,4 +444,4 @@ git submodule update --init --recursive
 ## Next Steps
 
 - [Development Setup](development.md) - Configure your development environment
-- [Examples](../examples/README.md) - Learn how to use the library
+- [Examples](../cpp/examples/README.md) - Learn how to use the library
