@@ -27,7 +27,7 @@ target_link_libraries(unit_tests PRIVATE GTest::gtest_main)
 target_compile_definitions(unit_tests PRIVATE OSI_TRACE_FILE_SPEC_VERSION="${OSI_TRACE_FILE_SPEC_VERSION}")
 
 # Test data directory for fixture-based tests
-target_compile_definitions(unit_tests PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
+target_compile_definitions(unit_tests PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test-data")
 
 # Link against OSI made available by parent CMakeLists.txt
 if (LINK_WITH_SHARED_OSI)
@@ -47,7 +47,7 @@ else ()
 endif ()
 
 # include public headers of the library
-target_include_directories(unit_tests PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(unit_tests PRIVATE ${PROJECT_SOURCE_DIR}/cpp/include)
 gtest_discover_tests(unit_tests)   # Register the tests to gtest
 
 # ============================================================================

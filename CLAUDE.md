@@ -55,14 +55,14 @@ Note: the `vcpkg` preset writes to `build-vcpkg/`, the `base` preset writes to `
 .git/hooks/pre-commit --all-files --run-tidy
 ```
 
-Style: Google-based clang-format with **4-space indentation** and **180-column limit** (see `.clang-format`). Static analysis via clang-tidy (see `.clang-tidy`).
+Style: Google-based clang-format with **4-space indentation** and **180-column limit** (see `cpp/.clang-format`). Static analysis via clang-tidy (see `cpp/.clang-tidy`).
 
 ## Architecture
 
 **Reader/Writer abstraction with factory pattern:**
 
-- `include/osi-utilities/tracefile/Reader.h` — base `TraceFileReader` with `TraceFileReaderFactory::createReader(path)` that picks the right reader by file extension
-- `include/osi-utilities/tracefile/Writer.h` — base `TraceFileWriter`
+- `cpp/include/osi-utilities/tracefile/Reader.h` — base `TraceFileReader` with `TraceFileReaderFactory::createReader(path)` that picks the right reader by file extension
+- `cpp/include/osi-utilities/tracefile/Writer.h` — base `TraceFileWriter`
 - Three format implementations under `reader/` and `writer/`: `MCAPTraceFile*`, `SingleChannelBinaryTraceFile*`, `TXTHTraceFile*`
 
 **Key types:**
@@ -73,9 +73,9 @@ Style: Google-based clang-format with **4-space indentation** and **180-column l
 
 **Configuration:**
 
-- `include/osi-utilities/tracefile/TraceFileConfig.h` — chunk size constants (default 16 MiB) and binary format constants
+- `cpp/include/osi-utilities/tracefile/TraceFileConfig.h` — chunk size constants (default 16 MiB) and binary format constants
 
-**Submodules in `lib/`:**
+**Submodules in `submodules/`:**
 
 - `osi-cpp/` — OSI protobuf definitions (has nested `open-simulation-interface` submodule)
 - `mcap/` — MCAP C++ library
@@ -99,7 +99,7 @@ When generating PR descriptions or commit messages, save them as markdown files 
 
 The `.playground/` folder is gitignored and serves as a scratch space for agent-generated artifacts.
 
-## Naming Conventions (from .clang-tidy)
+## Naming Conventions (from cpp/.clang-tidy)
 
 - Classes/Structs: `CamelCase`
 - Variables: `lower_case`
@@ -109,7 +109,7 @@ The `.playground/` folder is gitignored and serves as a scratch space for agent-
 
 ## Testing
 
-GoogleTest framework. Tests in `tests/src/` following `*_test.cpp` pattern. Common helpers in `tests/src/TestUtilities.h`. Test target name: `unit_tests`.
+GoogleTest framework. Tests in `cpp/tests/src/` following `*_test.cpp` pattern. Common helpers in `cpp/tests/src/TestUtilities.h`. Test target name: `unit_tests`.
 
 ## Releasing
 

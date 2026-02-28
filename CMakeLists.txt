@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Add cmake modules directory early so we can use custom find modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cpp/cmake")
 
 # Read version from vcpkg.json (single source of truth)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json" VCPKG_JSON)
@@ -21,7 +21,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 
 # Add the include folder for public headers
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/cpp/include)
 
 # Build options
 option(BUILD_DOCS "Build Doxygen documentation" OFF)
@@ -54,14 +54,14 @@ if (OSIUTILITIES_RUN_TESTS)
 endif ()
 
 if (DEFINED USE_EXTERNAL_OSI AND USE_EXTERNAL_OSI)
-    message(FATAL_ERROR "External OSI is disabled; use the bundled lib/osi-cpp submodule.")
+    message(FATAL_ERROR "External OSI is disabled; use the bundled submodules/osi-cpp submodule.")
 elseif (DEFINED USE_EXTERNAL_OSI)
     message(STATUS "Ignoring legacy USE_EXTERNAL_OSI option; using bundled submodule.")
 endif ()
 
 if (NOT OSIUTILITIES_DOCS_ONLY)
     # Use bundled osi-cpp submodule, which builds open_simulation_interface.
-    set(OSI_CPP_DIR ${PROJECT_SOURCE_DIR}/lib/osi-cpp)
+    set(OSI_CPP_DIR ${PROJECT_SOURCE_DIR}/submodules/osi-cpp)
     if (NOT EXISTS "${OSI_CPP_DIR}/CMakeLists.txt")
         message(FATAL_ERROR "osi-cpp submodule not found. Run: git submodule update --init --recursive")
     endif ()
@@ -120,12 +120,12 @@ if (BUILD_DOCS AND PROJECT_IS_TOP_LEVEL)
 endif ()
 
 if (NOT OSIUTILITIES_DOCS_ONLY)
-    add_subdirectory(src)
+    add_subdirectory(cpp/src)
     if (PROJECT_IS_TOP_LEVEL)
         include(CTest)
         if (BUILD_TESTING)
             enable_testing()
-            add_subdirectory(tests)
+            add_subdirectory(cpp/tests)
             if (OSIUTILITIES_RUN_TESTS)
                 set(CTEST_CONFIG_ARG "")
                 if (CMAKE_CONFIGURATION_TYPES)
@@ -143,6 +143,6 @@ if (NOT OSIUTILITIES_DOCS_ONLY)
         endif ()
     endif ()
     if (BUILD_EXAMPLES)
-        add_subdirectory(examples)
+        add_subdirectory(cpp/examples)
     endif ()
 endif ()

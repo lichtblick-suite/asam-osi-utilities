@@ -7,7 +7,7 @@ SPDX-License-Identifier: MPL-2.0
 
 ## Project Structure & Module Organization
 
-The library implementation lives in `src/`, with public headers in `include/osi-utilities/`. Unit tests are in `tests/src/`, and example executables live in `examples/`. Documentation is in `doc/`, CMake helpers in `cmake/`, and developer scripts in `scripts/`. Third-party code is tracked as submodules in `lib/` (`mcap/`, `osi-cpp/`). Build artifacts should go in `build/` (generated). Dependency manifests are `vcpkg.json` and `vcpkg-configuration.json`.
+The C++ library implementation lives in `cpp/src/`, with public headers in `cpp/include/osi-utilities/`. Unit tests are in `cpp/tests/src/`, and example executables live in `cpp/examples/`. Shared test data is in `test-data/`. Documentation is in `doc/`, C++ CMake helpers in `cpp/cmake/`, and developer scripts in `scripts/`. Third-party code is tracked as submodules in `submodules/` (`mcap/`, `osi-cpp/`). Build artifacts should go in `build/` (generated). Dependency manifests are `vcpkg.json` and `vcpkg-configuration.json`.
 
 ## Build, Test, and Development Commands
 
@@ -20,11 +20,11 @@ The library implementation lives in `src/`, with public headers in `include/osi-
 
 ## Coding Style & Naming Conventions
 
-Formatting is enforced by `clang-format` with a Google-based style (`.clang-format`): 4-space indentation, no tabs, and a 180-column limit. Static analysis uses `clang-tidy` when available. Prefer running `.git/hooks/pre-commit` (or `--fix`) after the setup script installs hooks. Keep public APIs in `include/osi-utilities/` with matching implementations in `src/`, and follow existing naming patterns in nearby files.
+Formatting is enforced by `clang-format` with a Google-based style (`cpp/.clang-format`): 4-space indentation, no tabs, and a 180-column limit. Static analysis uses `clang-tidy` when available. Prefer running `.git/hooks/pre-commit` (or `--fix`) after the setup script installs hooks. Keep public APIs in `cpp/include/osi-utilities/` with matching implementations in `cpp/src/`, and follow existing naming patterns in nearby files.
 
 ## Testing Guidelines
 
-Tests are written with GoogleTest and registered via CTest (`tests/CMakeLists.txt` uses `gtest_discover_tests`). Test files follow the `*_test.cpp` naming pattern under `tests/src/`. Run the full suite with `ctest --test-dir build --output-on-failure`. CI collects coverage on Ubuntu for validation; add tests alongside new behavior.
+Tests are written with GoogleTest and registered via CTest (`cpp/tests/CMakeLists.txt` uses `gtest_discover_tests`). Test files follow the `*_test.cpp` naming pattern under `cpp/tests/src/`. Run the full suite with `ctest --test-dir build --output-on-failure`. CI collects coverage on Ubuntu for validation; add tests alongside new behavior.
 
 ## Commit & Pull Request Guidelines
 

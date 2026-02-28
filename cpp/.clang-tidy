@@ -35,7 +35,7 @@ Checks: >
   clang-analyzer-*,
   performance-*,
   -performance-avoid-endl,
-HeaderFilterRegex: '^(src|include|tests|examples|doc)/'
+HeaderFilterRegex: '^cpp/(src|include|tests|examples)/'
 
 # as like in clang-format, follow the Google style guide https://google.github.io/styleguide/cppguide.html
 # based on https://github.com/googleapis/google-cloud-cpp/blob/main/.clang-tidy
