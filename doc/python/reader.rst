@@ -15,3 +15,4 @@ TraceFileReader
    :show-inheritance:
 
 .. autofunction:: osi_utilities.tracefile.reader.open_trace_file
+

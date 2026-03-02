@@ -185,16 +185,13 @@ def parse_osi_trace_filename(filename: str) -> dict:
 
 @dataclass
 class ReadResult:
-    """Result of reading a single message from a trace file.
+    """Result of reading a single message from a trace file."""
 
-    Attributes:
-        message: The deserialized protobuf message.
-        message_type: The OSI message type.
-        channel_name: The channel/topic name (MCAP only, empty for single-channel formats).
-    """
-
+    #: The deserialized protobuf message.
     message: Message
+    #: The OSI message type.
     message_type: MessageType
+    #: The channel/topic name (MCAP only, empty for single-channel formats).
     channel_name: str = ""
 
 
@@ -203,17 +200,15 @@ class ChannelSpecification:
     """Specification for an OSI channel within a trace file.
 
     Adopted from PMSFIT's OSIChannelSpecification with builder pattern.
-
-    Attributes:
-        path: Path to the trace file.
-        message_type: OSI message type name (e.g. "GroundTruth").
-        topic: Channel topic name (MCAP only).
-        metadata: Additional channel metadata.
     """
 
+    #: Path to the trace file.
     path: Path
+    #: OSI message type name (e.g. "GroundTruth").
     message_type: str | None = None
+    #: Channel topic name (MCAP only).
     topic: str | None = None
+    #: Additional channel metadata.
     metadata: dict[str, str] = field(default_factory=dict)
 
     @property

@@ -8,3 +8,4 @@ TXTHTraceFileReader
    :members:
    :undoc-members:
    :show-inheritance:
+

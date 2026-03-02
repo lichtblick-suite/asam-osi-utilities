@@ -8,3 +8,4 @@ TraceFileWriter
    :members:
    :undoc-members:
    :show-inheritance:
+

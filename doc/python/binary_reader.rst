@@ -8,3 +8,4 @@ BinaryTraceFileReader
    :members:
    :undoc-members:
    :show-inheritance:
+

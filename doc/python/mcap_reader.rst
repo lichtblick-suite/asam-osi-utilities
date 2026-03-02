@@ -8,3 +8,4 @@ MCAPTraceFileReader
    :members:
    :undoc-members:
    :show-inheritance:
+

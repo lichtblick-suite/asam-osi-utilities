@@ -20,3 +20,4 @@ writers for Binary (``.osi``), MCAP (``.mcap``), and TXTH (``.txth``) trace file
    binary_writer
    txth_reader
    txth_writer
+

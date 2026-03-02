@@ -8,3 +8,4 @@ BinaryTraceFileWriter
    :members:
    :undoc-members:
    :show-inheritance:
+

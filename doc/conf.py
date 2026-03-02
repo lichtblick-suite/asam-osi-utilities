@@ -68,10 +68,11 @@ intersphinx_mapping = {
 intersphinx_timeout = 5
 
 # -- Warning suppression -----------------------------------------------------
-# Breathe warnings are expected when Doxygen XML hasn't been generated yet
-# (e.g. local dev without CMake build). Suppress to avoid false negatives.
+# myst.xref_missing: Markdown files may reference anchors that MyST cannot resolve.
+# intersphinx.inventory: Inventory fetch may fail behind corporate proxies.
 suppress_warnings = [
     "myst.xref_missing",
+    "intersphinx.inventory",
 ]
 
 # -- HTML output configuration -----------------------------------------------
@@ -93,3 +94,4 @@ exclude_patterns = ["_build", "xml", "html", "Doxyfile.in"]
 # -- Template and static paths -----------------------------------------------
 templates_path = []
 html_static_path = []
+

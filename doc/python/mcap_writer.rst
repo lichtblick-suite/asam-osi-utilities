@@ -8,3 +8,4 @@ MCAPTraceFileWriter
    :members:
    :undoc-members:
    :show-inheritance:
+

@@ -80,11 +80,20 @@ examples, and tests), use `OSIUTILITIES_DOCS_ONLY=ON`.
 The simplest way to build docs locally is via the root Makefile:
 
 ```bash
-make docs
+make docs-build
 ```
 
 This creates a Python virtual environment, installs Sphinx dependencies, runs
 Doxygen and Sphinx, and writes HTML to `doc/html/index.html`.
+
+To build and immediately preview in a browser:
+
+```bash
+make docs-serve
+```
+
+This builds the docs (if needed) and starts a local HTTP server at
+`http://localhost:8000`.
 
 Alternatively, using CMake directly:
 

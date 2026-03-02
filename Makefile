@@ -39,7 +39,7 @@ define check_venv
 	fi
 endef
 
-.PHONY: all setup setup-dev setup-docs lint lint-cpp lint-python format-python test test-cpp test-python docs docs-serve clean clean-docs help
+.PHONY: all setup setup-dev setup-docs lint lint-cpp lint-python format-python test test-cpp test-python docs docs-build docs-serve clean clean-docs help
 
 # Default target
 all: lint test
@@ -147,15 +147,18 @@ test-python:
 # ===========================================================================
 
 # Build unified documentation (Doxygen XML → Sphinx HTML)
-docs: setup-docs
+docs-build: setup-docs
 	@echo "[INFO] Building documentation (Doxygen XML → Sphinx HTML)..."
 	@cmake --preset $(CMAKE_DOCS_PRESET) -DOSIUTILITIES_DOCS_ONLY=ON -DPython3_EXECUTABLE=$(abspath $(PYTHON))
 	@cmake --build --preset $(CMAKE_DOCS_PRESET) --target library_api_doc
 	@echo "[OK] Documentation built at doc/html/"
 
+# Alias for CI workflows
+docs: docs-build
+
 # Serve docs locally for preview
-docs-serve: docs
-	@echo "[INFO] Starting local documentation server..."
+docs-serve: docs-build
+	@echo "[INFO] Starting local documentation server at http://localhost:8000 ..."
 	@"$(PYTHON)" -m http.server 8000 --directory doc/html
 
 # ===========================================================================
@@ -200,8 +203,9 @@ help:
 	@echo "  make test-python    - Run Python tests"
 	@echo ""
 	@echo "Documentation:"
-	@echo "  make docs           - Build unified docs (Doxygen XML → Sphinx HTML)"
-	@echo "  make docs-serve     - Build and serve docs locally on port 8000"
+	@echo "  make docs-build     - Build unified docs (Doxygen XML → Sphinx HTML)"
+	@echo "  make docs           - Alias for docs-build"
+	@echo "  make docs-serve     - Build and serve docs locally at http://localhost:8000"
 	@echo ""
 	@echo "Cleaning:"
 	@echo "  make clean          - Remove all build artifacts and caches"

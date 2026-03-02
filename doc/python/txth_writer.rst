@@ -8,3 +8,4 @@ TXTHTraceFileWriter
    :members:
    :undoc-members:
    :show-inheritance:
+

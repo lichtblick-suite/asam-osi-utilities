@@ -9,13 +9,13 @@ This project ships small executables that demonstrate how to read/write OSI trac
 
 ## What the examples cover
 
-- [example_mcap_reader.cpp](@ref example_mcap_reader.cpp) — MCAP read ([source](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_mcap_reader.cpp))
-- [example_mcap_writer.cpp](@ref example_mcap_writer.cpp) — MCAP write ([source](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_mcap_writer.cpp))
-- [example_single_channel_binary_reader.cpp](@ref example_single_channel_binary_reader.cpp) — `.osi` binary read ([source](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_single_channel_binary_reader.cpp))
-- [example_single_channel_binary_writer.cpp](@ref example_single_channel_binary_writer.cpp) — `.osi` binary write ([source](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_single_channel_binary_writer.cpp))
-- [example_txth_reader.cpp](@ref example_txth_reader.cpp) — `.txth` text read ([source](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_txth_reader.cpp))
-- [example_txth_writer.cpp](@ref example_txth_writer.cpp) — `.txth` text write ([source](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_txth_writer.cpp))
-- [convert_osi2mcap.cpp](@ref convert_osi2mcap.cpp) — convert `.osi` to `.mcap` ([source](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/convert_osi2mcap.cpp))
+- [example_mcap_reader.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_mcap_reader.cpp) — MCAP read
+- [example_mcap_writer.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_mcap_writer.cpp) — MCAP write
+- [example_single_channel_binary_reader.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_single_channel_binary_reader.cpp) — `.osi` binary read
+- [example_single_channel_binary_writer.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_single_channel_binary_writer.cpp) — `.osi` binary write
+- [example_txth_reader.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_txth_reader.cpp) — `.txth` text read
+- [example_txth_writer.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_txth_writer.cpp) — `.txth` text write
+- [convert_osi2mcap.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/convert_osi2mcap.cpp) — convert `.osi` to `.mcap`
 
 ## Build examples
 

@@ -85,4 +85,5 @@ class TXTHTraceFileWriter(TraceFileWriter):
 
     @property
     def written_count(self) -> int:
+        """Number of messages written so far."""
         return self._written_count

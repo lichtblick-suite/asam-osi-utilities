@@ -6,6 +6,7 @@ build-*/
 dist/
 doc/html
 doc/latex
+doc/xml
 osi/
 osi3/
 vcpkg_installed/
