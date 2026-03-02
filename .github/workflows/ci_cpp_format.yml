@@ -23,8 +23,5 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
           yq -r '.dependencies.dev.apt[]' .github/dependencies.yml | xargs sudo apt-get install -y
 
-      - name: Install Hooks
-        run: bash scripts/setup-dev.sh
-
       - name: Check C++ formatting
-        run: .git/hooks/pre-commit --all-files --skip-tidy
+        run: make lint-cpp

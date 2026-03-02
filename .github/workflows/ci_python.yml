@@ -23,17 +23,10 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        working-directory: python
-        run: make ci-install
-        env:
-          CI: "1"
-
-      - name: Check formatting and lint
-        working-directory: python
-        run: make format-check
-        env:
-          CI: "1"
+      - name: Setup and lint
+        run: |
+          make setup
+          make lint-python
 
   # ===========================================================================
   # Test Matrix (Linux, Windows, macOS × Python 3.10–3.12)
@@ -62,17 +55,10 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install make -y --no-progress
 
-      - name: Install dependencies
-        working-directory: python
-        run: make ci-install
-        env:
-          CI: "1"
-
-      - name: Run tests
-        working-directory: python
-        run: make test-ci
-        env:
-          CI: "1"
+      - name: Setup and test
+        run: |
+          make setup
+          make test-python
 
       - name: Upload test results
         if: always()
@@ -98,17 +84,10 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        working-directory: python
-        run: make ci-install
-        env:
-          CI: "1"
-
-      - name: Build and verify package
-        working-directory: python
-        run: make package-verify
-        env:
-          CI: "1"
+      - name: Setup and build package
+        run: |
+          make setup
+          cd python && make package-verify
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@v4

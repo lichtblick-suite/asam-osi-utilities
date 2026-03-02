@@ -190,10 +190,9 @@ jobs:
           python-version: '3.12'
 
       - name: Build Python package
-        working-directory: python
-        run: make package
-        env:
-          CI: "1"
+        run: |
+          make setup
+          cd python && make package
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Doxygen
+    name: Build Documentation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -28,7 +28,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           YQ_VERSION=v4.52.2
@@ -36,11 +36,8 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
           yq -r '.ci_jobs.ubuntu_docs.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
-      - name: Configure CMake
-        run: cmake --preset base -DOSIUTILITIES_DOCS_ONLY=ON
-
       - name: Build Documentation
-        run: cmake --build --preset base --target library_api_doc
+        run: make docs
 
       - name: Upload artifact for Pages
         if: inputs.deploy

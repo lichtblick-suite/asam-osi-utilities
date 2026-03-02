@@ -11,7 +11,7 @@
 #   - build:      System packages to compile the library (non-vcpkg path)
 #   - vcpkg_host: Host tools only when vcpkg manages libraries (cmake, git, etc.)
 #   - test:       Additional packages for unit tests
-#   - docs:       Documentation generation (doxygen, graphviz)
+#   - docs:       Documentation generation (doxygen, graphviz, python3-venv for Sphinx)
 #   - lint:       Static analysis tools (clang-tidy)
 #   - dev:        Development tools (clang-format, ninja)
 #   - coverage:   Code coverage reporting (gcovr)
@@ -82,12 +82,15 @@ dependencies:
       - gtest-devel
 
   # =========================================================================
-  # Documentation dependencies (Doxygen)
+  # Documentation dependencies (Doxygen + Sphinx)
   # =========================================================================
+  # System packages only. Sphinx and its plugins are installed via pip
+  # from pyproject.toml[docs]: pip install -e "python/[docs]"
   docs:
     apt:
       - doxygen
       - graphviz
+      - python3-venv
     dnf:
       - doxygen
       - graphviz
@@ -158,7 +161,7 @@ dependencies:
 # ci_build.yml (vcpkg):      (vcpkg handles all via vcpkg.json)
 # ci_lint.yml:               build + test + lint
 # ci_format.yml:             dev (clang-format only)
-# cd_docs.yml:               docs only (no build/test deps needed with -DOSIUTILITIES_DOCS_ONLY=ON)
+# cd_docs.yml:               docs + pip install -e "python/[docs]" (Doxygen XML → Sphinx HTML)
 
 ci_jobs:
   ubuntu_build:
@@ -174,6 +177,6 @@ ci_jobs:
       liblz4-dev libzstd-dev libgtest-dev clang-tidy-18 pkg-config
 
   ubuntu_docs:
-    description: "Documentation build only"
+    description: "Documentation build (Doxygen + Sphinx)"
     apt: |
-      cmake doxygen graphviz
+      cmake doxygen graphviz python3-venv

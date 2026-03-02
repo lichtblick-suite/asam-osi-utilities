@@ -2,18 +2,12 @@
 # Single point of truth for all build, lint, test, and CI commands.
 #
 # Local development:  make setup && make lint test
-# CI (no venv):       make ci-install && make lint test
-#                     (or set CI=1 to skip venv automatically)
+# CI:                 Use root Makefile (make setup && make lint-python test-python)
+#                     or set up venv from root and call targets here directly.
 
 VENV ?= .venv
 BOOTSTRAP_PYTHON ?= python3
 
-# --- CI mode: skip venv, use system Python directly ---
-ifdef CI
-PYTHON ?= python
-PIP ?= python -m pip
-PYTEST ?= python -m pytest
-else
 # Cross-platform venv paths
 ifeq ($(OS),Windows_NT)
 PYTHON ?= $(VENV)/Scripts/python
@@ -28,33 +22,30 @@ PYTEST ?= $(PYTHON) -m pytest
 VENV_MARKER := $(VENV)/bin/python3
 VENV_ACTIVATE := source $(VENV)/bin/activate
 endif
-endif
 
-# Check if dev environment is set up (skipped in CI)
+# Check if dev environment is set up
 define check_dev_setup
-	@if [ -z "$$CI" ]; then \
-		if [ ! -x "$(PYTHON)" ]; then \
-			echo ""; \
-			echo "[ERR] Development environment not set up."; \
-			echo ""; \
-			echo "Please run first:"; \
-			echo "  make setup"; \
-			echo ""; \
-			exit 1; \
-		fi; \
-		if ! $(PYTHON) -c "import mcap, google.protobuf" 2>/dev/null; then \
-			echo ""; \
-			echo "[ERR] Dev dependencies not installed."; \
-			echo ""; \
-			echo "Please run:"; \
-			echo "  make setup"; \
-			echo ""; \
-			exit 1; \
-		fi; \
+	@if [ ! -x "$(PYTHON)" ]; then \
+		echo ""; \
+		echo "[ERR] Development environment not set up."; \
+		echo ""; \
+		echo "Please run first:"; \
+		echo "  make setup"; \
+		echo ""; \
+		exit 1; \
+	fi; \
+	if ! $(PYTHON) -c "import mcap, google.protobuf" 2>/dev/null; then \
+		echo ""; \
+		echo "[ERR] Dev dependencies not installed."; \
+		echo ""; \
+		echo "Please run:"; \
+		echo "  make setup"; \
+		echo ""; \
+		exit 1; \
 	fi
 endef
 
-.PHONY: all setup install install-dev ci-install lint format format-check typecheck test test-ci test-cov package package-verify vendor-osi3 clean help
+.PHONY: all setup install install-dev lint format format-check typecheck test test-ci test-cov package package-verify vendor-osi3 clean help
 
 # Default target
 all: lint test
@@ -78,7 +69,6 @@ setup:
 	@echo ""
 	@echo "[OK] osi-utilities Python SDK setup complete. Activate with: $(VENV_ACTIVATE)"
 
-ifndef CI
 $(VENV_MARKER):
 	@echo "[INFO] Creating Python virtual environment at $(VENV)..."
 	@$(BOOTSTRAP_PYTHON) -m venv $(VENV)
@@ -92,36 +82,19 @@ $(VENV_MARKER):
 	@$(PIP) install -e ".[dev]"
 	@touch .venv/.installed
 	@echo "[OK] Python dependencies installed"
-endif
-
-# ---------------------------------------------------------------------------
-# CI setup (no venv, installs into system/action Python)
-# ---------------------------------------------------------------------------
-ci-install:
-	@echo "[INFO] CI: Installing dependencies..."
-	$(PIP) install --upgrade pip
-	$(PIP) install ../submodules/osi-python
-	$(PYTHON) -c "import pathlib; pathlib.Path('osi3').mkdir(exist_ok=True); (pathlib.Path('osi3')/'__init__.py').touch()"
-	$(PIP) install -e ".[dev]"
-	$(PYTHON) -c "import shutil; shutil.rmtree('osi3', ignore_errors=True)"
-	@echo "[OK] CI dependencies installed"
 
 # ---------------------------------------------------------------------------
 # Installation targets
 # ---------------------------------------------------------------------------
 install:
-ifndef CI
 	$(MAKE) $(VENV_MARKER)
-endif
 	@echo "[INFO] Installing osi-utilities package..."
 	@$(PIP) install ../submodules/osi-python
 	@$(PIP) install -e .
 	@echo "[OK] Package installation complete"
 
 install-dev:
-ifndef CI
 	$(MAKE) .venv/.installed
-endif
 
 # ---------------------------------------------------------------------------
 # Linting and formatting
@@ -222,13 +195,10 @@ clean:
 help:
 	@echo "osi-utilities Python SDK - Available Commands"
 	@echo ""
-	@echo "Local development:"
+	@echo "Setup:"
 	@echo "  make setup          - Create venv and install dev dependencies"
 	@echo "  make install        - Install package (user mode)"
 	@echo "  make install-dev    - Install with dev dependencies"
-	@echo ""
-	@echo "CI (set CI=1 or use ci-* targets):"
-	@echo "  make ci-install     - Install deps into system Python (no venv)"
 	@echo ""
 	@echo "Linting:"
 	@echo "  make lint           - Run ruff linter"
