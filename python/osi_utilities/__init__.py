@@ -3,6 +3,7 @@
 
 """Python utilities for reading and writing ASAM OSI trace files."""
 
+from osi_utilities.converters.gt2sv import convert_gt2sv
 from osi_utilities.tracefile._types import (
     ChannelSpecification,
     MessageType,
@@ -34,5 +35,6 @@ __all__ = [
     "TraceFileReader",
     "TraceFileReaderFactory",
     "TraceFileWriter",
+    "convert_gt2sv",
     "open_trace_file",
 ]

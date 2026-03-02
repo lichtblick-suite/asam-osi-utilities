@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from pathlib import Path
 
-from osi_utilities.tracefile._types import ReadResult
+from osi_utilities.tracefile._types import MessageType, ReadResult
 
 logger = logging.getLogger(__name__)
 
@@ -77,11 +77,18 @@ class TraceFileReaderFactory:
     """Factory for creating trace file readers based on file extension."""
 
     @staticmethod
-    def create_reader(path: str | Path) -> TraceFileReader:
+    def create_reader(
+        path: str | Path,
+        *,
+        message_type: MessageType | None = None,
+    ) -> TraceFileReader:
         """Create a trace file reader appropriate for the given file.
 
         Args:
             path: Path to the trace file. Extension determines the reader type.
+            message_type: Explicit message type for binary/txth files. If provided,
+                overrides filename-based inference. Ignored for MCAP files (which
+                store the schema in the file itself).
 
         Returns:
             An opened TraceFileReader instance.
@@ -100,7 +107,10 @@ class TraceFileReaderFactory:
         elif suffix == ".osi":
             from osi_utilities.tracefile.binary_reader import BinaryTraceFileReader
 
-            reader = BinaryTraceFileReader()
+            if message_type is not None:
+                reader = BinaryTraceFileReader(message_type=message_type)
+            else:
+                reader = BinaryTraceFileReader()
         elif suffix == ".txth":
             from osi_utilities.tracefile.txth_reader import TXTHTraceFileReader
 
@@ -113,15 +123,20 @@ class TraceFileReaderFactory:
         return reader
 
 
-def open_trace_file(path: str | Path) -> TraceFileReader:
+def open_trace_file(
+    path: str | Path,
+    *,
+    message_type: MessageType | None = None,
+) -> TraceFileReader:
     """Convenience function to open a trace file for reading.
 
     Equivalent to ``TraceFileReaderFactory.create_reader(path)``.
 
     Args:
         path: Path to the trace file.
+        message_type: Explicit message type for binary/txth files.
 
     Returns:
         An opened TraceFileReader instance (use as context manager).
     """
-    return TraceFileReaderFactory.create_reader(path)
+    return TraceFileReaderFactory.create_reader(path, message_type=message_type)

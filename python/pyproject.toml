@@ -16,6 +16,7 @@ authors = [
     {name = "BMW AG"},
 ]
 keywords = ["osi", "open-simulation-interface", "mcap", "protobuf", "simulation", "automated-driving"]
+
 classifiers = [
     "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
     "Programming Language :: Python :: 3",
@@ -31,6 +32,9 @@ dependencies = [
     "mcap>=1.1",
     "mcap-protobuf-support>=0.5",
 ]
+
+[project.scripts]
+convert-gt2sv = "osi_utilities.converters.gt2sv:main"
 
 [project.optional-dependencies]
 dev = [

@@ -140,11 +140,25 @@ def _get_message_class(message_type: MessageType) -> type[Message]:
 
 
 def infer_message_type_from_filename(filename: str) -> MessageType:
-    """Infer message type from filename patterns (matching C++ kFileNameMessageTypeMap)."""
+    """Infer message type from filename patterns.
+
+    Matches the C++ kFileNameMessageTypeMap patterns (e.g. ``_gt_``) and also
+    supports the common convention where the type code appears at the end of
+    the stem before the extension (e.g. ``trace_gt.osi``, ``output_sv.mcap``).
+    """
     lower_name = filename.lower()
+    # First try the strict C++ patterns (e.g. "_gt_")
     for pattern, msg_type in FILENAME_MESSAGE_TYPE_MAP.items():
         if pattern in lower_name:
             return msg_type
+
+    # Fallback: match type code at end of stem before extension (e.g. "_gt.osi")
+    stem = Path(filename).stem.lower()
+    for pattern, msg_type in FILENAME_MESSAGE_TYPE_MAP.items():
+        code = pattern.strip("_")  # "_gt_" -> "gt"
+        if stem.endswith(f"_{code}") or stem == code:
+            return msg_type
+
     return MessageType.UNKNOWN
 
 
