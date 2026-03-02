@@ -11,13 +11,11 @@ from __future__ import annotations
 import logging
 
 import google.protobuf
-from google.protobuf.descriptor import FileDescriptor
-from google.protobuf.descriptor_pb2 import FileDescriptorSet
-from google.protobuf.message import Message
+from google.protobuf.message import EncodeError, Message
 from mcap.well_known import MessageEncoding
 from mcap.writer import Writer as McapRawWriter
 
-from osi_utilities.tracefile._config import NANOSECONDS_PER_SECOND
+from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set, extract_timestamp_ns
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +64,7 @@ class MCAPChannel:
 
         schema_name = f"osi3.{message_class.DESCRIPTOR.name}"
         if schema_name not in self._schema_cache:
-            fds = self._build_file_descriptor_set(message_class)
+            fds = build_file_descriptor_set(message_class)
             schema_id = self._mcap_writer.register_schema(
                 name=schema_name,
                 encoding=MessageEncoding.Protobuf,
@@ -103,7 +101,7 @@ class MCAPChannel:
 
         try:
             data = message.SerializeToString()
-            log_time = self._extract_timestamp_ns(message)
+            log_time = extract_timestamp_ns(message)
             self._mcap_writer.add_message(
                 channel_id=self._channels[topic],
                 log_time=log_time,
@@ -111,7 +109,7 @@ class MCAPChannel:
                 publish_time=log_time,
             )
             return True
-        except Exception as e:
+        except (OSError, EncodeError) as e:
             logger.error("Failed to write message: %s", e)
             return False
 
@@ -121,25 +119,3 @@ class MCAPChannel:
         from osi_utilities.tracefile.mcap_writer import prepare_required_file_metadata
 
         return prepare_required_file_metadata()
-
-    @staticmethod
-    def _build_file_descriptor_set(message_class: type[Message]) -> FileDescriptorSet:
-        fds = FileDescriptorSet()
-        seen: set[str] = set()
-
-        def _append(fd: FileDescriptor) -> None:
-            for dep in fd.dependencies:
-                if dep.name not in seen:
-                    seen.add(dep.name)
-                    _append(dep)
-            fd.CopyToProto(fds.file.add())
-
-        _append(message_class.DESCRIPTOR.file)
-        return fds
-
-    @staticmethod
-    def _extract_timestamp_ns(message: Message) -> int:
-        if hasattr(message, "timestamp"):
-            ts = message.timestamp
-            return int(ts.seconds * NANOSECONDS_PER_SECOND + ts.nanos)
-        return 0

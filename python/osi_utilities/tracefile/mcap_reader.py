@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 from typing import IO
 
+from mcap.exceptions import McapError
 from mcap.reader import make_reader
 from mcap_protobuf.decoder import DecoderFactory
 
@@ -56,7 +57,7 @@ class MCAPTraceFileReader(TraceFileReader):
             self._summary = self._reader.get_summary()
             self._start_iteration()
             return True
-        except Exception as e:
+        except (OSError, McapError) as e:
             logger.error("Failed to open MCAP file '%s': %s", path, e)
             if self._file is not None:
                 self._file.close()

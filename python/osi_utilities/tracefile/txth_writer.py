@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import IO
 
 from google.protobuf import text_format
-from google.protobuf.message import Message
+from google.protobuf.message import EncodeError, Message
 
 from osi_utilities.tracefile.writer import TraceFileWriter
 
@@ -72,7 +72,7 @@ class TXTHTraceFileWriter(TraceFileWriter):
             self._file.write(text)
             self._written_count += 1
             return True
-        except Exception as e:
+        except (OSError, EncodeError) as e:
             logger.error("Failed to write message: %s", e)
             return False
 

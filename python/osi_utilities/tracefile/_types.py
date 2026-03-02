@@ -178,7 +178,7 @@ def parse_osi_trace_filename(filename: str) -> dict:
             "number_of_frames": int(match.group("number_of_frames")),
             "custom_trace_name": match.group("custom_trace_name"),
         }
-    except Exception as e:
+    except (ValueError, IndexError) as e:
         logger.warning("Error parsing filename %s: %s", filename, e)
         return {}
 

@@ -15,20 +15,19 @@ from pathlib import Path
 from typing import IO
 
 import google.protobuf
-from google.protobuf.descriptor import FileDescriptor
-from google.protobuf.descriptor_pb2 import FileDescriptorSet
-from google.protobuf.message import Message
+from google.protobuf.message import EncodeError, Message
+from mcap.exceptions import McapError
 from mcap.well_known import MessageEncoding
 from mcap.writer import Writer as McapRawWriter
 
 from osi_utilities.tracefile._config import (
-    NANOSECONDS_PER_SECOND,
     OSI_CHANNEL_RECOMMENDED_METADATA_KEYS,
     OSI_CHANNEL_REQUIRED_METADATA_KEYS,
     OSI_TRACE_METADATA_NAME,
     OSI_TRACE_RECOMMENDED_METADATA_KEYS,
     OSI_TRACE_REQUIRED_METADATA_KEYS,
 )
+from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set, extract_timestamp_ns
 from osi_utilities.tracefile.writer import TraceFileWriter
 
 logger = logging.getLogger(__name__)
@@ -42,22 +41,6 @@ def _get_package_version() -> str:
         return version("asam-osi-utilities")
     except Exception:
         return "0.0.0"
-
-
-def _build_file_descriptor_set(message_class: type[Message]) -> FileDescriptorSet:
-    """Build a FileDescriptorSet for a protobuf message class, including all dependencies."""
-    fds = FileDescriptorSet()
-    seen: set[str] = set()
-
-    def _append(fd: FileDescriptor) -> None:
-        for dep in fd.dependencies:
-            if dep.name not in seen:
-                seen.add(dep.name)
-                _append(dep)
-        fd.CopyToProto(fds.file.add())
-
-    _append(message_class.DESCRIPTOR.file)
-    return fds
 
 
 def prepare_required_file_metadata() -> dict[str, str]:
@@ -137,7 +120,7 @@ class MCAPTraceFileWriter(TraceFileWriter):
 
             self._written_count = 0
             return True
-        except Exception as e:
+        except (OSError, McapError) as e:
             logger.error("Failed to open MCAP file '%s' for writing: %s", path, e)
             if self._file is not None:
                 self._file.close()
@@ -179,7 +162,7 @@ class MCAPTraceFileWriter(TraceFileWriter):
 
         # Reuse schema if already registered
         if schema_name not in self._schema_cache:
-            fds = _build_file_descriptor_set(message_class)
+            fds = build_file_descriptor_set(message_class)
             schema_id = self._mcap_writer.register_schema(
                 name=schema_name,
                 encoding=MessageEncoding.Protobuf,
@@ -229,7 +212,7 @@ class MCAPTraceFileWriter(TraceFileWriter):
 
         try:
             data = message.SerializeToString()
-            log_time = self._extract_timestamp_ns(message)
+            log_time = extract_timestamp_ns(message)
             self._mcap_writer.add_message(
                 channel_id=self._active_channels[topic],
                 log_time=log_time,
@@ -238,7 +221,7 @@ class MCAPTraceFileWriter(TraceFileWriter):
             )
             self._written_count += 1
             return True
-        except Exception as e:
+        except (OSError, EncodeError, McapError) as e:
             logger.error("Failed to write message to topic '%s': %s", topic, e)
             return False
 
@@ -278,11 +261,3 @@ class MCAPTraceFileWriter(TraceFileWriter):
     @property
     def written_count(self) -> int:
         return self._written_count
-
-    @staticmethod
-    def _extract_timestamp_ns(message: Message) -> int:
-        """Extract timestamp in nanoseconds from an OSI message."""
-        if hasattr(message, "timestamp"):
-            ts = message.timestamp
-            return int(ts.seconds * NANOSECONDS_PER_SECOND + ts.nanos)
-        return 0
