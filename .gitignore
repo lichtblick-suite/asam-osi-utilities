@@ -61,6 +61,8 @@ local_build_tools/*.html
 
 # Allow Python SDK Makefile
 !python/Makefile
+# Allow root Makefile (line 23 ignores CMake-generated Makefiles)
+!/Makefile
 
 # trace file
 *.osi

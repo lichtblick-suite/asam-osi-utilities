@@ -24,7 +24,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 include_directories(${PROJECT_SOURCE_DIR}/cpp/include)
 
 # Build options
-option(BUILD_DOCS "Build Doxygen documentation" OFF)
+option(BUILD_DOCS "Build documentation (Doxygen XML + Sphinx)" OFF)
 option(BUILD_TESTING "Build unit tests" OFF)
 option(BUILD_EXAMPLES "Build example programs" ON)
 option(OSIUTILITIES_DOCS_ONLY "Build only documentation (skip library/examples/tests)" OFF)
@@ -40,7 +40,7 @@ if (APPLE)
 endif ()
 
 if (OSIUTILITIES_DOCS_ONLY)
-    set(BUILD_DOCS ON CACHE BOOL "Build Doxygen documentation" FORCE)
+    set(BUILD_DOCS ON CACHE BOOL "Build documentation (Doxygen XML + Sphinx)" FORCE)
     set(BUILD_TESTING OFF CACHE BOOL "Build unit tests" FORCE)
     set(BUILD_EXAMPLES OFF CACHE BOOL "Build example programs" FORCE)
     if (OSIUTILITIES_RUN_TESTS)
@@ -98,21 +98,52 @@ if (CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     message(WARNING "Added coverage options")
 endif ()
 
-# build doxygen documentation
+# build documentation (Doxygen XML → Sphinx HTML)
 if (BUILD_DOCS AND PROJECT_IS_TOP_LEVEL)
     find_package(Doxygen REQUIRED)
-    message(STATUS "Doxygen found, generating API documentation")
-    # set input and output files
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+    # Verify sphinx-build is available
+    execute_process(
+            COMMAND ${Python3_EXECUTABLE} -m sphinx --version
+            RESULT_VARIABLE SPHINX_CHECK_RESULT
+            OUTPUT_QUIET ERROR_QUIET
+    )
+    if (NOT SPHINX_CHECK_RESULT EQUAL 0)
+        message(FATAL_ERROR
+                "sphinx-build not found. Install documentation dependencies:\n"
+                "  pip install -e \"python/[docs]\"")
+    endif ()
+
+    message(STATUS "Doxygen + Sphinx found, generating unified documentation")
+
+    # Configure Doxyfile (XML-only output for Breathe)
     set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
     set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/doc/Doxyfile)
-    # request to configure the file
     configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+
+    # Step 1: Doxygen generates XML from C++ headers
     add_custom_target(
-            library_api_doc
+            doxygen_xml
             COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            COMMENT "Generating API documentation with Doxygen"
+            COMMENT "Generating C++ API XML with Doxygen"
             VERBATIM
+    )
+
+    # Step 2: Sphinx consumes Doxygen XML (via Breathe) + Python autodoc → HTML
+    add_custom_target(
+            library_api_doc
+            COMMAND ${Python3_EXECUTABLE} -m sphinx
+            -b html
+            -W --keep-going
+            -q
+            ${CMAKE_CURRENT_SOURCE_DIR}/doc
+            ${CMAKE_CURRENT_SOURCE_DIR}/doc/html
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Building unified documentation with Sphinx"
+            VERBATIM
+            DEPENDS doxygen_xml
     )
     if (OSIUTILITIES_DOCS_ONLY)
         add_custom_target(docs_only ALL DEPENDS library_api_doc)
