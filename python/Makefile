@@ -79,7 +79,9 @@ $(VENV_MARKER):
 	@echo "[INFO] Installing osi-python from submodule..."
 	@$(PIP) install ../submodules/osi-python
 	@echo "[INFO] Installing osi-utilities Python SDK dependencies..."
+	@mkdir -p osi3 && touch osi3/__init__.py
 	@$(PIP) install -e ".[dev]"
+	@rm -rf osi3
 	@touch .venv/.installed
 	@echo "[OK] Python dependencies installed"
 

@@ -54,7 +54,9 @@ setup: $(ACTIVATE_SCRIPT)
 		echo "[INFO] Dependencies missing; reinstalling..."; \
 		"$(PYTHON)" -m pip install --upgrade pip; \
 		"$(PYTHON)" -m pip install submodules/osi-python; \
+		mkdir -p python/osi3 && touch python/osi3/__init__.py; \
 		"$(PYTHON)" -m pip install -e "python/[dev,docs]"; \
+		rm -rf python/osi3; \
 	fi
 	@echo "[OK] Python virtual environment and dependencies are ready at $(VENV)"
 	@echo ""
@@ -68,10 +70,14 @@ $(PYTHON):
 	@echo "[OK] Python virtual environment ready"
 
 # Install all dependencies into the venv
+# Note: hatchling force-include requires osi3/ to exist during metadata
+# generation, so we create a placeholder before the editable install.
 $(ACTIVATE_SCRIPT): $(PYTHON) python/pyproject.toml
 	@echo "[INFO] Installing Python dependencies (dev + docs)..."
 	@"$(PYTHON)" -m pip install submodules/osi-python
+	@mkdir -p python/osi3 && touch python/osi3/__init__.py
 	@"$(PYTHON)" -m pip install -e "python/[dev,docs]"
+	@rm -rf python/osi3
 	@touch "$(ACTIVATE_SCRIPT)"
 	@echo "[OK] Python dependencies installed"
 
@@ -86,7 +92,9 @@ setup-docs: $(PYTHON)
 	@if ! "$(PYTHON)" -c "import sphinx, breathe" >/dev/null 2>&1; then \
 		echo "[INFO] Installing docs dependencies..."; \
 		"$(PYTHON)" -m pip install submodules/osi-python; \
+		mkdir -p python/osi3 && touch python/osi3/__init__.py; \
 		"$(PYTHON)" -m pip install -e "python/[docs]"; \
+		rm -rf python/osi3; \
 	fi
 	@echo "[OK] Documentation dependencies ready"
 
