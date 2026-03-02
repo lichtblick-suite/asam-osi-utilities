@@ -14,11 +14,14 @@ The CI/CD pipeline is split into modular workflow files for clarity and maintain
 | File                | Type         | Description                             |
 | ------------------- | ------------ | --------------------------------------- |
 | `ci.yml`            | Orchestrator | Main workflow that triggers all CI jobs |
-| `ci_format.yml`     | CI           | Code formatting checks                  |
-| `ci_lint.yml`       | CI           | Static analysis with clang-tidy         |
-| `ci_build.yml`      | CI           | Build and test on all platforms         |
+| `ci_cpp_format.yml` | CI           | C++ code formatting checks              |
+| `ci_cpp_lint.yml`   | CI           | C++ static analysis with clang-tidy     |
+| `ci_cpp.yml`        | CI           | C++ build and test on all platforms     |
+| `ci_python.yml`     | CI           | Python lint, test, and package checks   |
 | `ci_compliance.yml` | CI           | DCO and Conventional Commits checks     |
+| `spdx_check.yml`    | CI           | REUSE/SPDX license compliance           |
 | `cd_docs.yml`       | CD           | Build and deploy documentation          |
+| `cd_release.yml`    | CD           | Create releases and publish to PyPI     |
 
 ## Naming Convention
 
@@ -43,7 +46,7 @@ When a PR is opened or updated against `main` or `develop`:
 When code is pushed to `main`:
 
 1. All CI checks run
-2. **Documentation Deployment** - Build and deploy Doxygen docs to GitHub Pages
+2. **Documentation Deployment** - Build and deploy Sphinx docs (Doxygen XML + Breathe) to GitHub Pages
 
 ## Workflow Details
 
@@ -118,7 +121,7 @@ On Ubuntu 24.04 with GCC, code coverage is collected and uploaded to Codecov.
 
 ### cd_docs.yml - Documentation Deployment
 
-Builds Doxygen documentation and deploys to GitHub Pages:
+Builds unified documentation (Doxygen XML → Sphinx HTML via Breathe) and deploys to GitHub Pages:
 
 1. Configure CMake with `-DOSIUTILITIES_DOCS_ONLY=ON` (docs-only configuration)
 2. Build `library_api_doc` target
@@ -165,8 +168,7 @@ Before pushing, you can run most CI checks locally:
 ### Format Check
 
 ```bash
-find cpp/src cpp/include cpp/tests cpp/examples -name "*.cpp" -o -name "*.h" | \
-  xargs clang-format --dry-run --Werror
+make lint-cpp
 ```
 
 ### Build and Test
@@ -175,6 +177,14 @@ find cpp/src cpp/include cpp/tests cpp/examples -name "*.cpp" -o -name "*.h" | \
 cmake --preset vcpkg
 cmake --build --preset vcpkg --parallel
 ctest --test-dir build-vcpkg --output-on-failure
+```
+
+### Python Lint and Test
+
+```bash
+make setup
+make lint-python
+make test-python
 ```
 
 On Windows:

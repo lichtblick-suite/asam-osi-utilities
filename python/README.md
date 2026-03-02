@@ -10,20 +10,16 @@ Python utilities for reading and writing ASAM OSI (Open Simulation Interface) tr
 
 ## Installation
 
+From PyPI:
+
 ```bash
-pip install -e .
+pip install asam-osi-utilities
 ```
 
-For development:
+For development (uses a virtual environment):
 
 ```bash
-pip install -e ".[dev]"
-```
-
-Or use the Makefile:
-
-```bash
-make setup
+make setup    # creates .venv and installs in editable mode
 ```
 
 ## Quick Start

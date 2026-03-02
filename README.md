@@ -6,7 +6,7 @@ SPDX-License-Identifier: MPL-2.0
 # ASAM OSI Utilities
 
 [![CI](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-doxygen-blue)](https://lichtblick-suite.github.io/asam-osi-utilities/)
+[![Documentation](https://img.shields.io/badge/docs-API_Reference-blue)](https://lichtblick-suite.github.io/asam-osi-utilities/)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 
 A C++ and Python utility library for working with [ASAM Open Simulation Interface (OSI)](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/specification/index.html) trace files in MCAP and other formats.
@@ -79,7 +79,7 @@ with open_trace_file("trace.mcap") as reader:
 | [Contributing](doc/contributing.md)                                     | How to contribute to this project               |
 | [Examples](doc/examples.md)                                             | Example programs and their purpose              |
 | [CI Pipeline](doc/ci-pipeline.md)                                       | Continuous integration documentation            |
-| [API Reference](https://lichtblick-suite.github.io/asam-osi-utilities/) | Doxygen-generated API docs                      |
+| [API Reference](https://lichtblick-suite.github.io/asam-osi-utilities/) | C++ and Python API documentation      |
 
 ## Examples
 

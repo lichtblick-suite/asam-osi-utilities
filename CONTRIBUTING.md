@@ -57,23 +57,22 @@ git commit -S -s -m "feat: your feature description"
 ### Python Development
 
 ```bash
+# From repository root (recommended)
+make setup          # Create venv and install all dependencies
+make lint-python    # Run linter
+make test-python    # Run tests
+make format-python  # Format code
+
+# Or from python/ directory
 cd python
-
-# Setup virtual environment and install in editable mode
-make setup
-
-# Run tests
-make test
-
-# Run linter + formatter
-make lint
-make format
-
-# Type checking
-make typecheck
+make setup      # Create venv and install dependencies
+make test       # Run tests
+make lint       # Run linter
+make format     # Format code
+make typecheck  # Run type checker
 ```
 
-The Makefile in `python/` is the single entry point for all Python development tasks. Run `make help` for a full list of targets.
+The root Makefile is the primary entry point for all tasks (C++ and Python). The `python/Makefile` provides additional Python-specific targets. Run `make help` for a full list.
 
 ## Documentation
 

@@ -9,7 +9,7 @@ This page covers environment setup only. For day-to-day commands, see [Developer
 
 ## Quick Setup
 
-Run the setup script to configure hooks and check tools. **No Python required**.
+Run the setup script to configure hooks and check tools:
 
 ```bash
 ./scripts/setup-dev.sh
@@ -17,7 +17,7 @@ Run the setup script to configure hooks and check tools. **No Python required**.
 
 > **Windows:** Run from Git Bash, or use `bash scripts/setup-dev.sh` from PowerShell/CMD.
 
-The setup script installs native Git hooks (format checks and commit message validation).
+The setup script installs native Git hooks (format checks, Python lint, and commit message validation).
 
 ## Required Tools
 
@@ -81,10 +81,17 @@ Hooks are generated into `.git/hooks/` by the setup scripts. Use them in the wor
 - Run checks: `.git/hooks/pre-commit`
 - Run checks on all files: `.git/hooks/pre-commit --all-files`
 - Run clang-tidy: `.git/hooks/pre-commit --run-tidy`
-- Auto-fix formatting: `.git/hooks/pre-commit --fix-format`
+- Run docs build: `.git/hooks/pre-commit --run-docs`
+- Auto-fix C++ formatting: `.git/hooks/pre-commit --fix-format`
 - Auto-fix clang-tidy: `.git/hooks/pre-commit --fix-tidy`
-- Skip tests: `.git/hooks/pre-commit --skip-tests`
-- Skip formatting: `.git/hooks/pre-commit --skip-format`
+- Auto-fix Python formatting: `.git/hooks/pre-commit --fix-python`
+- Skip C++ formatting: `.git/hooks/pre-commit --skip-format`
 - Skip clang-tidy: `.git/hooks/pre-commit --skip-tidy`
+- Skip Python checks: `.git/hooks/pre-commit --skip-python`
+- Skip docs build: `.git/hooks/pre-commit --skip-docs`
 
-Note: clang-tidy is disabled by default in the hook; use `--run-tidy` or `--fix-tidy` to enable it.
+Notes:
+
+- clang-tidy and docs build are opt-in. Use `--run-tidy` or `--run-docs` to enable them.
+- Python ruff checks run by default when a venv with ruff is detected.
+- clang-tidy requires `compile_commands.json` (see [Developer Workflow](workflow.md)).
