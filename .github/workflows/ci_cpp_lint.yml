@@ -32,4 +32,4 @@ jobs:
       - name: Run clang-tidy
         run: |
           bash scripts/setup-dev.sh
-          .git/hooks/pre-commit --all-files --run-tidy --skip-format
+          .git/hooks/pre-commit --all-files --run-tidy --skip-format --skip-python
