@@ -7,7 +7,7 @@
  * \brief Write an example OSI MCAP trace file with metadata and channels.
  */
 
-#include <osi-utilities/tracefile/TraceFileConfig.h>
+#include <osi-utilities/tracefile/TimestampUtils.h>
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
 #include <filesystem>
@@ -98,7 +98,7 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     for (int i = 0; i < 10; ++i) {
         // manipulate the data so not every message is the same
         constexpr auto kNsPerSec = osi3::tracefile::config::kNanosecondsPerSecond;
-        auto timestamp = sensor_view_1.timestamp().seconds() * kNsPerSec + sensor_view_1.timestamp().nanos();
+        auto timestamp = osi3::tracefile::TimestampToNanoseconds(sensor_view_1);
         timestamp += kTimeStepSizeS * kNsPerSec;
         sensor_view_1.mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
         sensor_view_1.mutable_timestamp()->set_seconds(static_cast<int64_t>(timestamp / kNsPerSec));

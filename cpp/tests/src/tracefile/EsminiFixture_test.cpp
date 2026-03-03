@@ -12,6 +12,7 @@
 
 #include "../TestUtilities.h"
 #include "osi-utilities/tracefile/Reader.h"
+#include "osi-utilities/tracefile/TimestampUtils.h"
 #include "osi-utilities/tracefile/reader/MCAPTraceFileReader.h"
 #include "osi-utilities/tracefile/reader/SingleChannelBinaryTraceFileReader.h"
 #include "osi_groundtruth.pb.h"
@@ -133,7 +134,7 @@ TEST_F(EsminiFixtureTest, EsminiTraceTimestampsIncreasing) {
         auto* gt = dynamic_cast<osi3::GroundTruth*>(result->message.get());
         ASSERT_NE(gt, nullptr);
 
-        const int64_t current_nanos = gt->timestamp().seconds() * 1'000'000'000LL + gt->timestamp().nanos();
+        const auto current_nanos = static_cast<int64_t>(osi3::tracefile::TimestampToNanoseconds(*gt));
         if (prev_nanos >= 0) {
             EXPECT_GT(current_nanos, prev_nanos);
         }
@@ -225,7 +226,7 @@ TEST_P(NcapGroundTruthTest, TimestampsIncreasing) {
         auto* gt = dynamic_cast<osi3::GroundTruth*>(result->message.get());
         ASSERT_NE(gt, nullptr);
 
-        const int64_t current_nanos = gt->timestamp().seconds() * 1'000'000'000LL + gt->timestamp().nanos();
+        const auto current_nanos = static_cast<int64_t>(osi3::tracefile::TimestampToNanoseconds(*gt));
         if (prev_nanos >= 0) {
             EXPECT_GT(current_nanos, prev_nanos);
         }
