@@ -13,8 +13,6 @@ from google.protobuf.descriptor import FileDescriptor
 from google.protobuf.descriptor_pb2 import FileDescriptorSet
 from google.protobuf.message import Message
 
-from osi_utilities.tracefile._config import NANOSECONDS_PER_SECOND
-
 
 def build_file_descriptor_set(message_class: type[Message]) -> FileDescriptorSet:
     """Build a FileDescriptorSet for a protobuf message class, including all dependencies."""
@@ -33,8 +31,11 @@ def build_file_descriptor_set(message_class: type[Message]) -> FileDescriptorSet
 
 
 def extract_timestamp_ns(message: Message) -> int:
-    """Extract timestamp in nanoseconds from an OSI message."""
-    if hasattr(message, "timestamp"):
-        ts = message.timestamp
-        return int(ts.seconds * NANOSECONDS_PER_SECOND + ts.nanos)
-    return 0
+    """Extract timestamp in nanoseconds from an OSI message.
+
+    .. deprecated::
+        Use :func:`osi_utilities.tracefile.timestamp.timestamp_to_nanoseconds` instead.
+    """
+    from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
+
+    return timestamp_to_nanoseconds(message)

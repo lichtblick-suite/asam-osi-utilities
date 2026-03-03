@@ -27,7 +27,8 @@ from osi_utilities.tracefile._config import (
     OSI_TRACE_RECOMMENDED_METADATA_KEYS,
     OSI_TRACE_REQUIRED_METADATA_KEYS,
 )
-from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set, extract_timestamp_ns
+from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
+from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
 from osi_utilities.tracefile.writer import TraceFileWriter
 
 logger = logging.getLogger(__name__)
@@ -212,7 +213,7 @@ class MCAPTraceFileWriter(TraceFileWriter):
 
         try:
             data = message.SerializeToString()
-            log_time = extract_timestamp_ns(message)
+            log_time = timestamp_to_nanoseconds(message)
             self._mcap_writer.add_message(
                 channel_id=self._active_channels[topic],
                 log_time=log_time,

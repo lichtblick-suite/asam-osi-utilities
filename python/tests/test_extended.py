@@ -28,8 +28,9 @@ from osi_utilities import (
     TXTHTraceFileWriter,
 )
 from osi_utilities.tracefile._config import MAX_EXPECTED_MESSAGE_SIZE
-from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set, extract_timestamp_ns
+from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
 from osi_utilities.tracefile.mcap_writer import prepare_required_file_metadata
+from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
 
 # ===========================================================================
 # Fixtures
@@ -142,7 +143,7 @@ class TestMCAPChannel:
     def test_timestamp_extraction(self):
         gt = _make_ground_truth(10)
         gt.timestamp.nanos = 500
-        ts_ns = extract_timestamp_ns(gt)
+        ts_ns = timestamp_to_nanoseconds(gt)
         assert ts_ns == 10 * 1_000_000_000 + 500
 
     def test_timestamp_missing(self):
@@ -150,7 +151,7 @@ class TestMCAPChannel:
         from google.protobuf.descriptor_pb2 import FileDescriptorProto
 
         msg = FileDescriptorProto()  # no .timestamp field
-        assert extract_timestamp_ns(msg) == 0
+        assert timestamp_to_nanoseconds(msg) == 0
 
     def test_prepare_required_file_metadata(self):
         meta = prepare_required_file_metadata()

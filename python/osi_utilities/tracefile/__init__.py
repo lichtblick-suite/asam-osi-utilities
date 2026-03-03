@@ -9,6 +9,12 @@ from osi_utilities.tracefile.mcap_channel import MCAPChannel
 from osi_utilities.tracefile.mcap_reader import MCAPTraceFileReader
 from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
 from osi_utilities.tracefile.reader import TraceFileReader, TraceFileReaderFactory, open_trace_file
+from osi_utilities.tracefile.timestamp import (
+    nanoseconds_to_seconds,
+    seconds_to_nanoseconds,
+    timestamp_to_nanoseconds,
+    timestamp_to_seconds,
+)
 from osi_utilities.tracefile.txth_reader import TXTHTraceFileReader
 from osi_utilities.tracefile.txth_writer import TXTHTraceFileWriter
 from osi_utilities.tracefile.writer import TraceFileWriter
@@ -24,5 +30,9 @@ __all__ = [
     "TraceFileReader",
     "TraceFileReaderFactory",
     "TraceFileWriter",
+    "nanoseconds_to_seconds",
     "open_trace_file",
+    "seconds_to_nanoseconds",
+    "timestamp_to_nanoseconds",
+    "timestamp_to_seconds",
 ]

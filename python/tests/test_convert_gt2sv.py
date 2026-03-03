@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytest
 from osi3.osi_groundtruth_pb2 import GroundTruth
-from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import (
     BinaryTraceFileReader,
@@ -19,9 +18,7 @@ from osi_utilities import (
     MCAPTraceFileWriter,
     MessageType,
     convert_gt2sv,
-    open_trace_file,
 )
-
 
 # ===========================================================================
 # Helpers
@@ -81,7 +78,7 @@ class TestConvertGt2svBinary:
     def test_basic_conversion(self, tmp_dir: Path):
         gt_path = tmp_dir / "input_gt.osi"
         sv_path = tmp_dir / "output_sv.osi"
-        gt_messages = _write_gt_binary(gt_path, count=5)
+        _write_gt_binary(gt_path, count=5)
 
         count = convert_gt2sv(gt_path, sv_path)
 
@@ -105,7 +102,7 @@ class TestConvertGt2svBinary:
     def test_ground_truth_preserved_in_sv(self, tmp_dir: Path):
         gt_path = tmp_dir / "input_gt.osi"
         sv_path = tmp_dir / "output_sv.osi"
-        gt_messages = _write_gt_binary(gt_path, count=3)
+        _write_gt_binary(gt_path, count=3)
 
         convert_gt2sv(gt_path, sv_path)
 

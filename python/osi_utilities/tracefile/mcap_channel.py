@@ -15,7 +15,8 @@ from google.protobuf.message import EncodeError, Message
 from mcap.well_known import MessageEncoding
 from mcap.writer import Writer as McapRawWriter
 
-from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set, extract_timestamp_ns
+from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
+from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +102,7 @@ class MCAPChannel:
 
         try:
             data = message.SerializeToString()
-            log_time = extract_timestamp_ns(message)
+            log_time = timestamp_to_nanoseconds(message)
             self._mcap_writer.add_message(
                 channel_id=self._channels[topic],
                 log_time=log_time,

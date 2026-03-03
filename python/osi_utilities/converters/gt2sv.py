@@ -31,7 +31,7 @@ from pathlib import Path
 
 from google.protobuf.message import Message
 
-from osi_utilities.tracefile._types import MessageType, ReadResult, get_trace_file_format, TraceFileFormat
+from osi_utilities.tracefile._types import MessageType, TraceFileFormat, get_trace_file_format
 from osi_utilities.tracefile.reader import TraceFileReaderFactory
 
 logger = logging.getLogger(__name__)
@@ -102,9 +102,7 @@ def convert_gt2sv(
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
     # Open reader — we know the input contains GroundTruth messages
-    reader = TraceFileReaderFactory.create_reader(
-        input_path, message_type=MessageType.GROUND_TRUTH
-    )
+    reader = TraceFileReaderFactory.create_reader(input_path, message_type=MessageType.GROUND_TRUTH)
     if topic is not None and hasattr(reader, "set_topics"):
         reader.set_topics([topic])
 
@@ -112,8 +110,9 @@ def convert_gt2sv(
     output_format = get_trace_file_format(output_path)
 
     if output_format == TraceFileFormat.MULTI_CHANNEL:
-        from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
         from osi3.osi_sensorview_pb2 import SensorView
+
+        from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
 
         writer = MCAPTraceFileWriter()
         if not writer.open(output_path):
