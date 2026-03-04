@@ -6,6 +6,7 @@ SPDX-License-Identifier: MPL-2.0
 # ASAM OSI Utilities
 
 [![CI](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/asam-osi-utilities)](https://pypi.org/project/asam-osi-utilities/)
 [![Documentation](https://img.shields.io/badge/docs-API_Reference-blue)](https://lichtblick-suite.github.io/asam-osi-utilities/)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 
