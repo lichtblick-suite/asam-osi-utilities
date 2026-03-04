@@ -18,7 +18,7 @@
  * MCAP file, then reads it back with non-OSI message filtering.
  */
 
-#include <osi-utilities/tracefile/TraceFileConfig.h>
+#include <osi-utilities/tracefile/TimestampUtils.h>
 #include <osi-utilities/tracefile/reader/MCAPTraceFileReader.h>
 #include <osi-utilities/tracefile/writer/MCAPTraceFileChannel.h>
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
@@ -94,7 +94,7 @@ void PopulateSensorView(osi3::SensorView& sensor_view, const uint64_t sensor_id,
  */
 void AdvanceTimestamp(osi3::GroundTruth& ground_truth, const uint64_t step_ns) {
     constexpr auto kNsPerSec = osi3::tracefile::config::kNanosecondsPerSecond;
-    auto time_ns = static_cast<uint64_t>(ground_truth.timestamp().seconds()) * kNsPerSec + static_cast<uint64_t>(ground_truth.timestamp().nanos()) + step_ns;
+    auto time_ns = osi3::tracefile::TimestampToNanoseconds(ground_truth) + step_ns;
     ground_truth.mutable_timestamp()->set_seconds(static_cast<int64_t>(time_ns / kNsPerSec));
     ground_truth.mutable_timestamp()->set_nanos(time_ns % kNsPerSec);
 }
@@ -106,7 +106,7 @@ void AdvanceTimestamp(osi3::GroundTruth& ground_truth, const uint64_t step_ns) {
  */
 void AdvanceTimestamp(osi3::SensorView& sensor_view, const uint64_t step_ns) {
     constexpr auto kNsPerSec = osi3::tracefile::config::kNanosecondsPerSecond;
-    auto time_ns = static_cast<uint64_t>(sensor_view.timestamp().seconds()) * kNsPerSec + static_cast<uint64_t>(sensor_view.timestamp().nanos()) + step_ns;
+    auto time_ns = osi3::tracefile::TimestampToNanoseconds(sensor_view) + step_ns;
     sensor_view.mutable_timestamp()->set_seconds(static_cast<int64_t>(time_ns / kNsPerSec));
     sensor_view.mutable_timestamp()->set_nanos(time_ns % kNsPerSec);
 
@@ -312,8 +312,7 @@ void Part2_MixedChannelWriter() {
 
         mcap::Message custom_msg;
         custom_msg.channelId = custom_channel.id;
-        custom_msg.logTime =
-            static_cast<uint64_t>(ground_truth.timestamp().seconds()) * osi3::tracefile::config::kNanosecondsPerSecond + static_cast<uint64_t>(ground_truth.timestamp().nanos());
+        custom_msg.logTime = osi3::tracefile::TimestampToNanoseconds(ground_truth);
         custom_msg.publishTime = custom_msg.logTime;
         custom_msg.data = reinterpret_cast<const std::byte*>(json_payload.data());
         custom_msg.dataSize = json_payload.size();

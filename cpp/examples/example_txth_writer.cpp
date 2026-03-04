@@ -7,7 +7,7 @@
  * \brief Write an OSI `.txth` text trace file.
  */
 
-#include <osi-utilities/tracefile/TraceFileConfig.h>
+#include <osi-utilities/tracefile/TimestampUtils.h>
 #include <osi-utilities/tracefile/writer/TXTHTraceFileWriter.h>
 
 #include <filesystem>
@@ -94,7 +94,7 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     for (int i = 0; i < 10; ++i) {
         // manipulate the data so not every message is the same
         constexpr auto kNsPerSec = osi3::tracefile::config::kNanosecondsPerSecond;
-        auto timestamp = sensor_view.timestamp().seconds() * kNsPerSec + sensor_view.timestamp().nanos();
+        auto timestamp = osi3::tracefile::TimestampToNanoseconds(sensor_view);
         timestamp += kTimeStepSizeS * kNsPerSec;
         sensor_view.mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
         sensor_view.mutable_timestamp()->set_seconds(static_cast<int64_t>(timestamp / kNsPerSec));

@@ -7,7 +7,7 @@
  * \brief Read OSI MCAP trace files and print message timestamps.
  */
 
-#include <osi-utilities/tracefile/TraceFileConfig.h>
+#include <osi-utilities/tracefile/TimestampUtils.h>
 #include <osi-utilities/tracefile/reader/MCAPTraceFileReader.h>
 
 #include <filesystem>
@@ -32,7 +32,7 @@ namespace {
  */
 template <typename T>
 void PrintTimestamp(T msg) {
-    auto timestamp = msg->timestamp().seconds() + msg->timestamp().nanos() / static_cast<double>(osi3::tracefile::config::kNanosecondsPerSecond);
+    auto timestamp = osi3::tracefile::TimestampToSeconds(*msg);
     std::cout << "Type: " << msg->descriptor()->full_name() << " Timestamp " << timestamp << "\n";
 }
 

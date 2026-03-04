@@ -6,7 +6,7 @@
 #include "osi-utilities/tracefile/writer/MCAPTraceFileChannel.h"
 
 #include "MCAPWriterUtils.h"
-#include "osi-utilities/tracefile/TraceFileConfig.h"
+#include "osi-utilities/tracefile/TimestampUtils.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_hostvehicledata.pb.h"
 #include "osi_motionrequest.pb.h"
@@ -42,8 +42,7 @@ auto MCAPTraceFileChannel::WriteMessage(const T& top_level_message, const std::s
     mcap::Message msg;
     msg.channelId = topic_channel_id->second;
 
-    msg.logTime =
-        static_cast<uint64_t>(top_level_message.timestamp().seconds()) * tracefile::config::kNanosecondsPerSecond + static_cast<uint64_t>(top_level_message.timestamp().nanos());
+    msg.logTime = tracefile::TimestampToNanoseconds(top_level_message);
     msg.publishTime = msg.logTime;
     msg.data = reinterpret_cast<const std::byte*>(serialize_buffer_.data());
     msg.dataSize = serialize_buffer_.size();
