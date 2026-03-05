@@ -23,6 +23,9 @@ def timestamp_to_nanoseconds(message: Message) -> int:
 
     Returns:
         Timestamp in nanoseconds, or 0 if the message has no timestamp field.
+        Note that 0 (epoch) is also a valid timestamp; callers that need to
+        distinguish missing timestamps should check ``hasattr(message, "timestamp")``
+        before calling this function.
     """
     if hasattr(message, "timestamp"):
         ts = message.timestamp

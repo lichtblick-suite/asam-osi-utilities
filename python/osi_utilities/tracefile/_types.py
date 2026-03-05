@@ -135,7 +135,10 @@ def _get_message_class(message_type: MessageType) -> type[Message]:
     }
     import importlib
 
-    module = importlib.import_module(f"osi3.{module_name_map[class_name]}")
+    module_name = module_name_map.get(class_name)
+    if module_name is None:
+        raise ValueError(f"No module mapping for protobuf class: {class_name}")
+    module = importlib.import_module(f"osi3.{module_name}")
     return getattr(module, class_name)
 
 

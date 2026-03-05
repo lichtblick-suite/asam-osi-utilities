@@ -63,14 +63,10 @@ class TXTHTraceFileReader(TraceFileReader):
             return False
 
         try:
-            self._file = open(path, encoding="utf-8")  # noqa: SIM115
+            self._buffer = Path(path).read_text(encoding="utf-8")
         except OSError as e:
             logger.error("Failed to open file '%s': %s", path, e)
             return False
-
-        self._buffer = self._file.read()
-        self._file.close()
-        self._file = None
         self._has_next = len(self._buffer.strip()) > 0
         return True
 
@@ -99,7 +95,7 @@ class TXTHTraceFileReader(TraceFileReader):
         except text_format.ParseError:
             # If full buffer fails, the file may have multiple concatenated messages.
             # Try splitting on the first top-level field name appearing again.
-            pass
+            logger.debug("Buffer contains multiple messages, splitting at field boundary.")
 
         # Multi-message: find the boundary by looking for a repeated top-level field
         # The C++ implementation reads line by line and tries parsing.

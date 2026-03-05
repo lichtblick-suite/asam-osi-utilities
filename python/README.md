@@ -25,7 +25,7 @@ make setup    # creates .venv and installs in editable mode
 ## Quick Start
 
 ```python
-from osi_utilities import open_trace_file
+from osi_utilities.tracefile import open_trace_file
 
 # Read any supported format (auto-detected from extension)
 with open_trace_file("trace.mcap") as reader:

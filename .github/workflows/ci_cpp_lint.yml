@@ -6,6 +6,9 @@ name: C++ Lint
 on:
   workflow_call:
 
+env:
+  YQ_VERSION: v4.52.2
+
 jobs:
   clang-tidy:
     name: clang-tidy
@@ -19,8 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          YQ_VERSION=v4.52.2
-          sudo curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
+          sudo curl -L -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/yq_linux_amd64"
           sudo chmod +x /usr/local/bin/yq
           yq -r '.ci_jobs.ubuntu_lint.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 

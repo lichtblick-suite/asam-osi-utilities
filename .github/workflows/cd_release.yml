@@ -13,7 +13,7 @@ on:
         type: boolean
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
@@ -78,6 +78,8 @@ jobs:
     name: Create Release
     needs: [validate, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       VERSION: ${{ needs.validate.outputs.version }}
     steps:
@@ -188,6 +190,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
       - name: Build Python package
         run: |

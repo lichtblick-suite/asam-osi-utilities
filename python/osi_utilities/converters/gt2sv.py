@@ -111,7 +111,6 @@ def convert_gt2sv(
 
     if output_format == TraceFileFormat.MULTI_CHANNEL:
         from osi3.osi_sensorview_pb2 import SensorView
-
         from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
 
         writer = MCAPTraceFileWriter()
@@ -130,22 +129,19 @@ def convert_gt2sv(
         raise ValueError(f"Unsupported output format: {output_path.suffix}")
 
     frame_count = 0
-    try:
-        with reader:
-            for result in reader:
-                if result.message_type != MessageType.GROUND_TRUTH:
-                    logger.warning(
-                        "Skipping non-GroundTruth message (type=%s) at frame %d",
-                        result.message_type,
-                        frame_count,
-                    )
-                    continue
+    with writer, reader:
+        for result in reader:
+            if result.message_type != MessageType.GROUND_TRUTH:
+                logger.warning(
+                    "Skipping non-GroundTruth message (type=%s) at frame %d",
+                    result.message_type,
+                    frame_count,
+                )
+                continue
 
-                sv_msg = _wrap_gt_in_sv(result.message)
-                writer.write_message(sv_msg, output_topic)
-                frame_count += 1
-    finally:
-        writer.close()
+            sv_msg = _wrap_gt_in_sv(result.message)
+            writer.write_message(sv_msg, output_topic)
+            frame_count += 1
 
     logger.info("Converted %d frames from GroundTruth to SensorView.", frame_count)
     return frame_count
@@ -186,7 +182,7 @@ def main() -> None:
     try:
         count = convert_gt2sv(args.input, args.output, topic=args.topic)
         print(f"Converted {count} frames from GroundTruth to SensorView.")
-    except Exception as e:
+    except (FileNotFoundError, ValueError, RuntimeError, OSError) as e:
         logger.error("%s", e)
         sys.exit(1)
 

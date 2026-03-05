@@ -14,7 +14,7 @@ PYTHON ?= $(VENV)/Scripts/python
 PIP ?= $(PYTHON) -m pip
 PYTEST ?= $(PYTHON) -m pytest
 VENV_MARKER := $(VENV)/Scripts/python.exe
-VENV_ACTIVATE := source $(VENV)/Scripts/activate
+VENV_ACTIVATE := $(VENV)/Scripts/activate
 else
 PYTHON ?= $(VENV)/bin/python3
 PIP ?= $(PYTHON) -m pip
@@ -25,7 +25,7 @@ endif
 
 # Check if dev environment is set up
 define check_dev_setup
-	@if [ ! -x "$(PYTHON)" ]; then \
+	@if [ ! -f "$(PYTHON)" ]; then \
 		echo ""; \
 		echo "[ERR] Development environment not set up."; \
 		echo ""; \
@@ -56,8 +56,7 @@ all: lint test
 setup:
 	@echo "[INFO] Setting up osi-utilities Python SDK..."
 	@echo "[INFO] Checking Python virtual environment and dependencies..."
-	@set -e; \
-	if [ ! -x "$(PYTHON)" ]; then \
+	@if [ ! -f "$(PYTHON)" ]; then \
 		echo "[INFO] Python virtual environment not found; bootstrapping..."; \
 		$(MAKE) --no-print-directory .venv/.installed; \
 	elif $(PYTHON) -c "import mcap, google.protobuf, pytest, ruff" >/dev/null 2>&1; then \
@@ -79,9 +78,9 @@ $(VENV_MARKER):
 	@echo "[INFO] Installing osi-python from submodule..."
 	@$(PIP) install ../submodules/osi-python
 	@echo "[INFO] Installing osi-utilities Python SDK dependencies..."
-	@mkdir -p osi3 && touch osi3/__init__.py
-	@$(PIP) install -e ".[dev]"
-	@rm -rf osi3
+	@mkdir -p osi3 && touch osi3/__init__.py && \
+		$(PIP) install -e ".[dev]" && \
+		rm -rf osi3
 	@touch .venv/.installed
 	@echo "[OK] Python dependencies installed"
 

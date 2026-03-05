@@ -52,15 +52,20 @@ all: lint test
 setup: $(ACTIVATE_SCRIPT)
 	@if ! "$(PYTHON)" -c "import sphinx, breathe, ruff, pytest" >/dev/null 2>&1; then \
 		echo "[INFO] Dependencies missing; reinstalling..."; \
-		"$(PYTHON)" -m pip install --upgrade pip; \
-		"$(PYTHON)" -m pip install submodules/osi-python; \
-		mkdir -p python/osi3 && touch python/osi3/__init__.py; \
-		"$(PYTHON)" -m pip install -e "python/[dev,docs]"; \
+		"$(PYTHON)" -m pip install --upgrade pip && \
+		"$(PYTHON)" -m pip install submodules/osi-python && \
+		mkdir -p python/osi3 && touch python/osi3/__init__.py && \
+		"$(PYTHON)" -m pip install -e "python/[dev,docs]" && \
 		rm -rf python/osi3; \
 	fi
 	@echo "[OK] Python virtual environment and dependencies are ready at $(VENV)"
+ifeq ($(OS),Windows_NT)
+	@echo ""
+	@echo "Activate with: $(VENV_BIN)\\activate"
+else
 	@echo ""
 	@echo "Activate with: source $(ACTIVATE_SCRIPT)"
+endif
 
 # Create the virtual environment
 $(PYTHON):
@@ -74,10 +79,10 @@ $(PYTHON):
 # generation, so we create a placeholder before the editable install.
 $(ACTIVATE_SCRIPT): $(PYTHON) python/pyproject.toml
 	@echo "[INFO] Installing Python dependencies (dev + docs)..."
-	@"$(PYTHON)" -m pip install submodules/osi-python
-	@mkdir -p python/osi3 && touch python/osi3/__init__.py
-	@"$(PYTHON)" -m pip install -e "python/[dev,docs]"
-	@rm -rf python/osi3
+	@"$(PYTHON)" -m pip install submodules/osi-python && \
+		mkdir -p python/osi3 && touch python/osi3/__init__.py && \
+		"$(PYTHON)" -m pip install -e "python/[dev,docs]" && \
+		rm -rf python/osi3
 	@touch "$(ACTIVATE_SCRIPT)"
 	@echo "[OK] Python dependencies installed"
 
@@ -91,9 +96,9 @@ setup-dev: setup
 setup-docs: $(PYTHON)
 	@if ! "$(PYTHON)" -c "import sphinx, breathe" >/dev/null 2>&1; then \
 		echo "[INFO] Installing docs dependencies..."; \
-		"$(PYTHON)" -m pip install submodules/osi-python; \
-		mkdir -p python/osi3 && touch python/osi3/__init__.py; \
-		"$(PYTHON)" -m pip install -e "python/[docs]"; \
+		"$(PYTHON)" -m pip install submodules/osi-python && \
+		mkdir -p python/osi3 && touch python/osi3/__init__.py && \
+		"$(PYTHON)" -m pip install -e "python/[docs]" && \
 		rm -rf python/osi3; \
 	fi
 	@echo "[OK] Documentation dependencies ready"
@@ -132,8 +137,8 @@ test: test-cpp test-python
 
 test-cpp:
 	@echo "[INFO] Running C++ test suite..."
-	@cmake --build --preset vcpkg --parallel
-	@ctest --test-dir build-vcpkg --output-on-failure
+	@cmake --build --preset vcpkg --parallel && \
+		ctest --test-dir build-vcpkg --output-on-failure
 	@echo "[OK] C++ tests passed"
 
 test-python:
@@ -149,8 +154,8 @@ test-python:
 # Build unified documentation (Doxygen XML → Sphinx HTML)
 docs-build: setup-docs
 	@echo "[INFO] Building documentation (Doxygen XML → Sphinx HTML)..."
-	@cmake --preset $(CMAKE_DOCS_PRESET) -DOSIUTILITIES_DOCS_ONLY=ON -DPython3_EXECUTABLE=$(abspath $(PYTHON))
-	@cmake --build --preset $(CMAKE_DOCS_PRESET) --target library_api_doc
+	@cmake --preset $(CMAKE_DOCS_PRESET) -DOSIUTILITIES_DOCS_ONLY=ON -DPython3_EXECUTABLE="$(abspath $(PYTHON))" && \
+		cmake --build --preset $(CMAKE_DOCS_PRESET) --target library_api_doc
 	@echo "[OK] Documentation built at doc/html/"
 
 # Alias for CI workflows

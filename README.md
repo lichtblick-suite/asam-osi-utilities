@@ -66,7 +66,7 @@ with open_trace_file("trace.mcap") as reader:
 - Convert between trace file formats
 - Cross-platform: Linux, Windows, macOS
 - **C++ library** with CMake/vcpkg integration
-- **Python SDK** available on [PyPI](https://pypi.org/p/asam-osi-utilities/) (`pip install asam-osi-utilities`)
+- **Python SDK** available on [PyPI](https://pypi.org/project/asam-osi-utilities/) (`pip install asam-osi-utilities`)
 
 ## Documentation
 

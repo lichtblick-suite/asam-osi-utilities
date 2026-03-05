@@ -40,7 +40,7 @@ def _get_package_version() -> str:
         from importlib.metadata import version
 
         return version("asam-osi-utilities")
-    except Exception:
+    except (ImportError, ModuleNotFoundError):
         return "0.0.0"
 
 
