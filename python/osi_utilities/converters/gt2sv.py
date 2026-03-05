@@ -111,6 +111,7 @@ def convert_gt2sv(
 
     if output_format == TraceFileFormat.MULTI_CHANNEL:
         from osi3.osi_sensorview_pb2 import SensorView
+
         from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
 
         writer = MCAPTraceFileWriter()
