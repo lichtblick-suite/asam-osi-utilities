@@ -117,7 +117,10 @@ class BinaryTraceFileReader(TraceFileReader):
             raise RuntimeError(f"Truncated message body: expected {msg_len} bytes, got {len(data)}")
 
         message = self._message_class()
-        message.ParseFromString(data)
+        try:
+            message.ParseFromString(data)
+        except Exception as e:
+            raise RuntimeError(f"Failed to deserialize protobuf message ({msg_len} bytes): {e}") from e
 
         self._has_next = self._peek_has_data()
         return ReadResult(message=message, message_type=self._message_type)

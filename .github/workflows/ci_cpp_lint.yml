@@ -8,6 +8,7 @@ on:
 
 env:
   YQ_VERSION: v4.52.2
+  YQ_SHA256: a74bd266990339e0c48a2103534aef692abf99f19390d12c2b0ce6830385c459
 
 jobs:
   clang-tidy:
@@ -22,7 +23,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo curl -L -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/yq_linux_amd64"
+          sudo curl --fail -L -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/yq_linux_amd64"
+          echo "${{ env.YQ_SHA256 }}  /usr/local/bin/yq" | sha256sum -c -
           sudo chmod +x /usr/local/bin/yq
           yq -r '.ci_jobs.ubuntu_lint.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 

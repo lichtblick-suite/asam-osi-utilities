@@ -6,6 +6,12 @@
 #
 # Local development:  make setup && make lint test
 # CI:                 make setup && make docs / make test-python / ...
+#
+# NOTE: Recipes use POSIX shell syntax.  On Windows, run make from
+#       Git Bash, MSYS2, or WSL — not from cmd.exe or PowerShell.
+
+# Force POSIX shell for recipe execution on all platforms.
+SHELL := /bin/sh
 
 # Allow parent makefiles or CI to override the venv path.
 VENV ?= python/.venv

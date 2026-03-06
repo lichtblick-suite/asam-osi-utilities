@@ -4,6 +4,12 @@
 # Local development:  make setup && make lint test
 # CI:                 Use root Makefile (make setup && make lint-python test-python)
 #                     or set up venv from root and call targets here directly.
+#
+# NOTE: Recipes use POSIX shell syntax.  On Windows, run make from
+#       Git Bash, MSYS2, or WSL — not from cmd.exe or PowerShell.
+
+# Force POSIX shell for recipe execution on all platforms.
+SHELL := /bin/sh
 
 VENV ?= .venv
 BOOTSTRAP_PYTHON ?= python3

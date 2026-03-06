@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import IO
 
 from google.protobuf import text_format
 
@@ -35,7 +34,6 @@ class TXTHTraceFileReader(TraceFileReader):
 
     def __init__(self, message_type: MessageType = MessageType.UNKNOWN) -> None:
         self._message_type = message_type
-        self._file: IO[str] | None = None
         self._message_class: type | None = None
         self._has_next = False
         self._buffer = ""
@@ -153,9 +151,6 @@ class TXTHTraceFileReader(TraceFileReader):
         return self._has_next
 
     def close(self) -> None:
-        if self._file is not None:
-            self._file.close()
-            self._file = None
         self._buffer = ""
         self._has_next = False
 

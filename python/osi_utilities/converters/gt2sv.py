@@ -141,7 +141,8 @@ def convert_gt2sv(
                 continue
 
             sv_msg = _wrap_gt_in_sv(result.message)
-            writer.write_message(sv_msg, output_topic)
+            if not writer.write_message(sv_msg, output_topic):
+                raise RuntimeError(f"Failed to write SensorView frame {frame_count} to {output_path}")
             frame_count += 1
 
     logger.info("Converted %d frames from GroundTruth to SensorView.", frame_count)
