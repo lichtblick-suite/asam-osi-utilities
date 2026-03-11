@@ -40,6 +40,19 @@ def main() -> int:
         choices=VALID_TYPES.keys(),
         help="Message type (auto-detected from filename if omitted)",
     )
+    parser.add_argument(
+        "--compression",
+        default=None,
+        choices=["none", "lz4", "zstd"],
+        help="MCAP compression algorithm (default: mcap library default)",
+    )
+    parser.add_argument(
+        "--chunk-size",
+        dest="chunk_size",
+        type=int,
+        default=None,
+        help="MCAP chunk size in bytes (default: 16 MiB)",
+    )
     args = parser.parse_args()
 
     input_path = Path(args.input_file)
@@ -60,7 +73,13 @@ def main() -> int:
 
     writer = MCAPTraceFileWriter()
     metadata = {"description": f"Converted from {input_path.name}"}
-    if not writer.open(output_path, metadata=metadata):
+    writer_kwargs: dict[str, object] = {}
+    if args.compression is not None:
+        writer_kwargs["compression"] = args.compression
+    if args.chunk_size is not None:
+        writer_kwargs["chunk_size"] = args.chunk_size
+
+    if not writer.open(output_path, metadata=metadata, **writer_kwargs):  # type: ignore[arg-type]
         print(f"Error: Could not open output '{output_path}'", file=sys.stderr)
         return 1
 
