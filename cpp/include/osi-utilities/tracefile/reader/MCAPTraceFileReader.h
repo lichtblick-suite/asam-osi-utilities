@@ -7,6 +7,8 @@
 #define OSIUTILITIES_TRACEFILE_READER_MCAPTRACEFILEREADER_H_
 
 #include <mcap/reader.hpp>
+#include <unordered_set>
+#include <vector>
 
 #include "osi-utilities/tracefile/Reader.h"
 #include "osi_groundtruth.pb.h"
@@ -79,6 +81,49 @@ class MCAPTraceFileReader final : public TraceFileReader {
      */
     void SetSkipNonOSIMsgs(const bool skip) { skip_non_osi_msgs_ = skip; }
 
+    /**
+     * @brief Set topic filter for message iteration.
+     *
+     * Must be called BEFORE Open(). Sets the topic filter on the internal
+     * mcap::ReadMessageOptions so only messages from specified topics are returned.
+     *
+     * @param topics Set of topic names to include
+     */
+    void SetTopics(const std::unordered_set<std::string>& topics);
+
+    /**
+     * @brief Get all available topics in the opened MCAP file.
+     * @return Vector of topic names, empty if file not opened
+     */
+    std::vector<std::string> GetAvailableTopics() const;
+
+    /**
+     * @brief Get file-level metadata records.
+     *
+     * Returns all metadata records from the MCAP file as a vector of
+     * (name, key-value) pairs.
+     *
+     * @return Vector of pairs: (metadata_name, metadata_map)
+     */
+    std::vector<std::pair<std::string, std::unordered_map<std::string, std::string>>> GetFileMetadata() const;
+
+    /**
+     * @brief Get channel-specific metadata for a given topic.
+     * @param topic The channel topic name
+     * @return Metadata key-value map if found, std::nullopt otherwise
+     */
+    std::optional<std::unordered_map<std::string, std::string>> GetChannelMetadata(const std::string& topic) const;
+
+    /**
+     * @brief Get the OSI message type for a given topic.
+     *
+     * Looks up the channel's schema name and maps it to a ReaderTopLevelMessage.
+     *
+     * @param topic The channel topic name
+     * @return The message type if found, std::nullopt otherwise
+     */
+    std::optional<ReaderTopLevelMessage> GetMessageTypeForTopic(const std::string& topic) const;
+
    private:
     std::ifstream trace_file_;                                            /**< File stream for reading */
     mcap::McapReader mcap_reader_;                                        /**< Upstream MCAP reader object */
@@ -87,6 +132,9 @@ class MCAPTraceFileReader final : public TraceFileReader {
 
     bool skip_non_osi_msgs_ = false;        /**< Flag to skip non-OSI messages during reading */
     mcap::ReadMessageOptions mcap_options_; /**< Options for the mcap reader */
+
+    /** @brief Cached file-level metadata records, populated during Open() */
+    std::vector<std::pair<std::string, std::unordered_map<std::string, std::string>>> file_metadata_;
 
     /**
      * @brief Template function to deserialize MCAP messages into specific OSI message types

@@ -6,6 +6,7 @@ include(GNUInstallDirs)
 
 # specify library source files
 set(OSIUtilities_SRCS
+        tracefile/FilenameUtils.cpp
         tracefile/reader/Reader.cpp
         tracefile/MCAPImplementation.cpp
         tracefile/reader/SingleChannelBinaryTraceFileReader.cpp
