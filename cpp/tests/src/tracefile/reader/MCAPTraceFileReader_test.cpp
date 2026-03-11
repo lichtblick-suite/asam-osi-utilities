@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <string>
 
@@ -259,4 +260,112 @@ TEST_F(McapTraceFileReaderTest, CloseAndReopenWithDifferentOptions) {
     options.endTime = 1;
     EXPECT_TRUE(reader_.Open(test_file_, options));
     reader_.Close();
+}
+
+TEST_F(McapTraceFileReaderTest, SetTopicsFiltersMessages) {
+    reader_.SetTopics({"gt"});
+    reader_.SetSkipNonOSIMsgs(true);
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+    // Should only get GroundTruth messages
+    auto result1 = reader_.ReadMessage();
+    ASSERT_TRUE(result1.has_value());
+    EXPECT_EQ(result1->channel_name, "gt");
+    EXPECT_EQ(result1->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
+
+    // No more messages (sv and json_topic are filtered out)
+    auto result2 = reader_.ReadMessage();
+    EXPECT_FALSE(result2.has_value());
+}
+
+TEST_F(McapTraceFileReaderTest, GetAvailableTopics) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+    auto topics = reader_.GetAvailableTopics();
+    EXPECT_EQ(topics.size(), 3);
+
+    // Check all expected topics are present (order is unspecified)
+    std::sort(topics.begin(), topics.end());
+    EXPECT_EQ(topics[0], "gt");
+    EXPECT_EQ(topics[1], "json_topic");
+    EXPECT_EQ(topics[2], "sv");
+}
+
+TEST_F(McapTraceFileReaderTest, GetAvailableTopicsBeforeOpen) {
+    auto topics = reader_.GetAvailableTopics();
+    EXPECT_TRUE(topics.empty());
+}
+
+TEST_F(McapTraceFileReaderTest, GetFileMetadata) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+    auto metadata = reader_.GetFileMetadata();
+    EXPECT_FALSE(metadata.empty());
+
+    // The test file has required metadata added via PrepareRequiredFileMetadata
+    bool found_osi_trace = false;
+    for (const auto& [name, kv_map] : metadata) {
+        if (name == "net.asam.osi.trace") {
+            found_osi_trace = true;
+            EXPECT_FALSE(kv_map.empty());
+        }
+    }
+    EXPECT_TRUE(found_osi_trace) << "Expected 'net.asam.osi.trace' metadata from PrepareRequiredFileMetadata";
+}
+
+TEST_F(McapTraceFileReaderTest, GetFileMetadataBeforeOpen) {
+    auto metadata = reader_.GetFileMetadata();
+    EXPECT_TRUE(metadata.empty());
+}
+
+TEST_F(McapTraceFileReaderTest, GetChannelMetadata) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+    // The "gt" channel should have metadata (added by AddChannel with OSI descriptor)
+    auto metadata = reader_.GetChannelMetadata("gt");
+    ASSERT_TRUE(metadata.has_value());
+}
+
+TEST_F(McapTraceFileReaderTest, GetChannelMetadataNotFound) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+    auto metadata = reader_.GetChannelMetadata("nonexistent_topic");
+    EXPECT_FALSE(metadata.has_value());
+}
+
+TEST_F(McapTraceFileReaderTest, GetChannelMetadataBeforeOpen) {
+    auto metadata = reader_.GetChannelMetadata("gt");
+    EXPECT_FALSE(metadata.has_value());
+}
+
+TEST_F(McapTraceFileReaderTest, GetMessageTypeForTopic) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+    auto gt_type = reader_.GetMessageTypeForTopic("gt");
+    ASSERT_TRUE(gt_type.has_value());
+    EXPECT_EQ(gt_type.value(), osi3::ReaderTopLevelMessage::kGroundTruth);
+
+    auto sv_type = reader_.GetMessageTypeForTopic("sv");
+    ASSERT_TRUE(sv_type.has_value());
+    EXPECT_EQ(sv_type.value(), osi3::ReaderTopLevelMessage::kSensorView);
+}
+
+TEST_F(McapTraceFileReaderTest, GetMessageTypeForNonOSITopic) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+    // JSON topic has a non-OSI schema, should return nullopt
+    auto type = reader_.GetMessageTypeForTopic("json_topic");
+    EXPECT_FALSE(type.has_value());
+}
+
+TEST_F(McapTraceFileReaderTest, GetMessageTypeForTopicNotFound) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+    auto type = reader_.GetMessageTypeForTopic("nonexistent");
+    EXPECT_FALSE(type.has_value());
+}
+
+TEST_F(McapTraceFileReaderTest, GetMessageTypeForTopicBeforeOpen) {
+    auto type = reader_.GetMessageTypeForTopic("gt");
+    EXPECT_FALSE(type.has_value());
 }
