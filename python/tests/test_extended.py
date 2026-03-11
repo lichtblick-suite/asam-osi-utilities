@@ -15,7 +15,14 @@ from pathlib import Path
 import pytest
 from mcap.writer import Writer as McapRawWriter
 from osi3.osi_groundtruth_pb2 import GroundTruth
+from osi3.osi_hostvehicledata_pb2 import HostVehicleData
+from osi3.osi_motionrequest_pb2 import MotionRequest
+from osi3.osi_sensordata_pb2 import SensorData
 from osi3.osi_sensorview_pb2 import SensorView
+from osi3.osi_streamingupdate_pb2 import StreamingUpdate
+from osi3.osi_trafficcommand_pb2 import TrafficCommand
+from osi3.osi_trafficcommandupdate_pb2 import TrafficCommandUpdate
+from osi3.osi_trafficupdate_pb2 import TrafficUpdate
 
 from osi_utilities import (
     BinaryTraceFileReader,
@@ -586,3 +593,83 @@ class TestCrossFormatRoundtrip:
             assert len(results) == 1
             assert results[0].message_type == MessageType.SENSOR_VIEW
             assert results[0].message.timestamp.seconds == 33
+
+
+_MESSAGE_TYPE_MAP = {
+    MessageType.GROUND_TRUTH: GroundTruth,
+    MessageType.SENSOR_VIEW: SensorView,
+    MessageType.SENSOR_DATA: SensorData,
+    MessageType.HOST_VEHICLE_DATA: HostVehicleData,
+    MessageType.TRAFFIC_COMMAND: TrafficCommand,
+    MessageType.TRAFFIC_COMMAND_UPDATE: TrafficCommandUpdate,
+    MessageType.TRAFFIC_UPDATE: TrafficUpdate,
+    MessageType.MOTION_REQUEST: MotionRequest,
+    MessageType.STREAMING_UPDATE: StreamingUpdate,
+}
+
+
+def _make_message(msg_type: MessageType, index: int = 0):
+    cls = _MESSAGE_TYPE_MAP[msg_type]
+    msg = cls()
+    msg.timestamp.seconds = index
+    msg.timestamp.nanos = index * 1000
+    return msg
+
+
+_ALL_TYPES = [
+    MessageType.GROUND_TRUTH,
+    MessageType.SENSOR_VIEW,
+    MessageType.SENSOR_DATA,
+    MessageType.HOST_VEHICLE_DATA,
+    MessageType.TRAFFIC_COMMAND,
+    MessageType.TRAFFIC_COMMAND_UPDATE,
+    MessageType.TRAFFIC_UPDATE,
+    MessageType.MOTION_REQUEST,
+    MessageType.STREAMING_UPDATE,
+]
+
+
+class TestMultiTypeRoundtrip:
+    """Parameterized roundtrip tests for all 9 message types × 3 formats (27 tests)."""
+
+    @pytest.mark.parametrize("msg_type", _ALL_TYPES, ids=lambda t: t.name)
+    def test_binary_roundtrip(self, msg_type: MessageType, tmp_dir: Path):
+        path = tmp_dir / f"roundtrip_{msg_type.name.lower()}.osi"
+        msg = _make_message(msg_type, index=42)
+        with BinaryTraceFileWriter() as w:
+            w.open(path)
+            w.write_message(msg)
+        with BinaryTraceFileReader(msg_type) as r:
+            r.open(path)
+            results = list(r)
+            assert len(results) == 1
+            assert results[0].message_type == msg_type
+            assert results[0].message.timestamp.seconds == 42
+
+    @pytest.mark.parametrize("msg_type", _ALL_TYPES, ids=lambda t: t.name)
+    def test_mcap_roundtrip(self, msg_type: MessageType, tmp_dir: Path):
+        path = tmp_dir / f"roundtrip_{msg_type.name.lower()}.mcap"
+        msg = _make_message(msg_type, index=55)
+        with MCAPTraceFileWriter() as w:
+            w.open(path)
+            w.write_message(msg)
+        with MCAPTraceFileReader() as r:
+            r.open(path)
+            results = list(r)
+            assert len(results) == 1
+            assert results[0].message_type == msg_type
+            assert results[0].message.timestamp.seconds == 55
+
+    @pytest.mark.parametrize("msg_type", _ALL_TYPES, ids=lambda t: t.name)
+    def test_txth_roundtrip(self, msg_type: MessageType, tmp_dir: Path):
+        path = tmp_dir / f"roundtrip_{msg_type.name.lower()}.txth"
+        msg = _make_message(msg_type, index=77)
+        with TXTHTraceFileWriter() as w:
+            w.open(path)
+            w.write_message(msg)
+        with TXTHTraceFileReader(msg_type) as r:
+            r.open(path)
+            results = list(r)
+            assert len(results) == 1
+            assert results[0].message_type == msg_type
+            assert results[0].message.timestamp.seconds == 77
