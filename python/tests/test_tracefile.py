@@ -115,6 +115,13 @@ class TestBinaryTraceFile:
         writer = BinaryTraceFileWriter()
         assert not writer.open(path)
 
+    def test_open_already_opened(self, tmp_dir: Path):
+        path = tmp_dir / "test_gt.osi"
+        writer = BinaryTraceFileWriter()
+        assert writer.open(path)
+        assert not writer.open(path)
+        writer.close()
+
     def test_read_truncated_header(self, tmp_dir: Path):
         path = tmp_dir / "truncated_gt.osi"
         path.write_bytes(b"\x05\x00")  # only 2 bytes of length header
@@ -205,6 +212,13 @@ class TestMCAPTraceFile:
             assert MessageType.GROUND_TRUTH in types
             assert MessageType.SENSOR_VIEW in types
 
+    def test_open_already_opened(self, tmp_dir: Path):
+        path = tmp_dir / "test.mcap"
+        writer = MCAPTraceFileWriter()
+        assert writer.open(path)
+        assert not writer.open(path)
+        writer.close()
+
     def test_file_metadata(self, tmp_dir: Path):
         path = tmp_dir / "meta.mcap"
         with MCAPTraceFileWriter() as writer:
@@ -255,6 +269,13 @@ class TestTXTHTraceFile:
         path = tmp_dir / "test.osi"
         writer = TXTHTraceFileWriter()
         assert not writer.open(path)
+
+    def test_open_already_opened(self, tmp_dir: Path):
+        path = tmp_dir / "test_gt.txth"
+        writer = TXTHTraceFileWriter()
+        assert writer.open(path)
+        assert not writer.open(path)
+        writer.close()
 
 
 # ===========================================================================

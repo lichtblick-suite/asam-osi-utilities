@@ -41,6 +41,10 @@ class BinaryTraceFileWriter(TraceFileWriter):
         Returns:
             True on success, False on failure.
         """
+        if self._file is not None:
+            logger.error("Opening file '%s', writer has already a file opened", path)
+            return False
+
         if path.suffix.lower() != ".osi":
             logger.error("Binary trace files must have .osi extension, got '%s'", path.suffix)
             return False

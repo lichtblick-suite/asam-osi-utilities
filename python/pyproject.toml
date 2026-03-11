@@ -54,6 +54,7 @@ docs = [
 
 [project.urls]
 Homepage = "https://github.com/lichtblick-suite/asam-osi-utilities"
+Documentation = "https://lichtblick-suite.github.io/asam-osi-utilities/"
 Repository = "https://github.com/lichtblick-suite/asam-osi-utilities"
 Issues = "https://github.com/lichtblick-suite/asam-osi-utilities/issues"
 
