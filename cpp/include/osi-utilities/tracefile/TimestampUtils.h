@@ -6,7 +6,10 @@
 #ifndef OSIUTILITIES_TRACEFILE_TIMESTAMPUTILS_H_
 #define OSIUTILITIES_TRACEFILE_TIMESTAMPUTILS_H_
 
+#include <cmath>
 #include <cstdint>
+#include <limits>
+#include <stdexcept>
 
 #include "osi-utilities/tracefile/TraceFileConfig.h"
 
@@ -24,10 +27,22 @@ namespace tracefile {
  * @tparam T Protobuf message type with timestamp().seconds() and timestamp().nanos()
  * @param message The protobuf message to extract the timestamp from
  * @return Timestamp in nanoseconds as uint64_t
+ * @throws std::out_of_range if the timestamp is negative or exceeds uint64 nanosecond range
  */
 template <typename T>
 auto TimestampToNanoseconds(const T& message) -> uint64_t {
-    return static_cast<uint64_t>(message.timestamp().seconds()) * config::kNanosecondsPerSecond + static_cast<uint64_t>(message.timestamp().nanos());
+    const auto seconds = message.timestamp().seconds();
+    const auto nanos = static_cast<uint64_t>(message.timestamp().nanos());
+    if (seconds < 0) {
+        throw std::out_of_range("Timestamp seconds must be non-negative.");
+    }
+
+    const auto seconds_as_uint = static_cast<uint64_t>(seconds);
+    if (seconds_as_uint > (std::numeric_limits<uint64_t>::max() - nanos) / config::kNanosecondsPerSecond) {
+        throw std::out_of_range("Timestamp exceeds uint64 nanosecond range.");
+    }
+
+    return seconds_as_uint * config::kNanosecondsPerSecond + nanos;
 }
 
 /**
@@ -55,8 +70,20 @@ inline auto NanosecondsToSeconds(const uint64_t nanoseconds) -> double { return 
  *
  * @param seconds Time value in seconds
  * @return Time in nanoseconds as uint64_t
+ * @throws std::out_of_range if seconds is negative, not finite, or exceeds uint64 nanosecond range
  */
-inline auto SecondsToNanoseconds(const double seconds) -> uint64_t { return static_cast<uint64_t>(seconds * static_cast<double>(config::kNanosecondsPerSecond)); }
+inline auto SecondsToNanoseconds(const double seconds) -> uint64_t {
+    if (!std::isfinite(seconds) || seconds < 0.0) {
+        throw std::out_of_range("Seconds must be finite and non-negative.");
+    }
+
+    constexpr auto kMaxSeconds = static_cast<double>(std::numeric_limits<uint64_t>::max()) / static_cast<double>(config::kNanosecondsPerSecond);
+    if (seconds > kMaxSeconds) {
+        throw std::out_of_range("Seconds exceed uint64 nanosecond range.");
+    }
+
+    return static_cast<uint64_t>(seconds * static_cast<double>(config::kNanosecondsPerSecond));
+}
 
 }  // namespace tracefile
 }  // namespace osi3

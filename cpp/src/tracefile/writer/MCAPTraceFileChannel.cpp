@@ -5,6 +5,8 @@
 
 #include "osi-utilities/tracefile/writer/MCAPTraceFileChannel.h"
 
+#include <stdexcept>
+
 #include "MCAPWriterUtils.h"
 #include "osi-utilities/tracefile/TimestampUtils.h"
 #include "osi_groundtruth.pb.h"
@@ -42,7 +44,12 @@ auto MCAPTraceFileChannel::WriteMessage(const T& top_level_message, const std::s
     mcap::Message msg;
     msg.channelId = topic_channel_id->second;
 
-    msg.logTime = tracefile::TimestampToNanoseconds(top_level_message);
+    try {
+        msg.logTime = tracefile::TimestampToNanoseconds(top_level_message);
+    } catch (const std::out_of_range& error) {
+        std::cerr << "ERROR: invalid message timestamp: " << error.what() << '\n';
+        return false;
+    }
     msg.publishTime = msg.logTime;
     msg.data = reinterpret_cast<const std::byte*>(serialize_buffer_.data());
     msg.dataSize = serialize_buffer_.size();
@@ -53,8 +60,8 @@ auto MCAPTraceFileChannel::WriteMessage(const T& top_level_message, const std::s
     return true;
 }
 
-auto MCAPTraceFileChannel::AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor,
-                                      std::unordered_map<std::string, std::string> channel_metadata) -> uint16_t {
+auto MCAPTraceFileChannel::AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor, std::unordered_map<std::string, std::string> channel_metadata)
+    -> uint16_t {
     // Check if the schema for this descriptor's full name already exists
     const auto& schema_name = descriptor->full_name();
     auto it_schema = schemas_.find(schema_name);

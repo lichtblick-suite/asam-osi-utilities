@@ -7,6 +7,8 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
 #include "osi_groundtruth.pb.h"
 
 namespace {
@@ -48,6 +50,11 @@ TEST(TimestampUtilsTest, TimestampToSecondsZero) {
     EXPECT_DOUBLE_EQ(osi3::tracefile::TimestampToSeconds(msg), 0.0);
 }
 
+TEST(TimestampUtilsTest, TimestampToNanosecondsRejectsNegativeSeconds) {
+    auto msg = MakeMessage(-1, 0);
+    EXPECT_THROW(osi3::tracefile::TimestampToNanoseconds(msg), std::out_of_range);
+}
+
 TEST(TimestampUtilsTest, NanosecondsToSecondsBasic) { EXPECT_DOUBLE_EQ(osi3::tracefile::NanosecondsToSeconds(1'500'000'000ULL), 1.5); }
 
 TEST(TimestampUtilsTest, NanosecondsToSecondsZero) { EXPECT_DOUBLE_EQ(osi3::tracefile::NanosecondsToSeconds(0ULL), 0.0); }
@@ -55,6 +62,13 @@ TEST(TimestampUtilsTest, NanosecondsToSecondsZero) { EXPECT_DOUBLE_EQ(osi3::trac
 TEST(TimestampUtilsTest, SecondsToNanosecondsBasic) { EXPECT_EQ(osi3::tracefile::SecondsToNanoseconds(1.5), 1'500'000'000ULL); }
 
 TEST(TimestampUtilsTest, SecondsToNanosecondsZero) { EXPECT_EQ(osi3::tracefile::SecondsToNanoseconds(0.0), 0ULL); }
+
+TEST(TimestampUtilsTest, SecondsToNanosecondsRejectsNegativeSeconds) { EXPECT_THROW(osi3::tracefile::SecondsToNanoseconds(-1.5), std::out_of_range); }
+
+TEST(TimestampUtilsTest, SecondsToNanosecondsRejectsOverflow) {
+    constexpr auto kOverflowSeconds = static_cast<double>(std::numeric_limits<uint64_t>::max()) / static_cast<double>(osi3::tracefile::config::kNanosecondsPerSecond) + 1.0;
+    EXPECT_THROW(osi3::tracefile::SecondsToNanoseconds(kOverflowSeconds), std::out_of_range);
+}
 
 TEST(TimestampUtilsTest, Roundtrip) {
     auto msg = MakeMessage(3, 141'592'653);

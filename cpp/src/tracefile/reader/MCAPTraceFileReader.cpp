@@ -45,6 +45,7 @@ auto MCAPTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
     (void)mcap_reader_.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan);
 
     // Pre-load file-level metadata records from the summary indexes
+    file_metadata_.clear();
     auto* data_source = mcap_reader_.dataSource();
     if (data_source) {
         for (const auto& [name, index] : mcap_reader_.metadataIndexes()) {
@@ -58,8 +59,7 @@ auto MCAPTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
         }
     }
 
-    message_view_ = std::make_unique<mcap::LinearMessageView>(mcap_reader_.readMessages(OnProblem, mcap_options_));
-    message_iterator_ = std::make_unique<mcap::LinearMessageView::Iterator>(message_view_->begin());
+    ResetMessageIteration();
     return true;
 }
 
@@ -108,7 +108,6 @@ auto MCAPTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
         return result;
     }
 
-    std::cerr << "Unable to read message: No more messages available in trace file or file not opened." << std::endl;
     return std::nullopt;
 }
 
@@ -136,7 +135,15 @@ auto MCAPTraceFileReader::HasNext() -> bool {
 }
 
 void MCAPTraceFileReader::SetTopics(const std::unordered_set<std::string>& topics) {
-    mcap_options_.topicFilter = [topics](std::string_view topic) { return topics.find(std::string(topic)) != topics.end(); };
+    if (topics.empty()) {
+        mcap_options_.topicFilter = {};
+    } else {
+        mcap_options_.topicFilter = [topics](std::string_view topic) { return topics.find(std::string(topic)) != topics.end(); };
+    }
+
+    if (trace_file_.is_open()) {
+        ResetMessageIteration();
+    }
 }
 
 auto MCAPTraceFileReader::GetAvailableTopics() const -> std::vector<std::string> {
@@ -182,5 +189,17 @@ auto MCAPTraceFileReader::GetMessageTypeForTopic(const std::string& topic) const
 }
 
 void MCAPTraceFileReader::OnProblem(const mcap::Status& status) { std::cerr << "ERROR: The following MCAP problem occurred: " << status.message; }
+
+void MCAPTraceFileReader::ResetMessageIteration() {
+    message_iterator_.reset();
+    message_view_.reset();
+
+    if (!trace_file_.is_open()) {
+        return;
+    }
+
+    message_view_ = std::make_unique<mcap::LinearMessageView>(mcap_reader_.readMessages(OnProblem, mcap_options_));
+    message_iterator_ = std::make_unique<mcap::LinearMessageView::Iterator>(message_view_->begin());
+}
 
 }  // namespace osi3

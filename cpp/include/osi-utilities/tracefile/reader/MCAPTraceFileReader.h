@@ -84,8 +84,9 @@ class MCAPTraceFileReader final : public TraceFileReader {
     /**
      * @brief Set topic filter for message iteration.
      *
-     * Must be called BEFORE Open(). Sets the topic filter on the internal
-     * mcap::ReadMessageOptions so only messages from specified topics are returned.
+     * Can be called before or after Open(). If the reader is already open,
+     * the message iteration restarts from the beginning with the updated filter.
+     * Passing an empty set clears the topic filter and reads all topics.
      *
      * @param topics Set of topic names to include
      */
@@ -181,6 +182,9 @@ class MCAPTraceFileReader final : public TraceFileReader {
      * when it encounters issues during file reading operations.
      */
     static void OnProblem(const mcap::Status& status);
+
+    /** @brief Recreate the message view using the current read options. */
+    void ResetMessageIteration();
 };
 
 }  // namespace osi3

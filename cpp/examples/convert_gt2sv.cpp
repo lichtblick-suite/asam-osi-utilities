@@ -29,7 +29,7 @@
 #include "osi_sensorview.pb.h"
 
 auto main(const int argc, const char** argv) -> int {
-    if (argc < 3 || std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
+    const auto print_usage = []() {
         std::cerr << "Usage: convert_gt2sv <input.osi|.mcap> <output.osi|.mcap> [--topic <name>]\n"
                   << "\n"
                   << "Reads a GroundTruth trace (.osi or .mcap) and writes a SensorView\n"
@@ -38,6 +38,15 @@ auto main(const int argc, const char** argv) -> int {
                   << "\n"
                   << "Options:\n"
                   << "  --topic <name>  Filter MCAP input to a specific topic\n";
+    };
+
+    if (argc >= 2 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h")) {
+        print_usage();
+        return 0;
+    }
+
+    if (argc < 3) {
+        print_usage();
         return 1;
     }
 
@@ -46,10 +55,17 @@ auto main(const int argc, const char** argv) -> int {
     std::string topic_filter;
 
     // Parse optional --topic argument
-    for (int i = 3; i < argc - 1; ++i) {
-        if (std::string(argv[i]) == "--topic") {
-            topic_filter = argv[i + 1];
-            ++i;
+    for (int i = 3; i < argc; ++i) {
+        const std::string argument = argv[i];
+        if (argument == "--topic") {
+            if (i + 1 >= argc) {
+                std::cerr << "ERROR: Missing value for --topic\n";
+                return 1;
+            }
+            topic_filter = argv[++i];
+        } else {
+            std::cerr << "ERROR: Unknown argument: " << argument << "\n";
+            return 1;
         }
     }
 
@@ -88,6 +104,7 @@ auto main(const int argc, const char** argv) -> int {
     std::unique_ptr<osi3::SingleChannelBinaryTraceFileWriter> binary_writer;
     std::unique_ptr<osi3::MCAPTraceFileWriter> mcap_writer;
     bool output_is_mcap = (output_ext == ".mcap");
+    const std::string output_topic = topic_filter.empty() ? "SensorView" : topic_filter;
 
     if (output_is_mcap) {
         mcap_writer = std::make_unique<osi3::MCAPTraceFileWriter>();
@@ -96,7 +113,7 @@ auto main(const int argc, const char** argv) -> int {
             return 1;
         }
         mcap_writer->AddFileMetadata(osi3::MCAPTraceFileWriter::PrepareRequiredFileMetadata());
-        mcap_writer->AddChannel("sensor_view", osi3::SensorView::descriptor());
+        mcap_writer->AddChannel(output_topic, osi3::SensorView::descriptor());
     } else if (output_ext == ".osi") {
         binary_writer = std::make_unique<osi3::SingleChannelBinaryTraceFileWriter>();
         if (!binary_writer->Open(output_path)) {
@@ -134,7 +151,7 @@ auto main(const int argc, const char** argv) -> int {
 
         bool write_ok = false;
         if (output_is_mcap) {
-            write_ok = mcap_writer->WriteMessage(sv, "sensor_view");
+            write_ok = mcap_writer->WriteMessage(sv, output_topic);
         } else {
             write_ok = binary_writer->WriteMessage(sv);
         }

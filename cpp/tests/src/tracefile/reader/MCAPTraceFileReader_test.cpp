@@ -278,6 +278,43 @@ TEST_F(McapTraceFileReaderTest, SetTopicsFiltersMessages) {
     EXPECT_FALSE(result2.has_value());
 }
 
+TEST_F(McapTraceFileReaderTest, SetTopicsFiltersMessagesAfterOpen) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetTopics({"gt"});
+
+    auto result1 = reader_.ReadMessage();
+    ASSERT_TRUE(result1.has_value());
+    EXPECT_EQ(result1->channel_name, "gt");
+    EXPECT_EQ(result1->message_type, osi3::ReaderTopLevelMessage::kGroundTruth);
+
+    auto result2 = reader_.ReadMessage();
+    EXPECT_FALSE(result2.has_value());
+}
+
+TEST_F(McapTraceFileReaderTest, SetTopicsWithEmptySetClearsFilterAndRestartsIteration) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetTopics({"gt"});
+
+    auto filtered_result = reader_.ReadMessage();
+    ASSERT_TRUE(filtered_result.has_value());
+    EXPECT_EQ(filtered_result->channel_name, "gt");
+    EXPECT_FALSE(reader_.ReadMessage().has_value());
+
+    reader_.SetTopics({});
+
+    auto first_result = reader_.ReadMessage();
+    ASSERT_TRUE(first_result.has_value());
+    EXPECT_EQ(first_result->channel_name, "gt");
+
+    auto second_result = reader_.ReadMessage();
+    ASSERT_TRUE(second_result.has_value());
+    EXPECT_EQ(second_result->channel_name, "sv");
+
+    EXPECT_FALSE(reader_.ReadMessage().has_value());
+}
+
 TEST_F(McapTraceFileReaderTest, GetAvailableTopics) {
     ASSERT_TRUE(reader_.Open(test_file_));
 
