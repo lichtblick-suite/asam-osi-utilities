@@ -60,8 +60,8 @@ auto MCAPTraceFileChannel::WriteMessage(const T& top_level_message, const std::s
     return true;
 }
 
-auto MCAPTraceFileChannel::AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor, std::unordered_map<std::string, std::string> channel_metadata)
-    -> uint16_t {
+auto MCAPTraceFileChannel::AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor,
+                                      std::unordered_map<std::string, std::string> channel_metadata) -> uint16_t {
     // Check if the schema for this descriptor's full name already exists
     const auto& schema_name = descriptor->full_name();
     auto it_schema = schemas_.find(schema_name);
