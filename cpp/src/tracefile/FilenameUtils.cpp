@@ -13,8 +13,7 @@
 #include <sstream>
 #include <unordered_set>
 
-namespace osi3 {
-namespace tracefile {
+namespace osi3::tracefile {
 
 namespace {
 
@@ -37,7 +36,7 @@ auto IsValidUtcTimestamp(const std::string& timestamp) -> bool {
 
 }  // namespace
 
-ReaderTopLevelMessage InferMessageTypeFromFilename(const std::filesystem::path& file_path) {
+auto InferMessageTypeFromFilename(const std::filesystem::path& file_path) -> ReaderTopLevelMessage {
     const auto normalized_file_name = ToLower(file_path.filename().string());
     const auto stem = ToLower(file_path.stem().string());
 
@@ -56,7 +55,7 @@ ReaderTopLevelMessage InferMessageTypeFromFilename(const std::filesystem::path& 
     return ReaderTopLevelMessage::kUnknown;
 }
 
-std::optional<OsiTraceFilenameComponents> ParseOsiTraceFilename(const std::filesystem::path& file_path) {
+auto ParseOsiTraceFilename(const std::filesystem::path& file_path) -> std::optional<OsiTraceFilenameComponents> {
     static const std::regex kFilenamePattern(R"(^(\d{8}T\d{6}Z)_([A-Za-z0-9]+)_([^_]+)_([^_]+)_(\d+)_([^_.]+)(?:_(.+))?\.[^.]+$)");
 
     std::smatch match;
@@ -83,5 +82,4 @@ std::optional<OsiTraceFilenameComponents> ParseOsiTraceFilename(const std::files
     return result;
 }
 
-}  // namespace tracefile
-}  // namespace osi3
+}  // namespace osi3::tracefile

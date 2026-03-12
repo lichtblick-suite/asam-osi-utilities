@@ -5,13 +5,24 @@
 
 #include "osi-utilities/tracefile/reader/MCAPTraceFileReader.h"
 
+#include <cstdio>
+#include <cstring>
+#include <exception>
 #include <filesystem>
 
 namespace osi3 {
 
-MCAPTraceFileReader::~MCAPTraceFileReader() {
+MCAPTraceFileReader::~MCAPTraceFileReader() noexcept {
     if (trace_file_.is_open()) {
-        Close();
+        try {
+            Close();
+        } catch (const std::exception& error) {
+            std::fputs("ERROR: Failed to close MCAP reader during destruction: ", stderr);
+            std::fputs(error.what(), stderr);
+            std::fputc('\n', stderr);
+        } catch (...) {
+            std::fputs("ERROR: Failed to close MCAP reader during destruction due to an unknown exception.\n", stderr);
+        }
     }
 }
 
@@ -49,7 +60,7 @@ auto MCAPTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
     auto* data_source = mcap_reader_.dataSource();
     if (data_source) {
         for (const auto& [name, index] : mcap_reader_.metadataIndexes()) {
-            mcap::Record raw_record;
+            mcap::Record raw_record{};
             if (const auto read_status = mcap::McapReader::ReadRecord(*data_source, index.offset, &raw_record); read_status.ok()) {
                 mcap::Metadata metadata;
                 if (const auto parse_status = mcap::McapReader::ParseMetadata(raw_record, &metadata); parse_status.ok()) {
@@ -135,10 +146,12 @@ auto MCAPTraceFileReader::HasNext() -> bool {
 }
 
 void MCAPTraceFileReader::SetTopics(const std::unordered_set<std::string>& topics) {
-    if (topics.empty()) {
+    filtered_topics_.assign(topics.begin(), topics.end());
+
+    if (filtered_topics_.empty()) {
         mcap_options_.topicFilter = {};
     } else {
-        mcap_options_.topicFilter = [topics](std::string_view topic) { return topics.find(std::string(topic)) != topics.end(); };
+        mcap_options_.topicFilter = [this](const std::string_view topic) noexcept { return TopicMatches(topic); };
     }
 
     if (trace_file_.is_open()) {
@@ -148,7 +161,10 @@ void MCAPTraceFileReader::SetTopics(const std::unordered_set<std::string>& topic
 
 auto MCAPTraceFileReader::GetAvailableTopics() const -> std::vector<std::string> {
     std::vector<std::string> topics;
-    if (!trace_file_.is_open()) return topics;
+    if (!trace_file_.is_open()) {
+        return topics;
+    }
+
     const auto channels = mcap_reader_.channels();
     for (const auto& [id, channel_ptr] : channels) {
         if (channel_ptr) {
@@ -161,7 +177,10 @@ auto MCAPTraceFileReader::GetAvailableTopics() const -> std::vector<std::string>
 auto MCAPTraceFileReader::GetFileMetadata() const -> std::vector<std::pair<std::string, std::unordered_map<std::string, std::string>>> { return file_metadata_; }
 
 auto MCAPTraceFileReader::GetChannelMetadata(const std::string& topic) const -> std::optional<std::unordered_map<std::string, std::string>> {
-    if (!trace_file_.is_open()) return std::nullopt;
+    if (!trace_file_.is_open()) {
+        return std::nullopt;
+    }
+
     const auto channels = mcap_reader_.channels();
     for (const auto& [id, channel_ptr] : channels) {
         if (channel_ptr && channel_ptr->topic == topic) {
@@ -172,12 +191,18 @@ auto MCAPTraceFileReader::GetChannelMetadata(const std::string& topic) const -> 
 }
 
 auto MCAPTraceFileReader::GetMessageTypeForTopic(const std::string& topic) const -> std::optional<ReaderTopLevelMessage> {
-    if (!trace_file_.is_open()) return std::nullopt;
+    if (!trace_file_.is_open()) {
+        return std::nullopt;
+    }
+
     const auto channels = mcap_reader_.channels();
     for (const auto& [id, channel_ptr] : channels) {
         if (channel_ptr && channel_ptr->topic == topic) {
             const auto schema_ptr = mcap_reader_.schema(channel_ptr->schemaId);
-            if (!schema_ptr) return std::nullopt;
+            if (!schema_ptr) {
+                return std::nullopt;
+            }
+
             const auto it = deserializer_map_.find(schema_ptr->name);
             if (it != deserializer_map_.end()) {
                 return it->second.second;
@@ -189,6 +214,16 @@ auto MCAPTraceFileReader::GetMessageTypeForTopic(const std::string& topic) const
 }
 
 void MCAPTraceFileReader::OnProblem(const mcap::Status& status) { std::cerr << "ERROR: The following MCAP problem occurred: " << status.message; }
+
+auto MCAPTraceFileReader::TopicMatches(const std::string_view topic) const noexcept -> bool {
+    // Keep this as a manual loop so the MCAP topicFilter callback stays trivially noexcept.
+    for (const auto& candidate : filtered_topics_) {  // NOLINT(readability-use-anyofallof)
+        if (candidate.size() == topic.size() && std::memcmp(candidate.data(), topic.data(), topic.size()) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void MCAPTraceFileReader::ResetMessageIteration() {
     message_iterator_.reset();

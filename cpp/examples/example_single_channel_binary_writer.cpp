@@ -10,6 +10,7 @@
 #include <osi-utilities/tracefile/TimestampUtils.h>
 #include <osi-utilities/tracefile/writer/SingleChannelBinaryTraceFileWriter.h>
 
+#include <exception>
 #include <filesystem>
 #ifdef _WIN32
 #include <process.h>
@@ -57,12 +58,7 @@ auto GenerateTempFilePath() -> std::filesystem::path {
     return path;
 }
 
-}  // namespace
-
-/**
- * \brief Entry point for the single-channel binary writer example.
- */
-auto main(int /*argc*/, const char** /*argv*/) -> int {
+auto RunExample() -> int {
     std::cout << "Starting single channel binary writer example:" << std::endl;
 
     // Create writer and open file
@@ -112,4 +108,18 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
 
     std::cout << "Finished single channel binary writer example" << std::endl;
     return 0;
+}
+
+}  // namespace
+
+/**
+ * \brief Entry point for the single-channel binary writer example.
+ */
+auto main(int /*argc*/, const char** /*argv*/) -> int {
+    try {
+        return RunExample();
+    } catch (const std::exception& error) {
+        std::cerr << "ERROR: " << error.what() << std::endl;
+        return 1;
+    }
 }

@@ -7,6 +7,7 @@
 #define OSIUTILITIES_TRACEFILE_READER_MCAPTRACEFILEREADER_H_
 
 #include <mcap/reader.hpp>
+#include <string_view>
 #include <unordered_set>
 #include <vector>
 
@@ -35,7 +36,7 @@ namespace osi3 {
 class MCAPTraceFileReader final : public TraceFileReader {
    public:
     /** @brief Destructor, closes the file if still open */
-    ~MCAPTraceFileReader() override;
+    ~MCAPTraceFileReader() noexcept override;
 
     /**
      * @brief Opens a trace file for reading with default options
@@ -185,6 +186,12 @@ class MCAPTraceFileReader final : public TraceFileReader {
 
     /** @brief Recreate the message view using the current read options. */
     void ResetMessageIteration();
+
+    /** @brief Check whether a topic matches the configured filter. */
+    auto TopicMatches(std::string_view topic) const noexcept -> bool;
+
+    /** @brief Stable topic filter storage used by the MCAP callback. */
+    std::vector<std::string> filtered_topics_;
 };
 
 }  // namespace osi3

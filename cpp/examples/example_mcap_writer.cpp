@@ -10,6 +10,7 @@
 #include <osi-utilities/tracefile/TimestampUtils.h>
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
+#include <exception>
 #include <filesystem>
 #ifdef _WIN32
 #include <process.h>
@@ -35,12 +36,7 @@ auto GenerateTempFilePath() -> std::filesystem::path {
     return std::filesystem::temp_directory_path() / ("sv_example_" + pid + ".mcap");  // add sv to indicate sensor view as recommended by the OSI-specification
 }
 
-}  // namespace
-
-/**
- * \brief Entry point for the MCAP writer example.
- */
-auto main(int /*argc*/, const char** /*argv*/) -> int {
+auto RunExample() -> int {
     std::cout << "Starting MCAP Writer example:" << std::endl;
 
     // Create writer and open file
@@ -116,4 +112,19 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     trace_file_writer.Close();
 
     std::cout << "Finished MCAP Writer example" << std::endl;
+    return 0;
+}
+
+}  // namespace
+
+/**
+ * \brief Entry point for the MCAP writer example.
+ */
+auto main(int /*argc*/, const char** /*argv*/) -> int {
+    try {
+        return RunExample();
+    } catch (const std::exception& error) {
+        std::cerr << "ERROR: " << error.what() << std::endl;
+        return 1;
+    }
 }

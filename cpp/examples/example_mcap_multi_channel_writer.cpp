@@ -23,6 +23,7 @@
 #include <osi-utilities/tracefile/writer/MCAPTraceFileChannel.h>
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #ifdef _WIN32
@@ -333,6 +334,16 @@ void Part2_MixedChannelWriter() {
     ReadBackAndPrintSummary(path, /*skip_non_osi=*/true);
 }
 
+auto RunExample() -> int {
+    std::cout << "Starting Multi-Channel MCAP Writer example" << std::endl;
+
+    Part1_MultiTopicWriter();
+    Part2_MixedChannelWriter();
+
+    std::cout << "\nFinished Multi-Channel MCAP Writer example" << std::endl;
+    return 0;
+}
+
 }  // namespace
 
 // ===========================================================================
@@ -343,11 +354,10 @@ void Part2_MixedChannelWriter() {
  * \brief Entry point for the multi-channel MCAP writer example.
  */
 auto main(int /*argc*/, const char** /*argv*/) -> int {
-    std::cout << "Starting Multi-Channel MCAP Writer example" << std::endl;
-
-    Part1_MultiTopicWriter();
-    Part2_MixedChannelWriter();
-
-    std::cout << "\nFinished Multi-Channel MCAP Writer example" << std::endl;
-    return 0;
+    try {
+        return RunExample();
+    } catch (const std::exception& error) {
+        std::cerr << "ERROR: " << error.what() << std::endl;
+        return 1;
+    }
 }
