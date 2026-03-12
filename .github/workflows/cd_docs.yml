@@ -41,7 +41,7 @@ jobs:
           yq -r '.ci_jobs.ubuntu_docs.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Build Documentation
-        run: make docs
+        run: make docs build
 
       - name: Upload artifact for Pages
         if: inputs.deploy

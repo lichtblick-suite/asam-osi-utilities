@@ -36,12 +36,15 @@ Notes:
 
 ```bash
 make lint           # All linters (C++ format + Python ruff)
-make lint-cpp       # C++ format checks only
-make lint-python    # Python ruff lint + format checks
-make format-python  # Auto-format Python code
+make lint cpp       # C++ format checks only
+make lint python    # Python ruff lint + format checks
+make format         # Auto-format C++ and Python code
+make format cpp     # Auto-format C++ code
+make format python  # Auto-format Python code
+make run help       # Show run subcommands
 ```
 
-`make lint-cpp` and the generated Git hook both require `clang-format` major version `18` so local checks match CI.
+`make lint cpp`, `make format cpp`, and the generated Git hook all require `clang-format` major version `18` so local checks match CI.
 
 ### Using hooks directly
 

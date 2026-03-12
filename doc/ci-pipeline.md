@@ -168,7 +168,7 @@ Before pushing, you can run most CI checks locally:
 ### Format Check
 
 ```bash
-make lint-cpp
+make lint cpp
 ```
 
 ### Build and Test
@@ -183,8 +183,8 @@ ctest --test-dir build-vcpkg --output-on-failure
 
 ```bash
 make setup
-make lint-python
-make test-python
+make lint python
+make test python
 ```
 
 On Windows:
