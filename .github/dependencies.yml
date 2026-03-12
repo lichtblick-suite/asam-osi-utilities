@@ -15,6 +15,9 @@
 #   - lint:       Static analysis tools (clang-tidy)
 #   - dev:        Development tools (clang-format, ninja)
 #   - coverage:   Code coverage reporting (gcovr)
+#
+# Formatter pinning:
+#   - C++ formatting is pinned to clang-format major version 18 across CI and local hooks.
 
 dependencies:
   # =========================================================================
@@ -107,6 +110,7 @@ dependencies:
 # - If `winget` fails while searching the `msstore` source (e.g. certificate/proxy issues),
 #   prefer `--source winget` (community repo) or disable the store source via:
 #     winget source disable msstore
+# - LLVM/clang-format on Windows: install LLVM 18.x to match CI's pinned formatter version.
 # - Graphviz on Windows: ensure `dot -V` works in PowerShell.
 #   In Git Bash/MSYS environments, `dot.exe` may fail to start if a MinGW runtime DLL is missing
 #   (e.g. `libltdl-7.dll`). In that case, install MSYS2 and `mingw-w64-x86_64-libtool`, then add
@@ -121,7 +125,7 @@ dependencies:
     dnf:
       - clang-tools-extra
     brew:
-      - llvm
+      - llvm@18
 
   # =========================================================================
   # Development tools (formatting, hooks)
@@ -136,7 +140,7 @@ dependencies:
       - git
       - ninja-build
     brew:
-      - clang-format
+      - llvm@18
       - git
       - ninja
     winget:

@@ -118,7 +118,7 @@ lint: lint-cpp lint-python
 lint-cpp:
 	@echo "[INFO] Running C++ format checks..."
 	@bash scripts/setup-dev.sh >/dev/null 2>&1
-	@.git/hooks/pre-commit --all-files --skip-tidy --skip-python --skip-docs
+	@HOOK_PATH="$$(git rev-parse --git-path hooks)/pre-commit"; "$$HOOK_PATH" --all-files --skip-tidy --skip-python --skip-docs
 	@echo "[OK] C++ format checks passed"
 
 lint-python:
