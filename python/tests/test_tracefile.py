@@ -64,20 +64,33 @@ class TestMessageType:
         assert MessageType.UNKNOWN.value == 0
 
     def test_infer_from_filename(self):
-        assert infer_message_type_from_filename("trace_gt_data.osi") == MessageType.GROUND_TRUTH
-        assert infer_message_type_from_filename("trace_sv_data.osi") == MessageType.SENSOR_VIEW
-        assert infer_message_type_from_filename("trace_sd_data.osi") == MessageType.SENSOR_DATA
+        assert (
+            infer_message_type_from_filename("trace_gt_data.osi")
+            == MessageType.GROUND_TRUTH
+        )
+        assert (
+            infer_message_type_from_filename("trace_sv_data.osi")
+            == MessageType.SENSOR_VIEW
+        )
+        assert (
+            infer_message_type_from_filename("trace_sd_data.osi")
+            == MessageType.SENSOR_DATA
+        )
         assert infer_message_type_from_filename("unknown.osi") == MessageType.UNKNOWN
 
     def test_parse_osi_trace_filename(self):
-        result = parse_osi_trace_filename("20240101T120000Z_gt_3.7.0_4.25.0_100_myapp.osi")
+        result = parse_osi_trace_filename(
+            "20240101T120000Z_gt_3.7.0_4.25.0_100_myapp.osi"
+        )
         assert result is not None
         assert len(result) > 0
 
     def test_get_trace_file_format(self):
         assert get_trace_file_format(Path("file.osi")) == TraceFileFormat.SINGLE_CHANNEL
         assert get_trace_file_format(Path("file.mcap")) == TraceFileFormat.MULTI_CHANNEL
-        assert get_trace_file_format(Path("file.txth")) == TraceFileFormat.SINGLE_CHANNEL
+        assert (
+            get_trace_file_format(Path("file.txth")) == TraceFileFormat.SINGLE_CHANNEL
+        )
 
     def test_channel_specification(self):
         spec = ChannelSpecification(path=Path("test.mcap"))
@@ -316,9 +329,10 @@ class TestFactory:
 
 def _is_lfs_pointer(path: Path) -> bool:
     """Check if a file is a Git LFS pointer (not actual content)."""
+    prefix = b"version https://git-lfs.github.com/spec/v1"
     try:
-        header = path.read_bytes()[:20]
-        return header.startswith(b"version https://git-lfs")
+        header = path.read_bytes()[: len(prefix)]
+        return header.startswith(prefix)
     except (OSError, ValueError):
         return False
 
@@ -348,7 +362,12 @@ class TestCrossLanguageValidation:
     def test_binary_mcap_content_match(self):
         osi_path = TEST_DATA_DIR / "5frames_gt_esmini.osi"
         mcap_path = TEST_DATA_DIR / "5frames_gt_esmini.mcap"
-        if not osi_path.exists() or not mcap_path.exists() or _is_lfs_pointer(osi_path) or _is_lfs_pointer(mcap_path):
+        if (
+            not osi_path.exists()
+            or not mcap_path.exists()
+            or _is_lfs_pointer(osi_path)
+            or _is_lfs_pointer(mcap_path)
+        ):
             pytest.skip("Test files not found or are LFS pointers")
 
         with open_trace_file(osi_path) as r:

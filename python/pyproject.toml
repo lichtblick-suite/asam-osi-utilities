@@ -99,7 +99,7 @@ known-third-party = ["osi3"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=osi_utilities --cov-report=term-missing"
+addopts = "--import-mode=importlib"
 
 [tool.mypy]
 python_version = "3.10"
