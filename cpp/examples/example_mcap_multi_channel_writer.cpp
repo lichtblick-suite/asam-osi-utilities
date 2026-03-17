@@ -53,7 +53,9 @@ auto GenerateTempFilePath(const std::string& suffix) -> std::filesystem::path {
 #else
     const auto pid = std::to_string(getpid());
 #endif
-    return std::filesystem::temp_directory_path() / ("multi_channel_example_" + suffix + "_" + pid + ".mcap");
+    auto output_dir = std::filesystem::current_path() / ".playground";
+    std::filesystem::create_directories(output_dir);
+    return output_dir / ("multi_channel_example_" + suffix + "_" + pid + ".mcap");
 }
 
 /**

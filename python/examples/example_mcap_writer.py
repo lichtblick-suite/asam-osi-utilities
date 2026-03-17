@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -38,7 +37,9 @@ def main() -> int:
     """Create a SensorView MCAP file with 10 frames of a moving vehicle."""
     print("Starting MCAP Writer example:")
 
-    trace_file_path = Path(tempfile.gettempdir()) / _generate_osi_filename("example_mcap_writer", "mcap")
+    output_dir = Path(__file__).resolve().parent.parent.parent / ".playground"
+    output_dir.mkdir(exist_ok=True)
+    trace_file_path = output_dir / _generate_osi_filename("example_mcap_writer", "mcap")
     print(f"Creating trace file at {trace_file_path}")
 
     metadata = {

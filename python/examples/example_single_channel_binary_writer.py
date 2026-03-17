@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -39,7 +38,9 @@ def main() -> int:
     print("Starting single-channel binary writer example:")
 
     file_name = _generate_osi_filename("example_single_channel_binary_writer", "osi")
-    trace_file_path = Path(tempfile.gettempdir()) / file_name
+    output_dir = Path(__file__).resolve().parent.parent.parent / ".playground"
+    output_dir.mkdir(exist_ok=True)
+    trace_file_path = output_dir / file_name
     print(f"Creating trace file at {trace_file_path}")
 
     writer = BinaryTraceFileWriter()

@@ -53,9 +53,10 @@ auto GenerateTempFilePath() -> std::filesystem::path {
 #else
     file_name += "_" + std::to_string(getpid());
 #endif
-    file_name += "_example_single_channel_binary_writer.osi";
-    auto path = std::filesystem::temp_directory_path() / file_name;
-    return path;
+    file_name += "_example_sv_single_channel_binary_writer.osi";
+    auto output_dir = std::filesystem::current_path() / ".playground";
+    std::filesystem::create_directories(output_dir);
+    return output_dir / file_name;
 }
 
 auto RunExample() -> int {

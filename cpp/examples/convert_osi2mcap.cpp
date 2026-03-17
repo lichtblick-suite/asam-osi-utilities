@@ -261,13 +261,13 @@ auto main(const int argc, const char** argv) -> int {
         return 1;
     }
 
-    std::cout << "Input file:  " << options->input_file_path << std::endl;
-    std::cout << "Output file: " << options->output_file_path << std::endl;
+    std::cout << "Input file:  " << options->input_file_path.string() << std::endl;
+    std::cout << "Output file: " << options->output_file_path.string() << std::endl;
 
     // create single channel trace file (.osi) reader
     auto trace_file_reader = osi3::SingleChannelBinaryTraceFileReader();
     if (!trace_file_reader.Open(options->input_file_path, options->message_type)) {
-        std::cerr << "ERROR: Could not open input file " << options->input_file_path << std::endl;
+        std::cerr << "ERROR: Could not open input file " << options->input_file_path.string() << std::endl;
         return 1;
     }
 
@@ -289,7 +289,7 @@ auto main(const int argc, const char** argv) -> int {
 
     // open output file with options
     if (!trace_file_writer.Open(options->output_file_path, mcap_options)) {
-        std::cerr << "ERROR: Could not open output file " << options->output_file_path << std::endl;
+        std::cerr << "ERROR: Could not open output file " << options->output_file_path.string() << std::endl;
         return 1;
     }
 

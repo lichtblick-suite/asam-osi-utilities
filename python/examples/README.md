@@ -28,10 +28,17 @@ python convert_osi2mcap.py input.osi output.mcap --input-type SensorView
 
 ### example_mcap_reader
 
-Reads an MCAP file and prints message types and timestamps.
+Reads an MCAP file with metadata inspection, topic filtering, and message iteration.
 
 ```bash
+# Basic usage — prints available topics, metadata, and all messages
 python example_mcap_reader.py /path/to/file.mcap
+
+# Filter to a specific topic
+python example_mcap_reader.py /path/to/file.mcap --topic ground_truth
+
+# Use TraceFileReaderFactory for format auto-detection
+python example_mcap_reader.py /path/to/file.mcap --factory
 ```
 
 ### example_mcap_writer
@@ -40,6 +47,27 @@ Writes 10 SensorView frames to an MCAP file in the system temp directory.
 
 ```bash
 python example_mcap_writer.py
+# Output: /tmp/<timestamp>_sv_<version>_<pid>_example_mcap_writer.mcap
+```
+
+### example_mcap_multi_channel_writer
+
+Writes multi-topic MCAP files (Part 1: pure OSI channels, Part 2: mixed OSI + non-OSI channels).
+
+```bash
+python example_mcap_multi_channel_writer.py
+# Output: /tmp/multi_channel_example_part1_<pid>.mcap
+#         /tmp/multi_channel_example_part2_<pid>.mcap
+```
+
+### example_reader_factory
+
+Demonstrates format auto-detection and timestamp conversion utilities.
+
+```bash
+# Auto-detect format from extension (.osi, .mcap, or .txth)
+python example_reader_factory.py ../../test-data/5frames_gt_esmini.osi
+python example_reader_factory.py ../../test-data/5frames_gt_esmini.mcap
 ```
 
 ### example_single_channel_binary_reader
@@ -56,6 +84,7 @@ Writes 10 SensorView frames to a binary .osi file in the system temp directory.
 
 ```bash
 python example_single_channel_binary_writer.py
+# Output: /tmp/<timestamp>_sv_<version>_<pid>_example_single_channel_binary_writer.osi
 ```
 
 ### example_txth_reader
@@ -72,16 +101,34 @@ Writes 10 SensorView frames to a text .txth file in the system temp directory.
 
 ```bash
 python example_txth_writer.py
+# Output: /tmp/<timestamp>_sv_<version>_<pid>_example_txth_writer.txth
+```
+
+### benchmark
+
+Benchmarks read/write throughput for all three formats (MCAP, .osi, .txth).
+
+```bash
+# Synthetic mode — generate N messages and benchmark
+python benchmark.py synthetic 100
+
+# File mode — benchmark an existing .osi file
+python benchmark.py file /path/to/file.osi
 ```
 
 ## Quick Start
 
 ```bash
-# Write an MCAP file, then read it back
+# Write → Read roundtrip for each format
 python example_mcap_writer.py
-python example_mcap_reader.py /tmp/sv_example.mcap
+python example_mcap_reader.py /tmp/*_example_mcap_writer.mcap
 
-# Write a binary .osi file, then read it back
 python example_single_channel_binary_writer.py
-python example_single_channel_binary_reader.py /tmp/sv_example_<pid>.osi --type SensorView
+python example_single_channel_binary_reader.py /tmp/*_sv_*_example_single_channel_binary_writer.osi
+
+python example_txth_writer.py
+python example_txth_reader.py /tmp/*_sv_*_example_txth_writer.txth
+
+# Format auto-detection with factory
+python example_reader_factory.py ../../test-data/5frames_gt_esmini.mcap
 ```

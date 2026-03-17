@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -110,7 +109,8 @@ def _run_synthetic(num_messages: int) -> int:
     total_mb = total_bytes / (1024.0 * 1024.0)
     print(f"Approx. payload: {total_mb:.1f} MB ({single_size} bytes/msg)\n")
 
-    tmp = Path(tempfile.gettempdir())
+    tmp = Path(__file__).resolve().parent.parent.parent / ".playground"
+    tmp.mkdir(exist_ok=True)
     mcap_path = tmp / "bench_sv_.mcap"
     osi_path = tmp / "bench_sv_.osi"
     txth_path = tmp / "bench_sv_.txth"
@@ -235,7 +235,9 @@ def _run_file(input_path: Path, message_type: MessageType) -> int:
     _print_metrics("Read", len(messages), float(file_size), read_elapsed)
 
     # Write benchmark
-    tmp_path = Path(tempfile.gettempdir()) / "benchmark_write_output.osi"
+    tmp_dir = Path(__file__).resolve().parent.parent.parent / ".playground"
+    tmp_dir.mkdir(exist_ok=True)
+    tmp_path = tmp_dir / "benchmark_write_output.osi"
     writer = BinaryTraceFileWriter()
     if not writer.open(tmp_path):
         print(f"ERROR: Could not open temp file for write benchmark: {tmp_path}", file=sys.stderr)

@@ -20,7 +20,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import tempfile
 from pathlib import Path
 
 from osi3.osi_groundtruth_pb2 import GroundTruth
@@ -49,7 +48,9 @@ STEP_NS = 100_000_000  # 100 ms
 
 def generate_temp_file_path(suffix: str) -> Path:
     """Generate a temporary output path for the multi-channel example."""
-    return Path(tempfile.gettempdir()) / f"multi_channel_example_{suffix}_{os.getpid()}.mcap"
+    output_dir = Path(__file__).resolve().parent.parent.parent / ".playground"
+    output_dir.mkdir(exist_ok=True)
+    return output_dir / f"multi_channel_example_{suffix}_{os.getpid()}.mcap"
 
 
 def populate_ground_truth(ground_truth: GroundTruth) -> None:

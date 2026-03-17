@@ -33,7 +33,9 @@ auto GenerateTempFilePath() -> std::filesystem::path {
 #else
     const auto pid = std::to_string(getpid());
 #endif
-    return std::filesystem::temp_directory_path() / ("sv_example_" + pid + ".mcap");  // add sv to indicate sensor view as recommended by the OSI-specification
+    auto output_dir = std::filesystem::current_path() / ".playground";
+    std::filesystem::create_directories(output_dir);
+    return output_dir / ("sv_example_" + pid + ".mcap");  // add sv to indicate sensor view as recommended by the OSI-specification
 }
 
 auto RunExample() -> int {
@@ -101,7 +103,7 @@ auto RunExample() -> int {
         ground_truth_1->mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
         ground_truth_1->mutable_timestamp()->set_seconds(static_cast<int64_t>(timestamp / kNsPerSec));
         const auto old_position = host_vehicle->base().position().x();
-        const auto new_position = old_position + host_vehicle->base().velocity().x() + kTimeStepSizeS;
+        const auto new_position = old_position + host_vehicle->base().velocity().x() * kTimeStepSizeS;
         host_vehicle->mutable_base()->mutable_position()->set_x(new_position);
 
         // finally write the data using topic

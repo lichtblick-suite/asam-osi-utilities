@@ -202,8 +202,8 @@ auto RunProgram(const int argc, const char** argv) -> int {
 
     const auto input_ext = options->input_path.extension().string();
     const auto output_ext = options->output_path.extension().string();
-    std::cout << "Input:  " << options->input_path << " (" << input_ext << ")\n";
-    std::cout << "Output: " << options->output_path << " (" << output_ext << ")\n";
+    std::cout << "Input:  " << options->input_path.string() << " (" << input_ext << ")\n";
+    std::cout << "Output: " << options->output_path.string() << " (" << output_ext << ")\n";
 
     auto reader = CreateReader(*options);
     auto output_context = CreateOutputContext(*options);

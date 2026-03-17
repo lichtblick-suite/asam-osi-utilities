@@ -180,10 +180,10 @@ auto main(const int argc, const char** argv) -> int {
     // or use the provided cli argument value for the message type
     auto trace_file_reader = osi3::SingleChannelBinaryTraceFileReader();
     if (!trace_file_reader.Open(options->file_path, options->message_type)) {
-        std::cerr << "Error: Could not open file '" << options->file_path << "'\n\n";
+        std::cerr << "Error: Could not open file '" << options->file_path.string() << "'\n\n";
         return 1;
     }
-    std::cout << "Opened file " << options->file_path << std::endl;
+    std::cout << "Opened file " << options->file_path.string() << std::endl;
 
     // Continuously read messages from file
     while (trace_file_reader.HasNext()) {
