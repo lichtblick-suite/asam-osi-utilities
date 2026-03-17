@@ -10,6 +10,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLANG_FORMAT_RESOLVER="$SCRIPT_DIR/resolve-clang-format.sh"
+PINNED_CLANG_FORMAT_MAJOR=18
 
 echo "=============================================="
 echo "ASAM OSI Utilities - Development Setup"
@@ -23,12 +25,13 @@ echo "Checking required tools..."
 echo ""
 
 # Check for clang-format
-if command -v clang-format &> /dev/null; then
-    echo "✓ clang-format found: $(clang-format --version | head -n1)"
+if CLANG_FORMAT_BIN="$(sh "$CLANG_FORMAT_RESOLVER" 2>/dev/null)"; then
+    echo "✓ clang-format found: $("$CLANG_FORMAT_BIN" --version | head -n1)"
 else
-    echo "WARNING: clang-format not found (optional, for C++ code formatting)"
-    echo "  Install via: apt install clang-format (Debian/Ubuntu)"
-    echo "           or: brew install clang-format (macOS)"
+    echo "WARNING: clang-format ${PINNED_CLANG_FORMAT_MAJOR}.x not found (required for C++ code formatting)"
+    echo "  Install via: apt install clang-format-${PINNED_CLANG_FORMAT_MAJOR} (Debian/Ubuntu)"
+    echo "           or: brew install llvm@${PINNED_CLANG_FORMAT_MAJOR} (macOS)"
+    echo "           or: winget install --id LLVM.LLVM --source winget --version <latest-${PINNED_CLANG_FORMAT_MAJOR}.x> (Windows)"
 fi
 
 # Check for CMake
@@ -76,7 +79,13 @@ fi
 # Install Git hooks
 echo ""
 echo "Installing Git hooks..."
-HOOKS_DIR="$REPO_ROOT/.git/hooks"
+HOOKS_DIR="$(git -C "$REPO_ROOT" rev-parse --git-path hooks)"
+case "$HOOKS_DIR" in
+    /* | [A-Za-z]:/*) ;;
+    *)
+        HOOKS_DIR="$REPO_ROOT/$HOOKS_DIR"
+        ;;
+esac
 mkdir -p "$HOOKS_DIR"
 
 # Create pre-commit hook
@@ -88,22 +97,22 @@ cat > "$HOOKS_DIR/pre-commit" << 'EOF'
 # Multi-language checks: C++ (clang-format, clang-tidy), Python (ruff), Docs (Sphinx)
 #
 # Usage:
-#   .git/hooks/pre-commit                               # Check staged files (C++ format + Python lint)
-#   .git/hooks/pre-commit --all-files                   # Check all files in the project
-#   .git/hooks/pre-commit --run-tidy                    # Also run clang-tidy (opt-in)
-#   .git/hooks/pre-commit --run-docs                    # Also build documentation (opt-in)
-#   .git/hooks/pre-commit --fix-format                  # Auto-fix C++ formatting
-#   .git/hooks/pre-commit --fix-python                  # Auto-fix Python lint/format
-#   .git/hooks/pre-commit --fix-tidy                    # Auto-fix clang-tidy issues
-#   .git/hooks/pre-commit --skip-tests                  # Skip tests/ in checks
-#   .git/hooks/pre-commit --skip-format                 # Skip C++ clang-format checks
-#   .git/hooks/pre-commit --skip-tidy                   # Skip clang-tidy checks
-#   .git/hooks/pre-commit --skip-python                 # Skip Python ruff checks
-#   .git/hooks/pre-commit --skip-docs                   # Skip documentation build
-#   .git/hooks/pre-commit --all-files --run-tidy --run-docs   # Full check suite
+#   $(git rev-parse --git-path hooks)/pre-commit                               # Check staged files (C++ format + Python lint)
+#   $(git rev-parse --git-path hooks)/pre-commit --all-files                   # Check all files in the project
+#   $(git rev-parse --git-path hooks)/pre-commit --run-tidy                    # Also run clang-tidy (opt-in)
+#   $(git rev-parse --git-path hooks)/pre-commit --run-docs                    # Also build documentation (opt-in)
+#   $(git rev-parse --git-path hooks)/pre-commit --fix-format                  # Auto-fix C++ formatting
+#   $(git rev-parse --git-path hooks)/pre-commit --fix-python                  # Auto-fix Python lint/format
+#   $(git rev-parse --git-path hooks)/pre-commit --fix-tidy                    # Auto-fix clang-tidy issues
+#   $(git rev-parse --git-path hooks)/pre-commit --skip-tests                  # Skip tests/ in checks
+#   $(git rev-parse --git-path hooks)/pre-commit --skip-format                 # Skip C++ clang-format checks
+#   $(git rev-parse --git-path hooks)/pre-commit --skip-tidy                   # Skip clang-tidy checks
+#   $(git rev-parse --git-path hooks)/pre-commit --skip-python                 # Skip Python ruff checks
+#   $(git rev-parse --git-path hooks)/pre-commit --skip-docs                   # Skip documentation build
+#   $(git rev-parse --git-path hooks)/pre-commit --all-files --run-tidy --run-docs   # Full check suite
 #
 # Default behavior (no flags):
-#   - C++ formatting via clang-format: ON (staged files)
+#   - C++ formatting via clang-format 18: ON (staged files)
 #   - Python lint+format via ruff:     ON (staged files)
 #   - C++ linting via clang-tidy:      OFF (use --run-tidy)
 #   - Documentation build:             OFF (use --run-docs)
@@ -150,7 +159,11 @@ if [ $RUN_TIDY -eq 1 ] && [ $FIX_FORMAT -eq 0 ]; then
     RUN_FORMAT=0
 fi
 
-# ===== C++ formatting (clang-format) =====
+REPO_ROOT=$(git rev-parse --show-toplevel)
+HOOK_PATH="$(git rev-parse --git-path hooks)/pre-commit"
+CLANG_FORMAT_RESOLVER="$REPO_ROOT/scripts/resolve-clang-format.sh"
+
+# ===== C++ formatting (clang-format 18) =====
 
 # Determine search roots based on skip flags
 if [ $SKIP_TESTS -eq 1 ]; then
@@ -175,6 +188,10 @@ if [ $RUN_FORMAT -eq 1 ]; then
     fi
 
     if [ -n "$FILES" ]; then
+        if ! CLANG_FORMAT_BIN="$(sh "$CLANG_FORMAT_RESOLVER")"; then
+            sh "$CLANG_FORMAT_RESOLVER" --diagnose || true
+            exit 1
+        fi
         if [ $FIX_FORMAT -eq 1 ]; then
             echo "Auto-fixing C++ formatting..."
         else
@@ -182,17 +199,15 @@ if [ $RUN_FORMAT -eq 1 ]; then
         fi
         FAILED=0
         for FILE in $FILES; do
-            if command -v clang-format &> /dev/null; then
-                if [ $FIX_FORMAT -eq 1 ]; then
-                    clang-format -i "$FILE" 2>/dev/null
-                    if [ $ALL_FILES -eq 0 ]; then
-                        git add "$FILE"
-                    fi
-                else
-                    if ! clang-format --dry-run --Werror "$FILE" 2>/dev/null; then
-                        echo "  ✗ $FILE needs formatting"
-                        FAILED=1
-                    fi
+            if [ $FIX_FORMAT -eq 1 ]; then
+                "$CLANG_FORMAT_BIN" -i "$FILE" 2>/dev/null
+                if [ $ALL_FILES -eq 0 ]; then
+                    git add "$FILE"
+                fi
+            else
+                if ! "$CLANG_FORMAT_BIN" --dry-run --Werror "$FILE" 2>/dev/null; then
+                    echo "  ✗ $FILE needs formatting"
+                    FAILED=1
                 fi
             fi
         done
@@ -201,7 +216,7 @@ if [ $RUN_FORMAT -eq 1 ]; then
         else
             if [ $FAILED -ne 0 ]; then
                 echo ""
-                echo "Please run: .git/hooks/pre-commit --fix-format"
+                echo "Please run: $HOOK_PATH --fix-format"
                 exit 1
             fi
             echo "✓ C++ formatting OK"
@@ -272,7 +287,7 @@ if [ $RUN_TIDY -eq 1 ]; then
                 if [ $LINT_FAILED -ne 0 ]; then
                     if [ $FIX_TIDY -eq 0 ]; then
                         echo ""
-                        echo "Please run: .git/hooks/pre-commit --fix-tidy"
+                        echo "Please run: $HOOK_PATH --fix-tidy"
                     fi
                     exit 1
                 fi

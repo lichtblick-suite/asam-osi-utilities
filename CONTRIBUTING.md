@@ -54,15 +54,25 @@ cd asam-osi-utilities
 git commit -S -s -m "feat: your feature description"
 ```
 
-### Python Development
+### Root Makefile Commands
 
 ```bash
 # From repository root (recommended)
-make setup          # Create venv and install all dependencies
-make lint-python    # Run linter
-make test-python    # Run tests
-make format-python  # Format code
+make setup dev       # Create venv, install dependencies, and install Git hooks
+make lint cpp        # Run C++ format checks
+make format cpp      # Auto-format C++ code
+make test cpp        # Run C++ tests
+make lint python     # Run Python lint + format checks
+make format python   # Auto-format Python code
+make test python     # Run Python tests
+make run docs        # Build and serve docs locally
+```
 
+The root Makefile is the primary entry point for all tasks (C++ and Python). Run `make help` or `make <group> help` for the available subcommands.
+
+### Python Development
+
+```bash
 # Or from python/ directory
 cd python
 make setup      # Create venv and install dependencies
@@ -72,7 +82,7 @@ make format     # Format code
 make typecheck  # Run type checker
 ```
 
-The root Makefile is the primary entry point for all tasks (C++ and Python). The `python/Makefile` provides additional Python-specific targets. Run `make help` for a full list.
+The `python/Makefile` provides additional Python-specific targets.
 
 ## Documentation
 

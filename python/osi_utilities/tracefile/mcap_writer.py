@@ -18,9 +18,13 @@ import google.protobuf
 from google.protobuf.message import EncodeError, Message
 from mcap.exceptions import McapError
 from mcap.well_known import MessageEncoding
+from mcap.writer import CompressionType
 from mcap.writer import Writer as McapRawWriter
 
 from osi_utilities.tracefile._config import (
+    DEFAULT_CHUNK_SIZE,
+    MAX_CHUNK_SIZE,
+    MIN_CHUNK_SIZE,
     OSI_CHANNEL_RECOMMENDED_METADATA_KEYS,
     OSI_CHANNEL_REQUIRED_METADATA_KEYS,
     OSI_TRACE_METADATA_NAME,
@@ -32,6 +36,12 @@ from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
 from osi_utilities.tracefile.writer import TraceFileWriter
 
 logger = logging.getLogger(__name__)
+
+_COMPRESSION_MAP: dict[str, CompressionType] = {
+    "none": CompressionType.NONE,
+    "lz4": CompressionType.LZ4,
+    "zstd": CompressionType.ZSTD,
+}
 
 
 def _get_package_version() -> str:
@@ -95,12 +105,23 @@ class MCAPTraceFileWriter(TraceFileWriter):
         self._schema_cache: dict[str, int] = {}  # schema_name -> schema_id
         self._written_count = 0
 
-    def open(self, path: Path, metadata: dict[str, str] | None = None) -> bool:
+    def open(
+        self,
+        path: Path,
+        metadata: dict[str, str] | None = None,
+        *,
+        compression: str | None = None,
+        chunk_size: int | None = None,
+    ) -> bool:
         """Open an MCAP file for writing.
 
         Args:
             path: Path to the output file. Must have .mcap extension.
             metadata: Optional net.asam.osi.trace file metadata. If None, default metadata is used.
+            compression: Compression algorithm — ``"none"``, ``"lz4"``, or ``"zstd"``.
+                If *None*, the mcap library default is used.
+            chunk_size: Chunk size in bytes. Must be between ``MIN_CHUNK_SIZE`` and ``MAX_CHUNK_SIZE``.
+                If *None*, ``DEFAULT_CHUNK_SIZE`` is used.
 
         Returns:
             True on success, False on failure.
@@ -113,9 +134,35 @@ class MCAPTraceFileWriter(TraceFileWriter):
             logger.error("MCAP files must have .mcap extension, got '%s'", path.suffix)
             return False
 
+        if compression is not None:
+            compression_lower = compression.lower()
+            if compression_lower not in _COMPRESSION_MAP:
+                logger.error(
+                    "Invalid compression '%s'. Must be one of: %s",
+                    compression,
+                    ", ".join(_COMPRESSION_MAP),
+                )
+                return False
+            mcap_compression = _COMPRESSION_MAP[compression_lower]
+        else:
+            mcap_compression = None
+
+        effective_chunk_size = chunk_size if chunk_size is not None else DEFAULT_CHUNK_SIZE
+        if effective_chunk_size < MIN_CHUNK_SIZE or effective_chunk_size > MAX_CHUNK_SIZE:
+            logger.error(
+                "chunk_size %d out of range [%d, %d]",
+                effective_chunk_size,
+                MIN_CHUNK_SIZE,
+                MAX_CHUNK_SIZE,
+            )
+            return False
+
         try:
             self._file = open(path, "wb")  # noqa: SIM115
-            self._mcap_writer = McapRawWriter(self._file)
+            writer_kwargs: dict[str, object] = {"chunk_size": effective_chunk_size}
+            if mcap_compression is not None:
+                writer_kwargs["compression"] = mcap_compression
+            self._mcap_writer = McapRawWriter(self._file, **writer_kwargs)  # type: ignore[arg-type]
             self._mcap_writer.start(library="osi-utilities-python")
             self._path = path
 

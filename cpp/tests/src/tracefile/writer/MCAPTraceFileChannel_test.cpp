@@ -238,6 +238,20 @@ TEST_F(MCAPTraceFileChannelTest, WriteWithEmptyTopicFails) {
     CloseWriter();
 }
 
+TEST_F(MCAPTraceFileChannelTest, WriteMessageRejectsNegativeTimestamp) {
+    OpenWriter();
+
+    osi3::MCAPTraceFileChannel osi_channel(mcap_writer_);
+    osi_channel.AddChannel("gt", osi3::GroundTruth::descriptor());
+
+    osi3::GroundTruth gt;
+    gt.mutable_timestamp()->set_seconds(-1);
+
+    EXPECT_FALSE(osi_channel.WriteMessage(gt, "gt"));
+
+    CloseWriter();
+}
+
 TEST_F(MCAPTraceFileChannelTest, PrepareRequiredFileMetadataContent) {
     const auto metadata = osi3::MCAPTraceFileChannel::PrepareRequiredFileMetadata();
 

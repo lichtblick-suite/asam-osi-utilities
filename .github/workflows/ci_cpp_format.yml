@@ -28,4 +28,4 @@ jobs:
           yq -r '.dependencies.dev.apt[]' .github/dependencies.yml | xargs sudo apt-get install -y
 
       - name: Check C++ formatting
-        run: make lint-cpp
+        run: make lint cpp

@@ -8,19 +8,37 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
+import google.protobuf
 from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import BinaryTraceFileWriter
 from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
 
 
+def _generate_osi_filename(description: str, extension: str, frame_count: int = 10) -> str:
+    """Generate filename following OSI naming convention."""
+    now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    try:
+        from osi3.osi_version_pb2 import DESCRIPTOR as VERSION_DESCRIPTOR
+        from osi3.osi_version_pb2 import InterfaceVersion
+
+        osi_ver = VERSION_DESCRIPTOR.file_options.Extensions[InterfaceVersion.current_interface_version]
+        osi_version = f"{osi_ver.version_major}.{osi_ver.version_minor}.{osi_ver.version_patch}"
+    except Exception:
+        osi_version = "0.0.0"
+    proto_version = google.protobuf.__version__
+    pid = os.getpid()
+    return f"{now}_sv_{osi_version}_{proto_version}_{frame_count}_{pid}_{description}.{extension}"
+
+
 def main() -> int:
     """Create a binary .osi file with 10 SensorView frames."""
     print("Starting single-channel binary writer example:")
 
-    file_name = f"sv_example_{os.getpid()}.osi"
+    file_name = _generate_osi_filename("example_single_channel_binary_writer", "osi")
     trace_file_path = Path(tempfile.gettempdir()) / file_name
     print(f"Creating trace file at {trace_file_path}")
 

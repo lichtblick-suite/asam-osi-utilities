@@ -36,23 +36,28 @@ Notes:
 
 ```bash
 make lint           # All linters (C++ format + Python ruff)
-make lint-cpp       # C++ format checks only
-make lint-python    # Python ruff lint + format checks
-make format-python  # Auto-format Python code
+make lint cpp       # C++ format checks only
+make lint python    # Python ruff lint + format checks
+make format         # Auto-format C++ and Python code
+make format cpp     # Auto-format C++ code
+make format python  # Auto-format Python code
+make run help       # Show run subcommands
 ```
+
+`make lint cpp`, `make format cpp`, and the generated Git hook all require `clang-format` major version `18` so local checks match CI.
 
 ### Using hooks directly
 
 ```bash
-.git/hooks/pre-commit
-.git/hooks/pre-commit --run-tidy
-.git/hooks/pre-commit --fix-format
-.git/hooks/pre-commit --fix-tidy
-.git/hooks/pre-commit --fix-python
-.git/hooks/pre-commit --all-files --run-tidy --fix-format --fix-tidy
-.git/hooks/pre-commit --all-files --skip-python
-.git/hooks/pre-commit --skip-format
-.git/hooks/pre-commit --skip-tidy
+$(git rev-parse --git-path hooks)/pre-commit
+$(git rev-parse --git-path hooks)/pre-commit --run-tidy
+$(git rev-parse --git-path hooks)/pre-commit --fix-format
+$(git rev-parse --git-path hooks)/pre-commit --fix-tidy
+$(git rev-parse --git-path hooks)/pre-commit --fix-python
+$(git rev-parse --git-path hooks)/pre-commit --all-files --run-tidy --fix-format --fix-tidy
+$(git rev-parse --git-path hooks)/pre-commit --all-files --skip-python
+$(git rev-parse --git-path hooks)/pre-commit --skip-format
+$(git rev-parse --git-path hooks)/pre-commit --skip-tidy
 ```
 
 Notes:

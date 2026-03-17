@@ -27,7 +27,7 @@ jobs:
       - name: Setup and lint
         run: |
           make setup
-          make lint-python
+          make lint python
 
   # ===========================================================================
   # Test Matrix (Linux, Windows, macOS × Python 3.10–3.12)
@@ -62,7 +62,7 @@ jobs:
       - name: Setup and test
         run: |
           make setup
-          make test-python
+          make test python
 
       - name: Upload test results
         if: always()

@@ -14,6 +14,7 @@ from typing import IO
 
 from mcap.exceptions import McapError
 from mcap.reader import make_reader
+from mcap.well_known import MessageEncoding
 from mcap_protobuf.decoder import DecoderFactory
 
 from osi_utilities.tracefile._types import (
@@ -41,6 +42,8 @@ class MCAPTraceFileReader(TraceFileReader):
         self._skip_non_osi_msgs = False
         self._next_result: ReadResult | None = None
         self._topics: list[str] | None = None
+        self._decoder_factory = DecoderFactory()
+        self._decoders: dict[int, object] = {}
 
     def open(self, path: Path) -> bool:
         """Open an MCAP trace file.
@@ -53,8 +56,9 @@ class MCAPTraceFileReader(TraceFileReader):
         """
         try:
             self._file = open(path, "rb")  # noqa: SIM115
-            self._reader = make_reader(self._file, decoder_factories=[DecoderFactory()])
+            self._reader = make_reader(self._file, decoder_factories=[self._decoder_factory])
             self._summary = self._reader.get_summary()
+            self._decoders.clear()
             self._start_iteration()
             return True
         except (OSError, McapError) as e:
@@ -93,9 +97,38 @@ class MCAPTraceFileReader(TraceFileReader):
 
         while True:
             try:
-                schema, channel, _message, proto_msg = next(self._message_iterator)
+                schema, channel, raw_message = next(self._message_iterator)
             except StopIteration:
                 return None
+
+            # Skip non-protobuf messages (e.g. JSON channels in mixed files)
+            if channel.message_encoding != MessageEncoding.Protobuf:
+                if not self._skip_non_osi_msgs:
+                    logger.warning(
+                        "Skipping non-protobuf message on channel '%s' (encoding: %s)",
+                        channel.topic,
+                        channel.message_encoding,
+                    )
+                continue
+
+            # Decode protobuf message
+            decoder = self._decoders.get(raw_message.channel_id)
+            if decoder is None:
+                decoder = self._decoder_factory.decoder_for(channel.message_encoding, schema)
+                if decoder is None:
+                    if not self._skip_non_osi_msgs:
+                        logger.warning(
+                            "Skipping message with no decoder for schema '%s'",
+                            schema.name if schema else "None",
+                        )
+                    continue
+                self._decoders[raw_message.channel_id] = decoder
+
+            try:
+                proto_msg = decoder(raw_message.data)
+            except Exception as e:
+                logger.warning("Failed to decode message on channel '%s': %s", channel.topic, e)
+                continue
 
             msg_type = SCHEMA_NAME_TO_MESSAGE_TYPE.get(schema.name, MessageType.UNKNOWN)
             if msg_type == MessageType.UNKNOWN:
@@ -158,6 +191,6 @@ class MCAPTraceFileReader(TraceFileReader):
         return None
 
     def _start_iteration(self) -> None:
-        """(Re)start the decoded message iterator."""
+        """(Re)start the raw message iterator."""
         if self._reader is not None:
-            self._message_iterator = iter(self._reader.iter_decoded_messages(topics=self._topics))
+            self._message_iterator = iter(self._reader.iter_messages(topics=self._topics))

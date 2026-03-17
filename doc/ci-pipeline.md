@@ -52,7 +52,7 @@ When code is pushed to `main`:
 
 ### ci_format.yml - Format Check
 
-Verifies C++ code formatting using clang-format-18.
+Verifies C++ code formatting using the repository's pinned clang-format major version (`18`).
 
 ```yaml
 # Checks files in: cpp/src/, cpp/include/, cpp/tests/, cpp/examples/
@@ -70,7 +70,7 @@ Runs clang-tidy via the pre-commit hook (clang-tidy is opt-in by default in hook
 cmake --preset base -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build --preset base --parallel
 bash scripts/setup-dev.sh
-.git/hooks/pre-commit --all-files --run-tidy --skip-format
+$(git rev-parse --git-path hooks)/pre-commit --all-files --run-tidy --skip-format
 ```
 
 **Fails if:** Any clang-tidy warning is emitted.
@@ -168,7 +168,7 @@ Before pushing, you can run most CI checks locally:
 ### Format Check
 
 ```bash
-make lint-cpp
+make lint cpp
 ```
 
 ### Build and Test
@@ -183,8 +183,8 @@ ctest --test-dir build-vcpkg --output-on-failure
 
 ```bash
 make setup
-make lint-python
-make test-python
+make lint python
+make test python
 ```
 
 On Windows:
@@ -196,7 +196,7 @@ On Windows:
 
 ### CI Fails but Local Passes
 
-- Ensure you're using the same clang-format version (18)
+- Ensure `scripts/resolve-clang-format.sh` resolves clang-format `18.x` locally
 - Check that all submodules are initialized
 - Verify you're building with the same CMake preset
 
