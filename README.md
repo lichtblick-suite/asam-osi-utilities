@@ -87,6 +87,7 @@ Both the C++ and Python SDKs ship with matching examples covering all supported 
 | `example_txth_reader` | `example_txth_reader.py` | Read `.txth` files |
 | `example_mcap_multi_channel_writer` | `example_mcap_multi_channel_writer.py` | Multi-topic MCAP with mixed channels |
 | `convert_osi2mcap` | `convert_osi2mcap.py` | Convert `.osi` → `.mcap` |
+| `convert_gt2sv` | — | Convert GroundTruth → SensorView |
 | — | `example_reader_factory.py` | Format auto-detection and timestamp utilities |
 | `benchmark` | `benchmark.py` | Throughput benchmark for all formats |
 

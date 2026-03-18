@@ -16,14 +16,14 @@ This project ships examples in both C++ and Python that demonstrate how to read/
 - [example_txth_reader.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_txth_reader.cpp) — `.txth` text read
 - [example_txth_writer.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_txth_writer.cpp) — `.txth` text write
 - [convert_osi2mcap.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/convert_osi2mcap.cpp) — convert `.osi` to `.mcap`
+- [convert_gt2sv.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/convert_gt2sv.cpp) — convert GroundTruth to SensorView
 
 ### Build C++ examples
 
 Examples are built as part of the normal build:
 
 ```bash
-cmake --preset vcpkg
-cmake --build --preset vcpkg --parallel
+make build cpp
 ```
 
 ### Run C++ examples
@@ -56,7 +56,7 @@ make setup
 
 ```bash
 python python/examples/example_mcap_writer.py
-python python/examples/example_mcap_reader.py /tmp/sv_example.mcap
+python python/examples/example_mcap_reader.py .playground/sv_example.mcap
 ```
 
 For more details, see [python/examples/README.md](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/python/examples/README.md).

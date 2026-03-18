@@ -19,7 +19,7 @@ The CI/CD pipeline is split into modular workflow files for clarity and maintain
 | `ci_cpp.yml`        | CI           | C++ build and test on all platforms     |
 | `ci_python.yml`     | CI           | Python lint, test, and package checks   |
 | `ci_compliance.yml` | CI           | DCO and Conventional Commits checks     |
-| `spdx_check.yml`    | CI           | REUSE/SPDX license compliance           |
+| `spdx_check.yml`    | CI           | REUSE/SPDX license compliance (standalone) |
 | `cd_docs.yml`       | CD           | Build and deploy documentation          |
 | `cd_release.yml`    | CD           | Create releases and publish to PyPI     |
 
@@ -32,7 +32,7 @@ The CI/CD pipeline is split into modular workflow files for clarity and maintain
 
 ### On Pull Request
 
-When a PR is opened or updated against `main` or `develop`:
+When a PR is opened or updated against `main`:
 
 1. **Format Check** - Verify code follows clang-format style
 2. **Lint** - Run clang-tidy static analysis
@@ -50,7 +50,7 @@ When code is pushed to `main`:
 
 ## Workflow Details
 
-### ci_format.yml - Format Check
+### ci_cpp_format.yml - Format Check
 
 Verifies C++ code formatting using the repository's pinned clang-format major version (`18`).
 
@@ -62,7 +62,7 @@ xargs clang-format-18 --dry-run --Werror
 
 **Fails if:** Any file is not properly formatted.
 
-### ci_lint.yml - Static Analysis
+### ci_cpp_lint.yml - Static Analysis
 
 Runs clang-tidy via the pre-commit hook (clang-tidy is opt-in by default in hooks).
 
@@ -75,7 +75,7 @@ $(git rev-parse --git-path hooks)/pre-commit --all-files --run-tidy --skip-forma
 
 **Fails if:** Any clang-tidy warning is emitted.
 
-### ci_build.yml - Build Matrix
+### ci_cpp.yml - Build Matrix
 
 Builds the project on multiple platforms and configurations:
 
@@ -174,9 +174,8 @@ make lint cpp
 ### Build and Test
 
 ```bash
-cmake --preset vcpkg
-cmake --build --preset vcpkg --parallel
-ctest --test-dir build-vcpkg --output-on-failure
+make build cpp tests
+make test cpp
 ```
 
 ### Python Lint and Test
