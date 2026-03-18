@@ -66,6 +66,15 @@ auto RunExample() -> int {
         exit(1);
     }
 
+    // Alternative: add custom metadata using the name + map overload
+    const std::unordered_map<std::string, std::string> custom_metadata = {
+        {"source_tool", "example_mcap_writer"},
+        {"scenario", "straight_road_acceleration"},
+    };
+    if (!trace_file_writer.AddFileMetadata("custom.example.metadata", custom_metadata)) {
+        std::cerr << "Failed to add custom metadata." << std::endl;
+    }
+
     // add a channel to store some data
     const std::string topic = "Sensor_1_Input";
     const std::unordered_map<std::string, std::string> channel_metadata = {

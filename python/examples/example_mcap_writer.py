@@ -14,6 +14,7 @@ import google.protobuf
 from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import MCAPTraceFileWriter
+from osi_utilities.tracefile._config import DEFAULT_CHUNK_SIZE, MAX_CHUNK_SIZE, MIN_CHUNK_SIZE
 from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
 
 
@@ -41,6 +42,10 @@ def main() -> int:
     output_dir.mkdir(exist_ok=True)
     trace_file_path = output_dir / _generate_osi_filename("example_mcap_writer", "mcap")
     print(f"Creating trace file at {trace_file_path}")
+    print(
+        f"  Config: chunk_size={DEFAULT_CHUNK_SIZE // (1024 * 1024)} MiB"
+        f" (range: {MIN_CHUNK_SIZE // (1024 * 1024)}-{MAX_CHUNK_SIZE // (1024 * 1024)} MiB)"
+    )
 
     metadata = {
         "description": "Example MCAP trace file created with the ASAM OSI utilities Python SDK.",
@@ -84,6 +89,12 @@ def main() -> int:
             if not writer.write_message(sensor_view, topic):
                 print(f"Error: Could not write message {i}", file=sys.stderr)
                 return 1
+
+        # Add custom metadata using the name + dict overload (alternative to constructor metadata)
+        writer.add_file_metadata(
+            "custom.example.metadata",
+            {"source_tool": "example_mcap_writer", "scenario": "straight_road_acceleration"},
+        )
 
     print("Finished MCAP Writer example")
     return 0

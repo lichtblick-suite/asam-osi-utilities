@@ -9,6 +9,8 @@ Demonstrates:
 - timestamp_to_seconds(), timestamp_to_nanoseconds() — timestamp conversion
 - nanoseconds_to_seconds(), seconds_to_nanoseconds() — unit conversion
 - MessageType enum — OSI message type identification
+- infer_message_type_from_filename() — detect message type from filename patterns
+- parse_osi_trace_filename() — parse OSI naming convention filenames
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ import sys
 from pathlib import Path
 
 from osi_utilities import MessageType, TraceFileReaderFactory, open_trace_file
+from osi_utilities.tracefile._types import infer_message_type_from_filename, parse_osi_trace_filename
 from osi_utilities.tracefile.timestamp import (
     nanoseconds_to_seconds,
     seconds_to_nanoseconds,
@@ -95,6 +98,20 @@ def main() -> int:
     print(
         "\nBoth methods auto-detect format from extension: .osi → BinaryReader, .mcap → MCAPReader, .txth → TXTHReader"
     )
+
+    # --- Method 3: FilenameUtils — infer message type and parse naming convention ---
+    print("\n=== Method 3: FilenameUtils ===")
+    filename = input_path.name
+    inferred = infer_message_type_from_filename(filename)
+    print(f"  infer_message_type_from_filename('{filename}') -> {inferred.name}")
+
+    parsed = parse_osi_trace_filename(filename)
+    if parsed:
+        print("  parse_osi_trace_filename (OSI naming convention detected):")
+        for key, value in parsed.items():
+            print(f"    {key}: {value}")
+    else:
+        print("  parse_osi_trace_filename -> no match (filename does not follow OSI naming convention)")
 
     return 0
 

@@ -9,8 +9,8 @@ This project ships examples in both C++ and Python that demonstrate how to read/
 
 ## C++ examples
 
-- [example_mcap_reader.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_mcap_reader.cpp) — MCAP read
-- [example_mcap_writer.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_mcap_writer.cpp) — MCAP write
+- [example_mcap_reader.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_mcap_reader.cpp) — MCAP read, metadata inspection, FilenameUtils
+- [example_mcap_writer.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_mcap_writer.cpp) — MCAP write, both metadata overloads, config constants
 - [example_single_channel_binary_reader.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_single_channel_binary_reader.cpp) — `.osi` binary read
 - [example_single_channel_binary_writer.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_single_channel_binary_writer.cpp) — `.osi` binary write
 - [example_txth_reader.cpp](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/cpp/examples/example_txth_reader.cpp) — `.txth` text read
@@ -38,8 +38,8 @@ For more details, see [cpp/examples/README.md](https://github.com/lichtblick-sui
 
 ## Python examples
 
-- [example_mcap_reader.py](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/python/examples/example_mcap_reader.py) — MCAP read
-- [example_mcap_writer.py](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/python/examples/example_mcap_writer.py) — MCAP write
+- [example_mcap_reader.py](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/python/examples/example_mcap_reader.py) — MCAP read, metadata inspection
+- [example_mcap_writer.py](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/python/examples/example_mcap_writer.py) — MCAP write, both metadata APIs, config constants
 - [example_single_channel_binary_reader.py](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/python/examples/example_single_channel_binary_reader.py) — `.osi` binary read
 - [example_single_channel_binary_writer.py](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/python/examples/example_single_channel_binary_writer.py) — `.osi` binary write
 - [example_txth_reader.py](https://github.com/lichtblick-suite/asam-osi-utilities/blob/main/python/examples/example_txth_reader.py) — `.txth` text read

@@ -29,7 +29,7 @@ It supports both MCAP and binary `.osi` input/output. A minimal SensorView is cr
 ### example_mcap_reader
 
 This example demonstrates how to read an MCAP file into your application.
-It simply prints the message types and timestamps of the OSI mcap file.
+It prints message types and timestamps, inspects file/channel metadata, and demonstrates `FilenameUtils` (`InferMessageTypeFromFilename`, `ParseOsiTraceFilename`) for automatic message type detection from file names.
 You can try it with an example mcap file generated with `example_mcap_writer` (see following section) with:
 
 ```bash
@@ -40,6 +40,7 @@ You can try it with an example mcap file generated with `example_mcap_writer` (s
 
 This example demonstrates how to write OSI data to an MCAP file from your application.
 As an example, a SensorView message with one moving object is created and written to the MCAP file.
+It shows both metadata overloads (`AddFileMetadata(mcap::Metadata)` and `AddFileMetadata(name, map)`), config constants (`kDefaultChunkSize`, `kMinChunkSize`, `kMaxChunkSize`), and compression options.
 It creates the example file `sv_example.mcap` in the `.playground/` directory at the repository root.
 
 ```bash

@@ -79,8 +79,8 @@ Both the C++ and Python SDKs ship with matching examples covering all supported 
 
 | C++ | Python | Description |
 |-----|--------|-------------|
-| `example_mcap_writer` | `example_mcap_writer.py` | Write MCAP trace files |
-| `example_mcap_reader` | `example_mcap_reader.py` | Read MCAP with metadata inspection and topic filtering |
+| `example_mcap_writer` | `example_mcap_writer.py` | Write MCAP trace files with metadata and config constants |
+| `example_mcap_reader` | `example_mcap_reader.py` | Read MCAP with metadata, topic filtering, and FilenameUtils |
 | `example_single_channel_binary_writer` | `example_single_channel_binary_writer.py` | Write binary `.osi` files |
 | `example_single_channel_binary_reader` | `example_single_channel_binary_reader.py` | Read binary `.osi` files |
 | `example_txth_writer` | `example_txth_writer.py` | Write human-readable `.txth` files |
@@ -88,7 +88,7 @@ Both the C++ and Python SDKs ship with matching examples covering all supported 
 | `example_mcap_multi_channel_writer` | `example_mcap_multi_channel_writer.py` | Multi-topic MCAP with mixed channels |
 | `convert_osi2mcap` | `convert_osi2mcap.py` | Convert `.osi` → `.mcap` |
 | `convert_gt2sv` | — | Convert GroundTruth → SensorView |
-| — | `example_reader_factory.py` | Format auto-detection and timestamp utilities |
+| — | `example_reader_factory.py` | Format auto-detection, timestamp utilities, and FilenameUtils |
 | `benchmark` | `benchmark.py` | Throughput benchmark for all formats |
 
 See [cpp/examples/README.md](cpp/examples/README.md) and [python/examples/README.md](python/examples/README.md) for full details.

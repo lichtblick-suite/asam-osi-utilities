@@ -15,6 +15,7 @@
  * - TraceFileReaderFactory::createReader() for format auto-detection
  */
 
+#include <osi-utilities/tracefile/FilenameUtils.h>
 #include <osi-utilities/tracefile/Reader.h>
 #include <osi-utilities/tracefile/reader/MCAPTraceFileReader.h>
 
@@ -216,6 +217,26 @@ auto main(const int argc, const char** argv) -> int {
 
     std::cout << "Starting MCAP Reader example:\n";
     std::cout << "Reading trace file from " << options->file_path.string() << "\n";
+
+    // --- FilenameUtils: infer message type and parse naming convention ---
+    const auto inferred_type = osi3::tracefile::InferMessageTypeFromFilename(options->file_path);
+    const auto& inferred_name = kMessageTypeNames.at(inferred_type);
+    std::cout << "\nFilename analysis:\n";
+    std::cout << "  InferMessageTypeFromFilename -> " << inferred_name << "\n";
+
+    const auto parsed = osi3::tracefile::ParseOsiTraceFilename(options->file_path);
+    if (parsed) {
+        std::cout << "  ParseOsiTraceFilename (OSI naming convention detected):\n";
+        std::cout << "    timestamp:        " << parsed->timestamp << "\n";
+        std::cout << "    message_type:     " << parsed->message_type << "\n";
+        std::cout << "    osi_version:      " << parsed->osi_version << "\n";
+        std::cout << "    protobuf_version: " << parsed->protobuf_version << "\n";
+        std::cout << "    frame_count:      " << parsed->frame_count << "\n";
+        std::cout << "    identifier:       " << parsed->identifier << "\n";
+        std::cout << "    description:      " << parsed->description << "\n";
+    } else {
+        std::cout << "  ParseOsiTraceFilename -> no match (filename does not follow OSI naming convention)\n";
+    }
 
     if (options->use_factory) {
         return RunFactoryMode(options->file_path);
