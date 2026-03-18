@@ -1,0 +1,102 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "asam-osi-utilities"
+dynamic = ["version"]
+description = "Python utilities for reading and writing ASAM OSI trace files (MCAP, binary .osi, text .txth)"
+readme = "README.md"
+license = {text = "MPL-2.0"}
+requires-python = ">=3.10"
+authors = [
+    {name = "BMW AG"},
+]
+keywords = ["osi", "open-simulation-interface", "mcap", "protobuf", "simulation", "automated-driving"]
+
+classifiers = [
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+dependencies = [
+    "protobuf>=6.30.2",
+    "mcap>=1.1",
+    "mcap-protobuf-support>=0.5",
+]
+
+[project.scripts]
+convert-gt2sv = "osi_utilities.converters.gt2sv:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "mypy-protobuf",
+]
+docs = [
+    "sphinx>=7.0",
+    "breathe>=4.35",
+    "furo>=2024.0",
+    "myst-parser>=3.0",
+    "sphinx-copybutton",
+]
+
+[project.urls]
+Homepage = "https://github.com/lichtblick-suite/asam-osi-utilities"
+Documentation = "https://lichtblick-suite.github.io/asam-osi-utilities/"
+Repository = "https://github.com/lichtblick-suite/asam-osi-utilities"
+Issues = "https://github.com/lichtblick-suite/asam-osi-utilities/issues"
+
+# ---------------------------------------------------------------------------
+# Version: single source of truth is vcpkg.json at repository root
+# ---------------------------------------------------------------------------
+[tool.hatch.version]
+source = "regex"
+path = "../vcpkg.json"
+pattern = '"version-string":\s*"(?P<version>[^"]+)"'
+
+# ---------------------------------------------------------------------------
+# Hatch build: include vendored osi3 protobuf bindings when present.
+# Run 'make vendor-osi3' before 'make package' to vendor osi3 into the wheel.
+# For editable/path installs, osi3 is expected from osi-python (a peer dep).
+# ---------------------------------------------------------------------------
+[tool.hatch.build.targets.wheel]
+packages = ["osi_utilities", "osi3"]
+exclude = ["*.proto"]
+
+[tool.hatch.build.targets.sdist]
+include = ["osi_utilities/", "tests/", "README.md", "pyproject.toml"]
+
+# ---------------------------------------------------------------------------
+# Tool configuration
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+src = [".", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.isort]
+known-third-party = ["osi3"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true

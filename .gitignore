@@ -6,9 +6,12 @@ build-*/
 dist/
 doc/html
 doc/latex
+doc/xml
+lib/
 osi/
 osi3/
 vcpkg_installed/
+.cache/
 .playground/
 
 # Specific extensions
@@ -58,6 +61,11 @@ cmake-build-*/
 
 # Local build tool output
 local_build_tools/*.html
+
+# Allow Python SDK Makefile
+!python/Makefile
+# Allow root Makefile (line 23 ignores CMake-generated Makefiles)
+!/Makefile
 
 # trace file
 *.osi

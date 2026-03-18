@@ -1,6 +1,6 @@
 {
   "name": "asam-osi-utilities",
-  "version-string": "0.2.1",
+  "version-string": "0.3.0",
   "description": "A utility library for working with ASAM Open Simulation Interface (OSI)",
   "homepage": "https://github.com/lichtblick-suite/asam-osi-utilities",
   "dependencies": ["protobuf", "lz4", "zstd"],

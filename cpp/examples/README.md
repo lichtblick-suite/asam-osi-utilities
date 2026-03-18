@@ -17,21 +17,31 @@ Simply pass a .osi file and a .mcap destination file name as arguments to the ex
 ./convert_osi2mcap <input_osi_file> <output_mcap_file>
 ```
 
+### convert_gt2sv
+
+This example demonstrates how to convert GroundTruth trace files to SensorView format.
+It supports both MCAP and binary `.osi` input/output. A minimal SensorView is created from each GroundTruth message by copying the global ground truth reference.
+
+```bash
+./convert_gt2sv <input_file> <output_file>
+```
+
 ### example_mcap_reader
 
 This example demonstrates how to read an MCAP file into your application.
-It simply prints the message types and timestamps of the OSI mcap file.
+It prints message types and timestamps, inspects file/channel metadata, and demonstrates `FilenameUtils` (`InferMessageTypeFromFilename`, `ParseOsiTraceFilename`) for automatic message type detection from file names.
 You can try it with an example mcap file generated with `example_mcap_writer` (see following section) with:
 
 ```bash
-./example_mcap_reader /tmp/sv_example.mcap
+./example_mcap_reader .playground/sv_example.mcap
 ```
 
 ### example_mcap_writer
 
 This example demonstrates how to write OSI data to an MCAP file from your application.
 As an example, a SensorView message with one moving object is created and written to the MCAP file.
-It creates the example file `sv_example.mcap` in the temp directory of your operating system (for example, `/tmp` on Linux/macOS or `%TEMP%` on Windows).
+It shows both metadata overloads (`AddFileMetadata(mcap::Metadata)` and `AddFileMetadata(name, map)`), config constants (`kDefaultChunkSize`, `kMinChunkSize`, `kMaxChunkSize`), and compression options.
+It creates the example file `sv_example.mcap` in the `.playground/` directory at the repository root.
 
 ```bash
 ./example_mcap_writer
@@ -60,14 +70,14 @@ It simply prints the message types and timestamps of the OSI trace file.
 You can try it with an example osi trace file generated with `example_single_channel_binary_writer` (see following section) with:
 
 ```bash
-./example_single_channel_binary_reader /tmp/<timestamp>_<osi-version>_<protobuf-version>_<number-of-frames>_example_single_channel_binary_writer.osi --type SensorView
+./example_single_channel_binary_reader .playground/<timestamp>_<osi-version>_<protobuf-version>_<number-of-frames>_sv_example_single_channel_binary_writer.osi --type SensorView
 ```
 
 ### example_single_channel_binary_writer
 
 This example demonstrates how to write OSI data to a native binary file from your application.
 As an example, a SensorView message with one moving object is created and written to the OSI trace file.
-It creates the example file `<timestamp>_<osi-version>_<protobuf-version>_<number-of-frames>_example_single_channel_binary_writer.osi` in the temp directory of your operating system (for example, `/tmp` on Linux/macOS or `%TEMP%` on Windows).
+It creates the example file `<timestamp>_<osi-version>_<protobuf-version>_<number-of-frames>_sv_example_single_channel_binary_writer.osi` in the `.playground/` directory at the repository root.
 
 ```bash
 ./example_single_channel_binary_writer
@@ -80,14 +90,14 @@ It simply prints the message types and timestamps of the OSI trace file.
 You can try it with an example osi trace file generated with `example_txth_writer` (see following section) with:
 
 ```bash
-./example_txth_reader /tmp/<timestamp>_<osi-version>_<protobuf-version>_<number-of-frames>_example-txth-writer.txth --type SensorView
+./example_txth_reader .playground/<timestamp>_<osi-version>_<protobuf-version>_<number-of-frames>_sv_example-txth-writer.txth --type SensorView
 ```
 
 ### example_txth_writer
 
 This example demonstrates how to write OSI data to a human-readable txth file from your application.
 As an example, a SensorView message with one moving object is created and written to the txth file.
-It creates the example file `<timestamp>_<osi-version>_<protobuf-version>_<number-of-frames>_example-txth-writer.txth` in the temp directory of your operating system (for example, `/tmp` on Linux/macOS or `%TEMP%` on Windows).
+It creates the example file `<timestamp>_<osi-version>_<protobuf-version>_<number-of-frames>_sv_example-txth-writer.txth` in the `.playground/` directory at the repository root.
 
 ```bash
 ./example_txth_writer

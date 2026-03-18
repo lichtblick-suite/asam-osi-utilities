@@ -6,33 +6,49 @@ SPDX-License-Identifier: MPL-2.0
 # ASAM OSI Utilities
 
 [![CI](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml/badge.svg)](https://github.com/lichtblick-suite/asam-osi-utilities/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-doxygen-blue)](https://lichtblick-suite.github.io/asam-osi-utilities/)
+[![PyPI](https://img.shields.io/pypi/v/asam-osi-utilities)](https://pypi.org/project/asam-osi-utilities/)
+[![Documentation](https://img.shields.io/badge/docs-API_Reference-blue)](https://lichtblick-suite.github.io/asam-osi-utilities/)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 
-A C++ utility library for working with [ASAM Open Simulation Interface (OSI)](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/specification/index.html) trace files in MCAP and other formats.
+A C++ and Python utility library for working with [ASAM Open Simulation Interface (OSI)](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/specification/index.html) trace files in MCAP and other formats.
 
 ## Quick Start
+
+### C++
 
 ```bash
 # Clone with submodules
 git clone https://github.com/lichtblick-suite/asam-osi-utilities.git
 cd asam-osi-utilities
-
-# Init submodules once after cloning
 git submodule update --init --recursive
 
-# Update after remote changes
-git pull --recurse-submodules
+# Build (uses vcpkg preset — recommended)
+make build cpp
 
-# Build with vcpkg (recommended)
-cmake --preset vcpkg
-cmake --build --preset vcpkg --parallel
+# Build with tests
+make build cpp tests
 
-# Run tests (configure with -DBUILD_TESTING=ON to build them)
-ctest --test-dir build-vcpkg --output-on-failure
+# Run tests
+make test cpp
 ```
 
 > **Note:** First build takes 10-15 minutes as vcpkg compiles dependencies from source.
+>
+> Power users can call cmake directly: `cmake --preset vcpkg && cmake --build --preset vcpkg --parallel`
+
+### Python
+
+```bash
+pip install asam-osi-utilities
+```
+
+Or from source:
+
+```bash
+# From the repository root
+make setup          # creates venv + installs all dependencies
+make test python    # run Python tests
+```
 
 ## Features
 
@@ -40,6 +56,8 @@ ctest --test-dir build-vcpkg --output-on-failure
 - Read/write single-channel binary (`.osi`) and text (`.txth`) trace files
 - Convert between trace file formats
 - Cross-platform: Linux, Windows, macOS
+- **C++ library** with CMake/vcpkg integration
+- **Python SDK** available on [PyPI](https://pypi.org/project/asam-osi-utilities/) (`pip install asam-osi-utilities`)
 
 ## Documentation
 
@@ -53,22 +71,40 @@ ctest --test-dir build-vcpkg --output-on-failure
 | [Contributing](doc/contributing.md)                                     | How to contribute to this project               |
 | [Examples](doc/examples.md)                                             | Example programs and their purpose              |
 | [CI Pipeline](doc/ci-pipeline.md)                                       | Continuous integration documentation            |
-| [API Reference](https://lichtblick-suite.github.io/asam-osi-utilities/) | Doxygen-generated API docs                      |
+| [API Reference](https://lichtblick-suite.github.io/asam-osi-utilities/) | C++ and Python API documentation      |
 
 ## Examples
 
-See [cpp/examples/](cpp/examples/README.md) for usage examples:
+Both the C++ and Python SDKs ship with matching examples covering all supported formats (MCAP, binary `.osi`, text `.txth`), format conversion, and benchmarks.
 
-- `example_mcap_reader` / `example_mcap_writer` - MCAP trace file I/O
-- `example_single_channel_binary_reader` / `example_single_channel_binary_writer` - Binary `.osi` files
-- `example_txth_reader` / `example_txth_writer` - Human-readable `.txth` files
-- `convert_osi2mcap` - Convert `.osi` files to `.mcap` format
+| C++ | Python | Description |
+|-----|--------|-------------|
+| `example_mcap_writer` | `example_mcap_writer.py` | Write MCAP trace files with metadata and config constants |
+| `example_mcap_reader` | `example_mcap_reader.py` | Read MCAP with metadata, topic filtering, and FilenameUtils |
+| `example_single_channel_binary_writer` | `example_single_channel_binary_writer.py` | Write binary `.osi` files |
+| `example_single_channel_binary_reader` | `example_single_channel_binary_reader.py` | Read binary `.osi` files |
+| `example_txth_writer` | `example_txth_writer.py` | Write human-readable `.txth` files |
+| `example_txth_reader` | `example_txth_reader.py` | Read `.txth` files |
+| `example_mcap_multi_channel_writer` | `example_mcap_multi_channel_writer.py` | Multi-topic MCAP with mixed channels |
+| `convert_osi2mcap` | `convert_osi2mcap.py` | Convert `.osi` → `.mcap` |
+| `convert_gt2sv` | — | Convert GroundTruth → SensorView |
+| — | `example_reader_factory.py` | Format auto-detection, timestamp utilities, and FilenameUtils |
+| `benchmark` | `benchmark.py` | Throughput benchmark for all formats |
+
+See [cpp/examples/README.md](cpp/examples/README.md) and [python/examples/README.md](python/examples/README.md) for full details.
 
 ## Requirements
+
+### C++
 
 - C++17 compatible compiler
 - CMake 3.16+
 - vcpkg (recommended) or manual dependency installation
+
+### Python
+
+- Python 3.10+
+- `pip install asam-osi-utilities`
 
 ## Contributing
 

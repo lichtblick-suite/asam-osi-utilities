@@ -12,6 +12,10 @@ on:
         default: false
         type: boolean
 
+env:
+  YQ_VERSION: v4.52.2
+  YQ_SHA256: a74bd266990339e0c48a2103534aef692abf99f19390d12c2b0ce6830385c459
+
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
@@ -20,7 +24,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Doxygen
+    name: Build Documentation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -28,19 +32,16 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          YQ_VERSION=v4.52.2
-          sudo curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
+          sudo curl --fail -L -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/yq_linux_amd64"
+          echo "${{ env.YQ_SHA256 }}  /usr/local/bin/yq" | sha256sum -c -
           sudo chmod +x /usr/local/bin/yq
           yq -r '.ci_jobs.ubuntu_docs.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
-      - name: Configure CMake
-        run: cmake --preset base -DOSIUTILITIES_DOCS_ONLY=ON
-
       - name: Build Documentation
-        run: cmake --build --preset base --target library_api_doc
+        run: make docs build
 
       - name: Upload artifact for Pages
         if: inputs.deploy
@@ -70,4 +71,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4.0.5
+        uses: actions/deploy-pages@v4

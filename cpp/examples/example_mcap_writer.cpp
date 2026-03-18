@@ -10,6 +10,7 @@
 #include <osi-utilities/tracefile/TimestampUtils.h>
 #include <osi-utilities/tracefile/writer/MCAPTraceFileWriter.h>
 
+#include <exception>
 #include <filesystem>
 #ifdef _WIN32
 #include <process.h>
@@ -32,15 +33,12 @@ auto GenerateTempFilePath() -> std::filesystem::path {
 #else
     const auto pid = std::to_string(getpid());
 #endif
-    return std::filesystem::temp_directory_path() / ("sv_example_" + pid + ".mcap");  // add sv to indicate sensor view as recommended by the OSI-specification
+    auto output_dir = std::filesystem::current_path() / ".playground";
+    std::filesystem::create_directories(output_dir);
+    return output_dir / ("sv_example_" + pid + ".mcap");  // add sv to indicate sensor view as recommended by the OSI-specification
 }
 
-}  // namespace
-
-/**
- * \brief Entry point for the MCAP writer example.
- */
-auto main(int /*argc*/, const char** /*argv*/) -> int {
+auto RunExample() -> int {
     std::cout << "Starting MCAP Writer example:" << std::endl;
 
     // Create writer and open file
@@ -66,6 +64,15 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     if (!trace_file_writer.AddFileMetadata(net_asam_osi_trace_metadata)) {
         std::cerr << "Failed to add required metadata to trace_file." << std::endl;
         exit(1);
+    }
+
+    // Alternative: add custom metadata using the name + map overload
+    const std::unordered_map<std::string, std::string> custom_metadata = {
+        {"source_tool", "example_mcap_writer"},
+        {"scenario", "straight_road_acceleration"},
+    };
+    if (!trace_file_writer.AddFileMetadata("custom.example.metadata", custom_metadata)) {
+        std::cerr << "Failed to add custom metadata." << std::endl;
     }
 
     // add a channel to store some data
@@ -105,7 +112,7 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
         ground_truth_1->mutable_timestamp()->set_nanos(timestamp % kNsPerSec);
         ground_truth_1->mutable_timestamp()->set_seconds(static_cast<int64_t>(timestamp / kNsPerSec));
         const auto old_position = host_vehicle->base().position().x();
-        const auto new_position = old_position + host_vehicle->base().velocity().x() + kTimeStepSizeS;
+        const auto new_position = old_position + host_vehicle->base().velocity().x() * kTimeStepSizeS;
         host_vehicle->mutable_base()->mutable_position()->set_x(new_position);
 
         // finally write the data using topic
@@ -116,4 +123,19 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
     trace_file_writer.Close();
 
     std::cout << "Finished MCAP Writer example" << std::endl;
+    return 0;
+}
+
+}  // namespace
+
+/**
+ * \brief Entry point for the MCAP writer example.
+ */
+auto main(int /*argc*/, const char** /*argv*/) -> int {
+    try {
+        return RunExample();
+    } catch (const std::exception& error) {
+        std::cerr << "ERROR: " << error.what() << std::endl;
+        return 1;
+    }
 }

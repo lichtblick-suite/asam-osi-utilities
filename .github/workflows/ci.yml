@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
 
 concurrency:
@@ -14,22 +14,29 @@ concurrency:
 
 jobs:
   # ===========================================================================
-  # Code Quality (reusable workflows)
+  # C++ Code Quality (reusable workflows)
   # ===========================================================================
   format:
-    name: Format
-    uses: ./.github/workflows/ci_format.yml
+    name: C++ Format
+    uses: ./.github/workflows/ci_cpp_format.yml
 
   lint:
-    name: Lint
-    uses: ./.github/workflows/ci_lint.yml
+    name: C++ Lint
+    uses: ./.github/workflows/ci_cpp_lint.yml
 
   # ===========================================================================
-  # Build Matrix (reusable workflow)
+  # Python SDK (reusable workflow)
+  # ===========================================================================
+  python:
+    name: Python
+    uses: ./.github/workflows/ci_python.yml
+
+  # ===========================================================================
+  # C++ Build Matrix (reusable workflow)
   # ===========================================================================
   build:
-    name: Build
-    uses: ./.github/workflows/ci_build.yml
+    name: C++ Build
+    uses: ./.github/workflows/ci_cpp.yml
 
   # ===========================================================================
   # Compliance Checks (reusable workflow)

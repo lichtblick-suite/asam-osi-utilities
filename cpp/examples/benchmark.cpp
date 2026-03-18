@@ -167,7 +167,8 @@ auto RunSynthetic(int num_messages) -> int {
     const auto total_mb = total_bytes / (1024.0 * 1024.0);
     std::cout << "Approx. payload: " << std::fixed << std::setprecision(1) << total_mb << " MB (" << single_size << " bytes/msg)\n" << std::endl;
 
-    const auto tmp = std::filesystem::temp_directory_path();
+    const auto tmp = std::filesystem::current_path() / ".playground";
+    std::filesystem::create_directories(tmp);
     const auto mcap_path = tmp / "bench_sv_.mcap";
     const auto osi_path = tmp / "bench_sv_.osi";
     const auto txth_path = tmp / "bench_sv_.txth";
@@ -313,7 +314,8 @@ auto RunFile(const std::filesystem::path& input_path, osi3::ReaderTopLevelMessag
     PrintMetrics("Read", static_cast<int>(messages.size()), static_cast<double>(file_size), std::chrono::duration<double>(read_end - read_start).count());
 
     // Write benchmark
-    auto tmp_path = std::filesystem::temp_directory_path() / "benchmark_write_output.osi";
+    auto tmp_path = (std::filesystem::current_path() / ".playground" / "benchmark_write_output.osi");
+    std::filesystem::create_directories(tmp_path.parent_path());
 
     osi3::SingleChannelBinaryTraceFileWriter writer;
     if (!writer.Open(tmp_path)) {

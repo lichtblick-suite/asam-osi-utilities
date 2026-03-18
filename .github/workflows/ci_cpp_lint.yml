@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+
+name: C++ Lint
+
+on:
+  workflow_call:
+
+env:
+  YQ_VERSION: v4.52.2
+  YQ_SHA256: a74bd266990339e0c48a2103534aef692abf99f19390d12c2b0ce6830385c459
+
+jobs:
+  clang-tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo curl --fail -L -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/yq_linux_amd64"
+          echo "${{ env.YQ_SHA256 }}  /usr/local/bin/yq" | sha256sum -c -
+          sudo chmod +x /usr/local/bin/yq
+          yq -r '.ci_jobs.ubuntu_lint.apt' .github/dependencies.yml | xargs sudo apt-get install -y
+
+      - name: Configure and build
+        run: |
+          cmake --preset base -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cmake --build --preset base --parallel $(nproc)
+
+      - name: Run clang-tidy
+        run: |
+          bash scripts/setup-dev.sh
+          .git/hooks/pre-commit --all-files --run-tidy --skip-format --skip-python

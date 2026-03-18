@@ -6,6 +6,7 @@
 #ifndef OSIUTILITIES_TRACEFILE_TRACEFILECONFIG_H_
 #define OSIUTILITIES_TRACEFILE_TRACEFILECONFIG_H_
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -86,6 +87,34 @@ constexpr size_t kMaxExpectedMessageSize = 512 * 1024 * 1024;  // 512 MiB
 
 /** @brief Initial string reserve size when reading a TXTH text message. */
 constexpr size_t kTxthReadBufferReserveSize = 4096;
+
+// ============================================================================
+// MCAP Metadata Key Constants (per OSI MCAP spec)
+// ============================================================================
+
+/** @brief Name of the OSI trace file-level metadata record. */
+constexpr auto kOsiTraceMetadataName = "net.asam.osi.trace";
+
+/** @brief Required file-level metadata keys for net.asam.osi.trace. */
+constexpr std::array<const char*, 5> kOsiTraceRequiredMetadataKeys = {
+    "version", "min_osi_version", "max_osi_version", "min_protobuf_version", "max_protobuf_version",
+};
+
+/** @brief Recommended file-level metadata keys for net.asam.osi.trace. */
+constexpr std::array<const char*, 5> kOsiTraceRecommendedMetadataKeys = {
+    "zero_time", "creation_time", "description", "authors", "data_sources",
+};
+
+/** @brief Required channel metadata keys. */
+constexpr std::array<const char*, 2> kOsiChannelRequiredMetadataKeys = {
+    "net.asam.osi.trace.channel.osi_version",
+    "net.asam.osi.trace.channel.protobuf_version",
+};
+
+/** @brief Recommended channel metadata keys. */
+constexpr std::array<const char*, 1> kOsiChannelRecommendedMetadataKeys = {
+    "net.asam.osi.trace.channel.description",
+};
 
 }  // namespace config
 }  // namespace tracefile

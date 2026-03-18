@@ -10,6 +10,7 @@
 #include <osi-utilities/tracefile/TimestampUtils.h>
 #include <osi-utilities/tracefile/writer/SingleChannelBinaryTraceFileWriter.h>
 
+#include <exception>
 #include <filesystem>
 #ifdef _WIN32
 #include <process.h>
@@ -52,17 +53,13 @@ auto GenerateTempFilePath() -> std::filesystem::path {
 #else
     file_name += "_" + std::to_string(getpid());
 #endif
-    file_name += "_example_single_channel_binary_writer.osi";
-    auto path = std::filesystem::temp_directory_path() / file_name;
-    return path;
+    file_name += "_example_sv_single_channel_binary_writer.osi";
+    auto output_dir = std::filesystem::current_path() / ".playground";
+    std::filesystem::create_directories(output_dir);
+    return output_dir / file_name;
 }
 
-}  // namespace
-
-/**
- * \brief Entry point for the single-channel binary writer example.
- */
-auto main(int /*argc*/, const char** /*argv*/) -> int {
+auto RunExample() -> int {
     std::cout << "Starting single channel binary writer example:" << std::endl;
 
     // Create writer and open file
@@ -112,4 +109,18 @@ auto main(int /*argc*/, const char** /*argv*/) -> int {
 
     std::cout << "Finished single channel binary writer example" << std::endl;
     return 0;
+}
+
+}  // namespace
+
+/**
+ * \brief Entry point for the single-channel binary writer example.
+ */
+auto main(int /*argc*/, const char** /*argv*/) -> int {
+    try {
+        return RunExample();
+    } catch (const std::exception& error) {
+        std::cerr << "ERROR: " << error.what() << std::endl;
+        return 1;
+    }
 }

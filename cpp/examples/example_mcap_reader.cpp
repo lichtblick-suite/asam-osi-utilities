@@ -4,14 +4,24 @@
 //
 /**
  * \file
- * \brief Read OSI MCAP trace files and print message timestamps.
+ * \brief Read OSI MCAP trace files — metadata inspection, topic filtering, and message iteration.
+ *
+ * Demonstrates:
+ * - MCAPTraceFileReader::GetAvailableTopics()
+ * - MCAPTraceFileReader::GetFileMetadata()
+ * - MCAPTraceFileReader::GetChannelMetadata()
+ * - MCAPTraceFileReader::GetMessageTypeForTopic()
+ * - MCAPTraceFileReader::SetTopics() for topic filtering
+ * - TraceFileReaderFactory::createReader() for format auto-detection
  */
 
-#include <osi-utilities/tracefile/TimestampUtils.h>
+#include <osi-utilities/tracefile/FilenameUtils.h>
+#include <osi-utilities/tracefile/Reader.h>
 #include <osi-utilities/tracefile/reader/MCAPTraceFileReader.h>
 
 #include <filesystem>
 #include <optional>
+#include <unordered_set>
 
 #include "osi_groundtruth.pb.h"
 #include "osi_hostvehicledata.pb.h"
@@ -25,39 +35,173 @@
 
 namespace {
 
+/** \brief Readable names for ReaderTopLevelMessage enum values. */
+const std::unordered_map<osi3::ReaderTopLevelMessage, std::string> kMessageTypeNames = {
+    {osi3::ReaderTopLevelMessage::kGroundTruth, "GroundTruth"},
+    {osi3::ReaderTopLevelMessage::kSensorData, "SensorData"},
+    {osi3::ReaderTopLevelMessage::kSensorView, "SensorView"},
+    {osi3::ReaderTopLevelMessage::kSensorViewConfiguration, "SensorViewConfiguration"},
+    {osi3::ReaderTopLevelMessage::kHostVehicleData, "HostVehicleData"},
+    {osi3::ReaderTopLevelMessage::kTrafficCommand, "TrafficCommand"},
+    {osi3::ReaderTopLevelMessage::kTrafficCommandUpdate, "TrafficCommandUpdate"},
+    {osi3::ReaderTopLevelMessage::kTrafficUpdate, "TrafficUpdate"},
+    {osi3::ReaderTopLevelMessage::kMotionRequest, "MotionRequest"},
+    {osi3::ReaderTopLevelMessage::kStreamingUpdate, "StreamingUpdate"},
+    {osi3::ReaderTopLevelMessage::kUnknown, "Unknown"},
+};
+
 /**
  * \brief Print the timestamp of a decoded OSI message.
- * \tparam T Protobuf message pointer type.
- * \param msg Parsed OSI message instance.
+ * \param reading_result Read result containing the decoded message.
  */
-template <typename T>
-void PrintTimestamp(T msg) {
-    auto timestamp = osi3::tracefile::TimestampToSeconds(*msg);
-    std::cout << "Type: " << msg->descriptor()->full_name() << " Timestamp " << timestamp << "\n";
+void PrintMessage(const osi3::ReadResult& reading_result) {
+    // Use protobuf reflection to extract the timestamp from any OSI message type,
+    // avoiding a verbose switch-case over all 10+ message types.
+    double timestamp = 0.0;
+    const auto* descriptor = reading_result.message->GetDescriptor();
+    const auto* reflection = reading_result.message->GetReflection();
+    const auto* ts_field = descriptor->FindFieldByName("timestamp");
+    if (ts_field != nullptr && reflection->HasField(*reading_result.message, ts_field)) {
+        const auto& ts_msg = reflection->GetMessage(*reading_result.message, ts_field);
+        const auto* ts_desc = ts_msg.GetDescriptor();
+        const auto seconds = ts_msg.GetReflection()->GetInt64(ts_msg, ts_desc->FindFieldByName("seconds"));
+        const auto nanos = ts_msg.GetReflection()->GetUInt32(ts_msg, ts_desc->FindFieldByName("nanos"));
+        timestamp = static_cast<double>(seconds) + static_cast<double>(nanos) / 1e9;
+    }
+    const auto& type_name = kMessageTypeNames.at(reading_result.message_type);
+    std::cout << "  Type: osi3." << type_name << "  Timestamp: " << timestamp;
+    if (!reading_result.channel_name.empty()) {
+        std::cout << "  Channel: " << reading_result.channel_name;
+    }
+    std::cout << "\n";
 }
+
+/**
+ * \brief Parsed command-line options for this example.
+ */
+struct ProgramOptions {
+    std::filesystem::path file_path;        /**< Input trace file path. */
+    std::unordered_set<std::string> topics; /**< Optional topic filter (empty = all). */
+    bool use_factory = false;               /**< Use TraceFileReaderFactory instead of direct instantiation. */
+};
 
 /**
  * \brief Print CLI usage information.
  */
-void printHelp() {
-    std::cout << "Usage: example_mcap_reader <input_file> \n\n"
+void PrintHelp() {
+    std::cout << "Usage: example_mcap_reader <input_file> [options]\n\n"
               << "Arguments:\n"
-              << "  input_file              Path to the input OSI MCAP trace file\n";
+              << "  input_file              Path to the input OSI MCAP trace file\n\n"
+              << "Options:\n"
+              << "  --topic <name>          Filter to specific topic(s) (repeatable)\n"
+              << "  --factory               Use TraceFileReaderFactory for format auto-detection\n"
+              << "  -h, --help              Show this help\n";
 }
 
 /**
- * \brief Parse CLI arguments and return the input file path.
- * \param argc Argument count.
- * \param argv Argument vector.
- * \return Path to the input file or empty path on error/help.
+ * \brief Parse CLI arguments into ProgramOptions.
  */
-auto parseArgs(const int argc, const char** argv) -> std::filesystem::path {
-    if (argc < 2 || std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
-        printHelp();
-        return "";
+auto ParseArgs(const int argc, const char** argv) -> std::optional<ProgramOptions> {
+    if (argc < 2) {
+        PrintHelp();
+        return std::nullopt;
     }
 
-    return std::filesystem::path{argv[1]};
+    ProgramOptions options{};
+
+    for (int i = 1; i < argc; ++i) {
+        const std::string arg = argv[i];
+        if (arg == "--help" || arg == "-h") {
+            PrintHelp();
+            return std::nullopt;
+        }
+        if (arg == "--topic" && i + 1 < argc) {
+            options.topics.insert(argv[++i]);
+        } else if (arg == "--factory") {
+            options.use_factory = true;
+        } else if (options.file_path.empty()) {
+            options.file_path = arg;
+        } else {
+            std::cerr << "Error: Unexpected argument '" << arg << "'\n\n";
+            PrintHelp();
+            return std::nullopt;
+        }
+    }
+
+    if (options.file_path.empty()) {
+        PrintHelp();
+        return std::nullopt;
+    }
+
+    return options;
+}
+
+/**
+ * \brief Print available topics and their metadata.
+ */
+void PrintTopicsAndMetadata(osi3::MCAPTraceFileReader& reader) {
+    const auto topics = reader.GetAvailableTopics();
+    std::cout << "\nAvailable topics (" << topics.size() << "):\n";
+    for (const auto& topic : topics) {
+        const auto msg_type = reader.GetMessageTypeForTopic(topic);
+        const auto& type_name = msg_type ? kMessageTypeNames.at(*msg_type) : std::string("non-OSI");
+        std::cout << "  - " << topic << " (" << type_name << ")\n";
+
+        const auto channel_meta = reader.GetChannelMetadata(topic);
+        if (channel_meta && !channel_meta->empty()) {
+            for (const auto& [key, value] : *channel_meta) {
+                std::cout << "      " << key << ": " << value << "\n";
+            }
+        }
+    }
+
+    const auto file_metadata = reader.GetFileMetadata();
+    if (!file_metadata.empty()) {
+        std::cout << "\nFile metadata:\n";
+        for (const auto& [name, entries] : file_metadata) {
+            std::cout << "  [" << name << "]\n";
+            for (const auto& [key, value] : entries) {
+                std::cout << "    " << key << ": " << value << "\n";
+            }
+        }
+    }
+}
+
+/**
+ * \brief Run factory-mode demo: use TraceFileReaderFactory for format auto-detection.
+ */
+auto RunFactoryMode(const std::filesystem::path& file_path) -> int {
+    std::cout << "\n[Using TraceFileReaderFactory for format auto-detection]\n";
+    auto generic_reader = osi3::TraceFileReaderFactory::createReader(file_path);
+    generic_reader->Open(file_path);
+
+    while (generic_reader->HasNext()) {
+        const auto result = generic_reader->ReadMessage();
+        if (result) {
+            PrintMessage(*result);
+        }
+    }
+    generic_reader->Close();
+    std::cout << "Finished MCAP Reader example (factory mode)\n";
+    return 0;
+}
+
+/**
+ * \brief Read and print all messages from the trace file.
+ */
+void ReadMessages(osi3::MCAPTraceFileReader& reader) {
+    std::cout << "\nMessages:\n";
+    int count = 0;
+    while (reader.HasNext()) {
+        const auto reading_result = reader.ReadMessage();
+        if (!reading_result) {
+            std::cerr << "Error reading message." << std::endl;
+            continue;
+        }
+        PrintMessage(*reading_result);
+        ++count;
+    }
+    std::cout << "Total: " << count << " messages read\n";
 }
 
 }  // namespace
@@ -66,82 +210,60 @@ auto parseArgs(const int argc, const char** argv) -> std::filesystem::path {
  * \brief Entry point for the MCAP reader example.
  */
 auto main(const int argc, const char** argv) -> int {
-    std::cout << "Starting MCAP Reader example:" << std::endl;
-
-    const auto trace_file_path = parseArgs(argc, argv);
-    if (trace_file_path.empty()) {
+    const auto options = ParseArgs(argc, argv);
+    if (!options) {
         return 1;
     }
 
-    // Create reader and open file
-    auto trace_file_reader = osi3::MCAPTraceFileReader();
-    std::cout << "Reading trace file from " << trace_file_path << std::endl;
-    trace_file_reader.Open(trace_file_path);
+    std::cout << "Starting MCAP Reader example:\n";
+    std::cout << "Reading trace file from " << options->file_path.string() << "\n";
 
-    // Read messages in a loop until no more messages are available
-    while (trace_file_reader.HasNext()) {
-        const auto reading_result = trace_file_reader.ReadMessage();
-        if (!reading_result) {
-            std::cerr << "Error reading message." << std::endl;
-            continue;
-        }
+    // --- FilenameUtils: infer message type and parse naming convention ---
+    const auto inferred_type = osi3::tracefile::InferMessageTypeFromFilename(options->file_path);
+    const auto& inferred_name = kMessageTypeNames.at(inferred_type);
+    std::cout << "\nFilename analysis:\n";
+    std::cout << "  InferMessageTypeFromFilename -> " << inferred_name << "\n";
 
-        // we need to cast the pointer during runtime to allow multiple different trace files to be read
-        switch (reading_result->message_type) {
-            case osi3::ReaderTopLevelMessage::kGroundTruth: {
-                auto* const ground_truth = dynamic_cast<osi3::GroundTruth*>(reading_result->message.get());
-                PrintTimestamp(ground_truth);
-                break;
-            }
-            case osi3::ReaderTopLevelMessage::kSensorData: {
-                auto* const sensor_data = dynamic_cast<osi3::SensorData*>(reading_result->message.get());
-                PrintTimestamp(sensor_data);
-                break;
-            }
-            case osi3::ReaderTopLevelMessage::kSensorView: {
-                auto* const sensor_view = dynamic_cast<osi3::SensorView*>(reading_result->message.get());
-                PrintTimestamp(sensor_view);
-                break;
-            }
-            case osi3::ReaderTopLevelMessage::kHostVehicleData: {
-                auto* const host_vehicle_data = dynamic_cast<osi3::HostVehicleData*>(reading_result->message.get());
-                PrintTimestamp(host_vehicle_data);
-                break;
-            }
-            case osi3::ReaderTopLevelMessage::kTrafficCommand: {
-                auto* const traffic_command = dynamic_cast<osi3::TrafficCommand*>(reading_result->message.get());
-                PrintTimestamp(traffic_command);
-                break;
-            }
-            case osi3::ReaderTopLevelMessage::kTrafficCommandUpdate: {
-                auto* const traffic_command_update = dynamic_cast<osi3::TrafficCommandUpdate*>(reading_result->message.get());
-                PrintTimestamp(traffic_command_update);
-                break;
-            }
-            case osi3::ReaderTopLevelMessage::kTrafficUpdate: {
-                auto* const traffic_update = dynamic_cast<osi3::TrafficUpdate*>(reading_result->message.get());
-                PrintTimestamp(traffic_update);
-                break;
-            }
-            case osi3::ReaderTopLevelMessage::kMotionRequest: {
-                auto* const motion_request = dynamic_cast<osi3::MotionRequest*>(reading_result->message.get());
-                PrintTimestamp(motion_request);
-                break;
-            }
-            case osi3::ReaderTopLevelMessage::kStreamingUpdate: {
-                auto* const streaming_update = dynamic_cast<osi3::StreamingUpdate*>(reading_result->message.get());
-                PrintTimestamp(streaming_update);
-                break;
-            }
-            default: {
-                std::cout << "Could not determine type of message" << std::endl;
-                break;
-            }
-        }
+    const auto parsed = osi3::tracefile::ParseOsiTraceFilename(options->file_path);
+    if (parsed) {
+        std::cout << "  ParseOsiTraceFilename (OSI naming convention detected):\n";
+        std::cout << "    timestamp:        " << parsed->timestamp << "\n";
+        std::cout << "    message_type:     " << parsed->message_type << "\n";
+        std::cout << "    osi_version:      " << parsed->osi_version << "\n";
+        std::cout << "    protobuf_version: " << parsed->protobuf_version << "\n";
+        std::cout << "    frame_count:      " << parsed->frame_count << "\n";
+        std::cout << "    identifier:       " << parsed->identifier << "\n";
+        std::cout << "    description:      " << parsed->description << "\n";
+    } else {
+        std::cout << "  ParseOsiTraceFilename -> no match (filename does not follow OSI naming convention)\n";
     }
 
-    trace_file_reader.Close();
+    if (options->use_factory) {
+        return RunFactoryMode(options->file_path);
+    }
 
-    std::cout << "Finished MCAP Reader example" << std::endl;
+    // Direct MCAPTraceFileReader for full feature access
+    auto trace_file_reader = osi3::MCAPTraceFileReader();
+    if (!trace_file_reader.Open(options->file_path)) {
+        std::cerr << "Error: Could not open file '" << options->file_path.string() << "'\n";
+        return 1;
+    }
+
+    PrintTopicsAndMetadata(trace_file_reader);
+
+    // Apply topic filtering if requested
+    if (!options->topics.empty()) {
+        std::cout << "\nFiltering to topic(s):";
+        for (const auto& t : options->topics) {
+            std::cout << " " << t;
+        }
+        std::cout << "\n";
+        trace_file_reader.SetTopics(options->topics);
+    }
+
+    ReadMessages(trace_file_reader);
+
+    trace_file_reader.Close();
+    std::cout << "Finished MCAP Reader example\n";
     return 0;
 }

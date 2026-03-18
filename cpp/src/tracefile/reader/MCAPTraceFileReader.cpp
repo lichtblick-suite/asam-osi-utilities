@@ -5,13 +5,24 @@
 
 #include "osi-utilities/tracefile/reader/MCAPTraceFileReader.h"
 
+#include <cstdio>
+#include <cstring>
+#include <exception>
 #include <filesystem>
 
 namespace osi3 {
 
-MCAPTraceFileReader::~MCAPTraceFileReader() {
+MCAPTraceFileReader::~MCAPTraceFileReader() noexcept {
     if (trace_file_.is_open()) {
-        Close();
+        try {
+            Close();
+        } catch (const std::exception& error) {
+            std::fputs("ERROR: Failed to close MCAP reader during destruction: ", stderr);
+            std::fputs(error.what(), stderr);
+            std::fputc('\n', stderr);
+        } catch (...) {
+            std::fputs("ERROR: Failed to close MCAP reader during destruction due to an unknown exception.\n", stderr);
+        }
     }
 }
 
@@ -40,8 +51,26 @@ auto MCAPTraceFileReader::Open(const std::filesystem::path& file_path) -> bool {
         trace_file_.close();
         return false;
     }
-    message_view_ = std::make_unique<mcap::LinearMessageView>(mcap_reader_.readMessages(OnProblem, mcap_options_));
-    message_iterator_ = std::make_unique<mcap::LinearMessageView::Iterator>(message_view_->begin());
+
+    // Read summary to populate channels, schemas, and metadata indexes
+    (void)mcap_reader_.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan);
+
+    // Pre-load file-level metadata records from the summary indexes
+    file_metadata_.clear();
+    auto* data_source = mcap_reader_.dataSource();
+    if (data_source) {
+        for (const auto& [name, index] : mcap_reader_.metadataIndexes()) {
+            mcap::Record raw_record{};
+            if (const auto read_status = mcap::McapReader::ReadRecord(*data_source, index.offset, &raw_record); read_status.ok()) {
+                mcap::Metadata metadata;
+                if (const auto parse_status = mcap::McapReader::ParseMetadata(raw_record, &metadata); parse_status.ok()) {
+                    file_metadata_.emplace_back(metadata.name, metadata.metadata);
+                }
+            }
+        }
+    }
+
+    ResetMessageIteration();
     return true;
 }
 
@@ -90,7 +119,6 @@ auto MCAPTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
         return result;
     }
 
-    std::cerr << "Unable to read message: No more messages available in trace file or file not opened." << std::endl;
     return std::nullopt;
 }
 
@@ -99,6 +127,7 @@ void MCAPTraceFileReader::Close() {
     message_view_.reset();
     mcap_reader_.close();
     trace_file_.close();
+    file_metadata_.clear();
 }
 
 auto MCAPTraceFileReader::HasNext() -> bool {
@@ -116,6 +145,96 @@ auto MCAPTraceFileReader::HasNext() -> bool {
     return true;
 }
 
+void MCAPTraceFileReader::SetTopics(const std::unordered_set<std::string>& topics) {
+    filtered_topics_.assign(topics.begin(), topics.end());
+
+    if (filtered_topics_.empty()) {
+        mcap_options_.topicFilter = {};
+    } else {
+        mcap_options_.topicFilter = [this](const std::string_view topic) noexcept { return TopicMatches(topic); };
+    }
+
+    if (trace_file_.is_open()) {
+        ResetMessageIteration();
+    }
+}
+
+auto MCAPTraceFileReader::GetAvailableTopics() const -> std::vector<std::string> {
+    std::vector<std::string> topics;
+    if (!trace_file_.is_open()) {
+        return topics;
+    }
+
+    const auto channels = mcap_reader_.channels();
+    for (const auto& [id, channel_ptr] : channels) {
+        if (channel_ptr) {
+            topics.push_back(channel_ptr->topic);
+        }
+    }
+    return topics;
+}
+
+auto MCAPTraceFileReader::GetFileMetadata() const -> std::vector<std::pair<std::string, std::unordered_map<std::string, std::string>>> { return file_metadata_; }
+
+auto MCAPTraceFileReader::GetChannelMetadata(const std::string& topic) const -> std::optional<std::unordered_map<std::string, std::string>> {
+    if (!trace_file_.is_open()) {
+        return std::nullopt;
+    }
+
+    const auto channels = mcap_reader_.channels();
+    for (const auto& [id, channel_ptr] : channels) {
+        if (channel_ptr && channel_ptr->topic == topic) {
+            return channel_ptr->metadata;
+        }
+    }
+    return std::nullopt;
+}
+
+auto MCAPTraceFileReader::GetMessageTypeForTopic(const std::string& topic) const -> std::optional<ReaderTopLevelMessage> {
+    if (!trace_file_.is_open()) {
+        return std::nullopt;
+    }
+
+    const auto channels = mcap_reader_.channels();
+    for (const auto& [id, channel_ptr] : channels) {
+        if (channel_ptr && channel_ptr->topic == topic) {
+            const auto schema_ptr = mcap_reader_.schema(channel_ptr->schemaId);
+            if (!schema_ptr) {
+                return std::nullopt;
+            }
+
+            const auto it = deserializer_map_.find(schema_ptr->name);
+            if (it != deserializer_map_.end()) {
+                return it->second.second;
+            }
+            return std::nullopt;
+        }
+    }
+    return std::nullopt;
+}
+
 void MCAPTraceFileReader::OnProblem(const mcap::Status& status) { std::cerr << "ERROR: The following MCAP problem occurred: " << status.message; }
+
+auto MCAPTraceFileReader::TopicMatches(const std::string_view topic) const noexcept -> bool {
+    // Keep this as a manual loop so the MCAP topicFilter callback stays trivially noexcept.
+    for (const auto& candidate : filtered_topics_) {  // NOLINT(readability-use-anyofallof)
+        if (candidate.size() == topic.size() && std::memcmp(candidate.data(), topic.data(), topic.size()) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void MCAPTraceFileReader::ResetMessageIteration() {
+    message_iterator_.reset();
+    message_view_.reset();
+
+    if (!trace_file_.is_open()) {
+        return;
+    }
+
+    message_view_ = std::make_unique<mcap::LinearMessageView>(mcap_reader_.readMessages(OnProblem, mcap_options_));
+    message_iterator_ = std::make_unique<mcap::LinearMessageView::Iterator>(message_view_->begin());
+}
 
 }  // namespace osi3

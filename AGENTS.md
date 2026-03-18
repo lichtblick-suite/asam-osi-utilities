@@ -12,11 +12,13 @@ The C++ library implementation lives in `cpp/src/`, with public headers in `cpp/
 ## Build, Test, and Development Commands
 
 - Update submodules: `git pull --recurse-submodules` (or `git submodule update --init --recursive`).
-- Install hooks/tools: `./scripts/setup-dev.sh` (all platforms; use Git Bash on Windows).
-- Configure with vcpkg: `cmake --preset vcpkg`.
-- Build: `cmake --build --preset vcpkg --parallel`.
-- Run tests: `ctest --test-dir build --output-on-failure`.
-- For linting, ensure `build/compile_commands.json` exists (e.g., `cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON`).
+- Install hooks/tools: `make setup dev` (or `./scripts/setup-dev.sh` directly).
+- Build C++: `make build cpp` (wraps `cmake --preset vcpkg && cmake --build --preset vcpkg --parallel`).
+- Build C++ with tests: `make build cpp tests`.
+- Run tests: `make test` (both C++ + Python) or `make test cpp` / `make test python`.
+- Lint: `make lint` (both C++ + Python) or `make lint cpp` / `make lint python`.
+- Format: `make format` (both C++ + Python).
+- For clang-tidy, ensure `build/compile_commands.json` exists (e.g., `cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON`).
 
 ## Coding Style & Naming Conventions
 
@@ -54,12 +56,9 @@ When creating or updating PRs, agents should follow this sequence:
 3. Ensure every commit is signed (`-s` for DCO and `-S` for GPG).
 4. Fill the PR body using `.github/pull_request_template.md` headings verbatim.
 5. Verify repository links use the canonical path `https://github.com/lichtblick-suite/asam-osi-utilities`.
-6. Keep `.playground/commit-message.md` and `.playground/pre-description.md` updated for every change before committing and before opening/updating a PR.
-
-When generating PR descriptions or commit messages, keep these markdown files in `.playground/` updated:
-
-- PR diff description (detailed `main..HEAD` summary): `.playground/pre-description.md`
-- Commit messages: `.playground/commit-message.md`
+6. Keep the following markdown files in `.playground/` updated before committing and before opening/updating a PR:
+   - PR diff description (detailed `main..HEAD` summary): `.playground/pre-description.md`
+   - Commit messages: `.playground/commit-message.md`
 
 The `.playground/` folder is gitignored and serves as a scratch space for agent-generated artifacts.
 

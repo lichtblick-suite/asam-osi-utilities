@@ -14,11 +14,14 @@ The CI/CD pipeline is split into modular workflow files for clarity and maintain
 | File                | Type         | Description                             |
 | ------------------- | ------------ | --------------------------------------- |
 | `ci.yml`            | Orchestrator | Main workflow that triggers all CI jobs |
-| `ci_format.yml`     | CI           | Code formatting checks                  |
-| `ci_lint.yml`       | CI           | Static analysis with clang-tidy         |
-| `ci_build.yml`      | CI           | Build and test on all platforms         |
+| `ci_cpp_format.yml` | CI           | C++ code formatting checks              |
+| `ci_cpp_lint.yml`   | CI           | C++ static analysis with clang-tidy     |
+| `ci_cpp.yml`        | CI           | C++ build and test on all platforms     |
+| `ci_python.yml`     | CI           | Python lint, test, and package checks   |
 | `ci_compliance.yml` | CI           | DCO and Conventional Commits checks     |
+| `spdx_check.yml`    | CI           | REUSE/SPDX license compliance (standalone) |
 | `cd_docs.yml`       | CD           | Build and deploy documentation          |
+| `cd_release.yml`    | CD           | Create releases and publish to PyPI     |
 
 ## Naming Convention
 
@@ -29,7 +32,7 @@ The CI/CD pipeline is split into modular workflow files for clarity and maintain
 
 ### On Pull Request
 
-When a PR is opened or updated against `main` or `develop`:
+When a PR is opened or updated against `main`:
 
 1. **Format Check** - Verify code follows clang-format style
 2. **Lint** - Run clang-tidy static analysis
@@ -43,13 +46,13 @@ When a PR is opened or updated against `main` or `develop`:
 When code is pushed to `main`:
 
 1. All CI checks run
-2. **Documentation Deployment** - Build and deploy Doxygen docs to GitHub Pages
+2. **Documentation Deployment** - Build and deploy Sphinx docs (Doxygen XML + Breathe) to GitHub Pages
 
 ## Workflow Details
 
-### ci_format.yml - Format Check
+### ci_cpp_format.yml - Format Check
 
-Verifies C++ code formatting using clang-format-18.
+Verifies C++ code formatting using the repository's pinned clang-format major version (`18`).
 
 ```yaml
 # Checks files in: cpp/src/, cpp/include/, cpp/tests/, cpp/examples/
@@ -59,7 +62,7 @@ xargs clang-format-18 --dry-run --Werror
 
 **Fails if:** Any file is not properly formatted.
 
-### ci_lint.yml - Static Analysis
+### ci_cpp_lint.yml - Static Analysis
 
 Runs clang-tidy via the pre-commit hook (clang-tidy is opt-in by default in hooks).
 
@@ -67,12 +70,12 @@ Runs clang-tidy via the pre-commit hook (clang-tidy is opt-in by default in hook
 cmake --preset base -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build --preset base --parallel
 bash scripts/setup-dev.sh
-.git/hooks/pre-commit --all-files --run-tidy --skip-format
+$(git rev-parse --git-path hooks)/pre-commit --all-files --run-tidy --skip-format
 ```
 
 **Fails if:** Any clang-tidy warning is emitted.
 
-### ci_build.yml - Build Matrix
+### ci_cpp.yml - Build Matrix
 
 Builds the project on multiple platforms and configurations:
 
@@ -118,7 +121,7 @@ On Ubuntu 24.04 with GCC, code coverage is collected and uploaded to Codecov.
 
 ### cd_docs.yml - Documentation Deployment
 
-Builds Doxygen documentation and deploys to GitHub Pages:
+Builds unified documentation (Doxygen XML → Sphinx HTML via Breathe) and deploys to GitHub Pages:
 
 1. Configure CMake with `-DOSIUTILITIES_DOCS_ONLY=ON` (docs-only configuration)
 2. Build `library_api_doc` target
@@ -165,16 +168,22 @@ Before pushing, you can run most CI checks locally:
 ### Format Check
 
 ```bash
-find cpp/src cpp/include cpp/tests cpp/examples -name "*.cpp" -o -name "*.h" | \
-  xargs clang-format --dry-run --Werror
+make lint cpp
 ```
 
 ### Build and Test
 
 ```bash
-cmake --preset vcpkg
-cmake --build --preset vcpkg --parallel
-ctest --test-dir build-vcpkg --output-on-failure
+make build cpp tests
+make test cpp
+```
+
+### Python Lint and Test
+
+```bash
+make setup
+make lint python
+make test python
 ```
 
 On Windows:
@@ -186,7 +195,7 @@ On Windows:
 
 ### CI Fails but Local Passes
 
-- Ensure you're using the same clang-format version (18)
+- Ensure `scripts/resolve-clang-format.sh` resolves clang-format `18.x` locally
 - Check that all submodules are initialized
 - Verify you're building with the same CMake preset
 

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
-name: Build
+name: C++ Build
 
 on:
   workflow_call:
@@ -17,6 +17,10 @@ on:
         default: ''
         type: string
 
+env:
+  YQ_VERSION: v4.52.2
+  YQ_SHA256: a74bd266990339e0c48a2103534aef692abf99f19390d12c2b0ce6830385c459
+
 jobs:
   # ===========================================================================
   # Ubuntu with system packages (compatibility path)
@@ -24,6 +28,7 @@ jobs:
   ubuntu:
     name: Ubuntu ${{ matrix.ubuntu }} (${{ matrix.compiler }}, system-compat)
     runs-on: ubuntu-${{ matrix.ubuntu }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -46,8 +51,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          YQ_VERSION=v4.52.2
-          sudo curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
+          sudo curl --fail -L -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/yq_linux_amd64"
+          echo "${{ env.YQ_SHA256 }}  /usr/local/bin/yq" | sha256sum -c -
           sudo chmod +x /usr/local/bin/yq
           yq -r '.ci_jobs.ubuntu_build.apt' .github/dependencies.yml | xargs sudo apt-get install -y
 
@@ -93,6 +98,7 @@ jobs:
   ubuntu-vcpkg:
     name: Ubuntu (vcpkg)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
@@ -153,6 +159,7 @@ jobs:
   windows-vcpkg:
     name: Windows (MSVC, vcpkg default)
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
         with:
@@ -191,6 +198,7 @@ jobs:
   windows-vcpkg-static-md:
     name: Windows (MSVC, vcpkg static-md)
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
         with:
@@ -253,6 +261,7 @@ jobs:
   macos-vcpkg:
     name: macOS (vcpkg, ${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
