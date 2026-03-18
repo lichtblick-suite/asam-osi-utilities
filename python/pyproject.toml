@@ -67,21 +67,16 @@ path = "../vcpkg.json"
 pattern = '"version-string":\s*"(?P<version>[^"]+)"'
 
 # ---------------------------------------------------------------------------
-# Hatch build: include vendored osi3 protobuf bindings
-# The 'make vendor-osi3' target copies osi3/ from the submodule before build.
+# Hatch build: include vendored osi3 protobuf bindings when present.
+# Run 'make vendor-osi3' before 'make package' to vendor osi3 into the wheel.
+# For editable/path installs, osi3 is expected from osi-python (a peer dep).
 # ---------------------------------------------------------------------------
 [tool.hatch.build.targets.wheel]
-packages = ["osi_utilities"]
+packages = ["osi_utilities", "osi3"]
 exclude = ["*.proto"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"osi3" = "osi3"
 
 [tool.hatch.build.targets.sdist]
 include = ["osi_utilities/", "tests/", "README.md", "pyproject.toml"]
-
-[tool.hatch.build.targets.sdist.force-include]
-"osi3" = "osi3"
 
 # ---------------------------------------------------------------------------
 # Tool configuration
