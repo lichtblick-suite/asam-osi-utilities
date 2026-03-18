@@ -36,6 +36,11 @@ jobs:
 
       - name: Build Python package
         run: |
+          # Append .devN suffix so each push gets a unique TestPyPI version
+          VERSION=$(python -c "import json; print(json.load(open('vcpkg.json'))['version-string'])")
+          DEV_VERSION="${VERSION}.dev${{ github.run_number }}"
+          sed -i "s/\"version-string\": \"${VERSION}\"/\"version-string\": \"${DEV_VERSION}\"/" vcpkg.json
+          echo "TestPyPI version: ${DEV_VERSION}"
           make setup
           cd python && make package
 
