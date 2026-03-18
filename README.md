@@ -20,22 +20,21 @@ A C++ and Python utility library for working with [ASAM Open Simulation Interfac
 # Clone with submodules
 git clone https://github.com/lichtblick-suite/asam-osi-utilities.git
 cd asam-osi-utilities
-
-# Init submodules once after cloning
 git submodule update --init --recursive
 
-# Update after remote changes
-git pull --recurse-submodules
+# Build (uses vcpkg preset — recommended)
+make build cpp
 
-# Build with vcpkg (recommended)
-cmake --preset vcpkg
-cmake --build --preset vcpkg --parallel
+# Build with tests
+make build cpp tests
 
-# Run tests (configure with -DBUILD_TESTING=ON to build them)
-ctest --test-dir build-vcpkg --output-on-failure
+# Run tests
+make test cpp
 ```
 
 > **Note:** First build takes 10-15 minutes as vcpkg compiles dependencies from source.
+>
+> Power users can call cmake directly: `cmake --preset vcpkg && cmake --build --preset vcpkg --parallel`
 
 ### Python
 
@@ -46,17 +45,9 @@ pip install asam-osi-utilities
 Or from source:
 
 ```bash
-cd python
-make setup  # creates venv + installs in editable mode
-make test   # run tests
-```
-
-```python
-from osi_utilities.tracefile import open_trace_file
-
-with open_trace_file("trace.mcap") as reader:
-    for result in reader:
-        print(result.message_type, result.channel_name)
+# From the repository root
+make setup          # creates venv + installs all dependencies
+make test python    # run Python tests
 ```
 
 ## Features
@@ -84,14 +75,22 @@ with open_trace_file("trace.mcap") as reader:
 
 ## Examples
 
-See [cpp/examples/](cpp/examples/README.md) for C++ usage examples:
+Both the C++ and Python SDKs ship with matching examples covering all supported formats (MCAP, binary `.osi`, text `.txth`), format conversion, and benchmarks.
 
-- `example_mcap_reader` / `example_mcap_writer` - MCAP trace file I/O
-- `example_single_channel_binary_reader` / `example_single_channel_binary_writer` - Binary `.osi` files
-- `example_txth_reader` / `example_txth_writer` - Human-readable `.txth` files
-- `convert_osi2mcap` - Convert `.osi` files to `.mcap` format
+| C++ | Python | Description |
+|-----|--------|-------------|
+| `example_mcap_writer` | `example_mcap_writer.py` | Write MCAP trace files |
+| `example_mcap_reader` | `example_mcap_reader.py` | Read MCAP with metadata inspection and topic filtering |
+| `example_single_channel_binary_writer` | `example_single_channel_binary_writer.py` | Write binary `.osi` files |
+| `example_single_channel_binary_reader` | `example_single_channel_binary_reader.py` | Read binary `.osi` files |
+| `example_txth_writer` | `example_txth_writer.py` | Write human-readable `.txth` files |
+| `example_txth_reader` | `example_txth_reader.py` | Read `.txth` files |
+| `example_mcap_multi_channel_writer` | `example_mcap_multi_channel_writer.py` | Multi-topic MCAP with mixed channels |
+| `convert_osi2mcap` | `convert_osi2mcap.py` | Convert `.osi` → `.mcap` |
+| — | `example_reader_factory.py` | Format auto-detection and timestamp utilities |
+| `benchmark` | `benchmark.py` | Throughput benchmark for all formats |
 
-See [python/README.md](python/README.md) for Python SDK usage.
+See [cpp/examples/README.md](cpp/examples/README.md) and [python/examples/README.md](python/examples/README.md) for full details.
 
 ## Requirements
 

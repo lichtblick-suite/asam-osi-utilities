@@ -4,7 +4,7 @@
 # Makefile for asam-osi-utilities
 # Build command center for all development tasks (C++ and Python).
 #
-# Local development:  make setup dev && make lint && make test
+# Local development:  make setup dev && make build cpp && make test
 # CI:                 make setup && make lint python / make test python / ...
 #
 # NOTE: Recipes use POSIX shell syntax.  On Windows, run make from
@@ -31,6 +31,7 @@ endif
 
 # CMake preset for docs-only builds (no library/test compilation needed)
 CMAKE_DOCS_PRESET ?= base
+CMAKE_BUILD_PRESET ?= vcpkg
 CMAKE_TEST_PRESET ?= vcpkg
 CTEST_TEST_DIR ?= build-vcpkg
 CTEST_CONFIG ?= Release
@@ -48,26 +49,27 @@ define check_venv
 	fi
 endef
 
-.PHONY: all help setup lint format test docs run clean \
-	build cpp dev python serve \
-	_help_main _help_setup _help_lint _help_format _help_test _help_docs _help_run _help_clean \
+.PHONY: all help setup build lint format test docs run clean \
+	cpp dev python serve \
+	_help_main _help_setup _help_build _help_lint _help_format _help_test _help_docs _help_run _help_clean \
 	_setup _setup_dev _setup_docs \
+	_build_cpp _build_cpp_tests \
 	_lint _lint_cpp _lint_python _format _format_cpp _format_python \
 	_test _test_cpp _test_python \
 	_docs_build _run_docs \
 	_clean _clean_docs \
-	setup-dev setup-docs lint-cpp lint-python format-cpp format-python test-cpp test-python docs-build docs-serve clean-docs
+	setup-dev setup-docs build-cpp build-cpp-tests lint-cpp lint-python format-cpp format-python test-cpp test-python docs-build docs-serve clean-docs
 
-PUBLIC_GROUPS := help setup lint format test docs run clean
+PUBLIC_GROUPS := help setup build lint format test docs run clean
 FIRST_GOAL := $(firstword $(MAKECMDGOALS))
 SUBCOMMAND := $(word 2,$(MAKECMDGOALS))
 EXTRA_SUBCOMMANDS := $(wordlist 3,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 DISPATCH_CONTEXT := $(filter $(FIRST_GOAL),$(PUBLIC_GROUPS))
 
 # These are placeholders so grouped commands such as `make lint cpp` work as intended.
-build cpp dev python serve:
+cpp dev python serve tests:
 	@if [ "$(FIRST_GOAL)" = "$@" ]; then \
-		echo "[ERR] '$@' is a subcommand placeholder. Use a grouped command such as 'make lint cpp' or 'make docs build'."; \
+		echo "[ERR] '$@' is a subcommand placeholder. Use a grouped command such as 'make build cpp' or 'make lint cpp'."; \
 		exit 1; \
 	fi
 
@@ -159,6 +161,49 @@ _setup_docs: $(PYTHON)
 		rm -rf python/osi3; \
 	fi
 	@echo "[OK] Documentation dependencies ready"
+
+# ===========================================================================
+# Build targets
+# ===========================================================================
+
+# Configure and build C++ library + examples using the vcpkg preset.
+# This is the default happy-path build for contributors.
+# Power users can call cmake directly with custom presets/flags.
+_build_cpp:
+	@echo "[INFO] Building C++ library (preset: $(CMAKE_BUILD_PRESET))..."
+	@cmake --preset $(CMAKE_BUILD_PRESET) && \
+		cmake --build --preset $(CMAKE_BUILD_PRESET) --parallel
+	@echo "[OK] C++ build complete"
+
+# Configure and build C++ library + examples + tests.
+_build_cpp_tests:
+	@echo "[INFO] Building C++ library with tests (preset: $(CMAKE_BUILD_PRESET))..."
+	@cmake --preset $(CMAKE_BUILD_PRESET) -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests && \
+		cmake --build --preset $(CMAKE_BUILD_PRESET) --parallel
+	@echo "[OK] C++ build with tests complete"
+
+build:
+	@if [ -n "$(DISPATCH_CONTEXT)" ] && [ "$(FIRST_GOAL)" != "build" ]; then \
+		:; \
+	elif [ -n "$(strip $(EXTRA_SUBCOMMANDS))" ]; then \
+		if [ "$(SUBCOMMAND)" = "cpp" ] && [ "$(word 3,$(MAKECMDGOALS))" = "tests" ] && [ -z "$(word 4,$(MAKECMDGOALS))" ]; then \
+			"$(MAKE)" --no-print-directory _build_cpp_tests; \
+		else \
+			echo "[ERR] Too many build subcommands: $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))"; \
+			"$(MAKE)" --no-print-directory _help_build; \
+			exit 1; \
+		fi; \
+	elif [ -z "$(SUBCOMMAND)" ]; then \
+		"$(MAKE)" --no-print-directory _build_cpp; \
+	elif [ "$(SUBCOMMAND)" = "cpp" ]; then \
+		"$(MAKE)" --no-print-directory _build_cpp; \
+	elif [ "$(SUBCOMMAND)" = "help" ]; then \
+		"$(MAKE)" --no-print-directory _help_build; \
+	else \
+		echo "[ERR] Unknown build subcommand: $(SUBCOMMAND)"; \
+		"$(MAKE)" --no-print-directory _help_build; \
+		exit 1; \
+	fi
 
 # ===========================================================================
 # Linting and formatting
@@ -384,6 +429,12 @@ _help_main:
 	@echo "  make setup docs     - Install docs-only Python dependencies"
 	@echo "  make setup help     - Show setup subcommands"
 	@echo ""
+	@echo "Build:"
+	@echo "  make build          - Build C++ library + examples (vcpkg preset)"
+	@echo "  make build cpp      - Build C++ library + examples"
+	@echo "  make build cpp tests - Build C++ library + examples + tests"
+	@echo "  make build help     - Show build subcommands"
+	@echo ""
 	@echo "Lint:"
 	@echo "  make lint           - Run all linters (C++ format + Python ruff)"
 	@echo "  make lint cpp       - Run C++ format checks"
@@ -424,6 +475,15 @@ _help_setup:
 	@echo "  make setup dev      - Install Git hooks after setup"
 	@echo "  make setup docs     - Install docs-only Python dependencies"
 	@echo "  make setup help     - Show this help"
+
+_help_build:
+	@echo "Build subcommands:"
+	@echo "  make build          - Build C++ library + examples (vcpkg preset)"
+	@echo "  make build cpp      - Build C++ library + examples"
+	@echo "  make build cpp tests - Build C++ library + examples + tests"
+	@echo "  make build help     - Show this help"
+	@echo ""
+	@echo "Override the cmake preset:  CMAKE_BUILD_PRESET=base make build cpp"
 
 _help_lint:
 	@echo "Lint subcommands:"
@@ -466,6 +526,8 @@ _help_clean:
 # Backward-compatible aliases for CI and existing automation.
 setup-dev: _setup_dev
 setup-docs: _setup_docs
+build-cpp: _build_cpp
+build-cpp-tests: _build_cpp_tests
 lint-cpp: _lint_cpp
 lint-python: _lint_python
 format-cpp: _format_cpp
