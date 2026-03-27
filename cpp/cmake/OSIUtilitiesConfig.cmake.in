@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+# SPDX-License-Identifier: MPL-2.0
+#
+# OSIUtilitiesConfig.cmake.in — Package configuration for find_package(OSIUtilities)
+#
+# Provides the following imported targets:
+#   OSIUtilities::OSIUtilities — The OSI utilities library (tracefile readers/writers)
+#
+# Transitive dependencies (automatically available via the target):
+#   - open_simulation_interface (OSI C++ bindings + protobuf)
+#   - MCAP headers
+#   - LZ4 and ZSTD compression libraries
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Find OSI (provides open_simulation_interface::* targets and transitively protobuf).
+# osi-cpp installs its cmake config to:
+#   - CMake/open_simulation_interface-<major>/  on Windows
+#   - lib/cmake/open_simulation_interface-<major>/  on Unix
+# The Windows path is non-standard, so we add both the install prefix and its CMake/
+# subdirectory to CMAKE_PREFIX_PATH to ensure find_package can locate it.
+list(APPEND CMAKE_PREFIX_PATH "${PACKAGE_PREFIX_DIR}" "${PACKAGE_PREFIX_DIR}/CMake")
+find_dependency(open_simulation_interface)
+
+# Find compression libraries needed by MCAP support.
+# Ship our FindCompression module alongside the config so consumers can locate lz4/zstd
+# the same way we do.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+include(FindCompression)
+find_compression_libraries()
+if (NOT COMPRESSION_FOUND)
+    set(${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+        "OSIUtilities requires LZ4 and ZSTD compression libraries")
+    return()
+endif ()
+
+# Include the exported targets
+include("${CMAKE_CURRENT_LIST_DIR}/OSIUtilitiesTargets.cmake")
+
+check_required_components(OSIUtilities)
