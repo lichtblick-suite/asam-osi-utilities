@@ -481,5 +481,6 @@ git submodule update --init --recursive
 
 ## Next Steps
 
+- [Integration Guide](integration.md) - Use OSIUtilities in your downstream project
 - [Development Setup](development.md) - Configure your development environment
 - [Examples](examples.md) - Learn how to use the library
