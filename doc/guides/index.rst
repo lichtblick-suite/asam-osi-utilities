@@ -8,6 +8,7 @@ Guides
    :maxdepth: 2
 
    ../building
+   ../integration
    ../setup
    ../development
    ../contributing
