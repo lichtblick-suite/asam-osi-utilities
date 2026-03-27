@@ -41,16 +41,18 @@ function(find_compression_libraries)
 
     # Fallback to pkg-config if CONFIG mode didn't find targets
     if (NOT LZ4_TARGET_LOCAL OR NOT ZSTD_TARGET_LOCAL)
-        find_package(PkgConfig REQUIRED)
-        
-        if (NOT LZ4_TARGET_LOCAL)
-            pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
-            set(LZ4_TARGET_LOCAL PkgConfig::lz4)
-        endif ()
-        
-        if (NOT ZSTD_TARGET_LOCAL)
-            pkg_check_modules(zstd REQUIRED IMPORTED_TARGET libzstd)
-            set(ZSTD_TARGET_LOCAL PkgConfig::zstd)
+        find_package(PkgConfig QUIET)
+
+        if (PkgConfig_FOUND)
+            if (NOT LZ4_TARGET_LOCAL)
+                pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
+                set(LZ4_TARGET_LOCAL PkgConfig::lz4)
+            endif ()
+
+            if (NOT ZSTD_TARGET_LOCAL)
+                pkg_check_modules(zstd REQUIRED IMPORTED_TARGET libzstd)
+                set(ZSTD_TARGET_LOCAL PkgConfig::zstd)
+            endif ()
         endif ()
     endif ()
 
