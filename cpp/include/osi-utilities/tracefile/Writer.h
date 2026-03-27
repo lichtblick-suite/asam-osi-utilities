@@ -6,7 +6,10 @@
 #ifndef OSIUTILITIES_TRACEFILE_WRITER_H_
 #define OSIUTILITIES_TRACEFILE_WRITER_H_
 
+#include <google/protobuf/message.h>
+
 #include <filesystem>
+#include <memory>
 #include <string>
 
 namespace osi3 {
@@ -17,8 +20,12 @@ namespace osi3 {
  * This class provides an interface for writing protobuf messages to trace files.
  * Different implementations can support various file formats like .osi, .mcap or .txth.
  *
- * @note The WriteMessage() function is intentionally omitted from this base class since it is format-specific.
- * Users should dynamically cast to the concrete implementation class to access the appropriate WriteMessage() function.
+ * The WriteMessage() method accepts any protobuf message via the type-erased
+ * google::protobuf::Message base class. For MCAP format, the topic parameter
+ * selects the channel; for single-channel formats (.osi, .txth) it is ignored.
+ *
+ * Concrete implementations also provide template<typename T> WriteMessage()
+ * overloads for compile-time type safety when the message type is known.
  *
  * @note Thread Safety: Instances are **not** thread-safe.
  * Concurrent calls on the same writer must be externally synchronized.
@@ -54,9 +61,50 @@ class TraceFileWriter {
     virtual bool Open(const std::filesystem::path& file_path) = 0;
 
     /**
+     * @brief Writes a protobuf message to the trace file
+     *
+     * Type-erased write method that accepts any protobuf message. The behavior
+     * of the topic parameter depends on the writer implementation:
+     * - **MCAP**: topic selects the channel. If the topic has not been registered
+     *   via AddChannel(), it is auto-registered using the message's descriptor.
+     *   Required file metadata is also auto-added on first write if not set.
+     * - **Binary (.osi)** and **Text (.txth)**: topic is ignored (single-channel formats).
+     *
+     * @param message The protobuf message to write
+     * @param topic Channel/topic name (required for MCAP, ignored for .osi/.txth)
+     * @return true if successful, false otherwise
+     */
+    virtual bool WriteMessage(const google::protobuf::Message& message, const std::string& topic = "") = 0;
+
+    /**
      * @brief Closes the trace file
      */
     virtual void Close() = 0;
+};
+
+/**
+ * @brief Factory class for creating trace file writers based on file extensions
+ *
+ * Mirrors TraceFileReaderFactory. Creates the appropriate writer implementation
+ * based on the file extension, allowing format-agnostic writing through the
+ * TraceFileWriter base class.
+ */
+class TraceFileWriterFactory {
+   public:
+    /**
+     * @brief Creates a writer instance based on the file extension
+     * @param file_path Path to the trace file
+     * @return Unique pointer to a TraceFileWriter instance
+     * @throws std::invalid_argument if the file extension is not supported
+     *
+     * Supported formats:
+     * - .osi: Single channel binary format (SingleChannelBinaryTraceFileWriter)
+     * - .txth: Single channel human-readable format (TXTHTraceFileWriter)
+     * - .mcap: Multi channel binary format (MCAPTraceFileWriter)
+     *
+     * @note It is still required to call Open(path) on the returned writer instance
+     */
+    static std::unique_ptr<TraceFileWriter> createWriter(const std::filesystem::path& file_path);
 };
 
 }  // namespace osi3

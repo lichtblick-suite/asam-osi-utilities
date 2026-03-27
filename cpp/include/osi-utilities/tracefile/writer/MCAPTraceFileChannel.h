@@ -71,7 +71,20 @@ class MCAPTraceFileChannel {
     MCAPTraceFileChannel& operator=(MCAPTraceFileChannel&&) = delete;
 
     /**
-     * @brief Writes a protobuf message to the file
+     * @brief Writes a protobuf message to the file (type-erased)
+     *
+     * Uses protobuf reflection to serialize the message and extract its timestamp.
+     * If the topic has not been registered via AddChannel(), it is auto-registered
+     * using the message's protobuf descriptor.
+     *
+     * @param message The protobuf message to write
+     * @param topic Topic name (must not be empty)
+     * @return true if successful, false otherwise
+     */
+    bool WriteMessage(const google::protobuf::Message& message, const std::string& topic);
+
+    /**
+     * @brief Writes a protobuf message to the file (compile-time typed)
      * @tparam T Type of the OSI protobuf message (must have timestamp() method)
      * @param top_level_message The message to write
      * @param topic Topic name (must match a previously added channel)

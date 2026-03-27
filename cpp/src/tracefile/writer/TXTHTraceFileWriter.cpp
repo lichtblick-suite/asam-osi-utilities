@@ -70,6 +70,26 @@ auto TXTHTraceFileWriter::WriteMessage(const T& top_level_message) -> bool {
     return true;
 }
 
+auto TXTHTraceFileWriter::WriteMessage(const google::protobuf::Message& message, const std::string& /*topic*/) -> bool {
+    if (!(trace_file_ && trace_file_.is_open())) {
+        std::cerr << "ERROR: Cannot write message, file is not open\n";
+        return false;
+    }
+
+    google::protobuf::io::OstreamOutputStream output_stream(&trace_file_);
+    if (!google::protobuf::TextFormat::Print(message, &output_stream)) {
+        std::cerr << "ERROR: Failed to convert message to text format\n";
+        return false;
+    }
+
+    if (!trace_file_.good()) {
+        std::cerr << "ERROR: Failed to write text message to file\n";
+        return false;
+    }
+
+    return true;
+}
+
 // Template instantiations for allowed OSI top-level messages
 template bool TXTHTraceFileWriter::WriteMessage<osi3::GroundTruth>(const osi3::GroundTruth&);
 template bool TXTHTraceFileWriter::WriteMessage<osi3::SensorData>(const osi3::SensorData&);
