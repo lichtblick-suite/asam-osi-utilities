@@ -3,6 +3,15 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+// Suppress deprecation warning — this is the implementation of the deprecated class
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+
 #include "osi-utilities/tracefile/reader/TXTHTraceFileReader.h"
 
 #include <filesystem>
@@ -120,3 +129,9 @@ auto TXTHTraceFileReader::ReadNextMessageFromFile() -> std::string {
 }
 
 }  // namespace osi3
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif

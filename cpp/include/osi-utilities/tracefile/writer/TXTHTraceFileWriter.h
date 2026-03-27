@@ -18,9 +18,15 @@ namespace osi3 {
  * This class provides functionality to write OSI messages to text format files.
  * It converts protobuf messages to their text representation for human-readable storage.
  *
+ * @deprecated The `.txth` text format is intended for human consumption only (debugging,
+ * manual inspection). According to the OSI specification, it is "not unambiguously
+ * deserializable" — protobuf text format output is not guaranteed to be stable across
+ * library versions, and round-tripping (write then read) is unreliable. Prefer `.osi`
+ * (binary) for single-channel or `.mcap` for multi-channel trace files.
+ *
  * @note Thread Safety: Not thread-safe. External synchronization required for concurrent access.
  */
-class TXTHTraceFileWriter final : public TraceFileWriter {
+class [[deprecated("txth format is not reliably deserializable; use .osi or .mcap instead")]] TXTHTraceFileWriter final : public TraceFileWriter {
    public:
     /** @brief Destructor, closes the file if still open */
     ~TXTHTraceFileWriter() override;
