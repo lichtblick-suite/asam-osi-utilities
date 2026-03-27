@@ -31,9 +31,15 @@ namespace osi3 {
  * This class provides functionality to read and parse OSI messages from text format files.
  * It supports various OSI message types and handles their parsing using Google's protobuf TextFormat.
  *
+ * @deprecated The `.txth` text format is not reliably deserializable. The OSI specification
+ * states that it is "not unambiguously deserializable" — protobuf text format output is not
+ * guaranteed to be stable across library versions, field ordering may change, and float/double
+ * precision varies. Round-tripping (write then read) can silently lose data. Prefer `.osi`
+ * (binary) for single-channel or `.mcap` for multi-channel trace files.
+ *
  * @note Thread Safety: Not thread-safe. External synchronization required for concurrent access.
  */
-class TXTHTraceFileReader final : public TraceFileReader {
+class [[deprecated("txth format is not reliably deserializable; use .osi or .mcap instead")]] TXTHTraceFileReader final : public TraceFileReader {
     /**
      * @brief Function type for parsing protobuf TextFormat strings into protobuf objects
      */

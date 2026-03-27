@@ -11,6 +11,15 @@
 #include "osi-utilities/tracefile/Reader.h"
 #include "osi-utilities/tracefile/reader/MCAPTraceFileReader.h"
 #include "osi-utilities/tracefile/reader/SingleChannelBinaryTraceFileReader.h"
+
+// Suppress deprecation warning — factory tests verify TXTH dispatch
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
 #include "osi-utilities/tracefile/reader/TXTHTraceFileReader.h"
 #include "osi-utilities/tracefile/writer/MCAPTraceFileWriter.h"
 #include "osi-utilities/tracefile/writer/SingleChannelBinaryTraceFileWriter.h"
