@@ -73,7 +73,15 @@ if (NOT OSIUTILITIES_DOCS_ONLY)
                 "Run: git submodule update --init --recursive")
     endif ()
     message(STATUS "Using bundled osi-cpp submodule at ${OSI_CPP_DIR}")
-    add_subdirectory(${OSI_CPP_DIR} ${CMAKE_BINARY_DIR}/osi-cpp EXCLUDE_FROM_ALL)
+    add_subdirectory(${OSI_CPP_DIR} ${CMAKE_BINARY_DIR}/osi-cpp)
+
+    # osi-cpp's shared library target does not declare dllexport symbols, so on
+    # Windows MSVC no import library (.lib) is generated.  Setting this property
+    # makes CMake auto-export every symbol so the import lib is always produced.
+    if(WIN32 AND TARGET open_simulation_interface)
+        set_target_properties(open_simulation_interface PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    endif()
+
     get_directory_property(OSI_VERSION_MAJOR DIRECTORY ${OSI_CPP_DIR} DEFINITION VERSION_MAJOR)
     get_directory_property(OSI_VERSION_MINOR DIRECTORY ${OSI_CPP_DIR} DEFINITION VERSION_MINOR)
     get_directory_property(OSI_VERSION_PATCH DIRECTORY ${OSI_CPP_DIR} DEFINITION VERSION_PATCH)
