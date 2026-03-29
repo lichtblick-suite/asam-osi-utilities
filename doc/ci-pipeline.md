@@ -86,8 +86,10 @@ Builds the project on multiple platforms and configurations:
 | Ubuntu 24.04     | GCC         | Manual deps                       |
 | Ubuntu 24.04     | Clang       | Manual deps                       |
 | Ubuntu Latest    | -           | vcpkg                             |
+| Ubuntu Latest    | -           | vcpkg, shared OSI (`LINK_WITH_SHARED_OSI=ON`) |
 | Windows Latest   | MSVC        | vcpkg (default preset)            |
 | Windows Latest   | MSVC        | vcpkg-windows-static-md (packaging-oriented coverage) |
+| Windows Latest   | MSVC        | vcpkg, shared OSI (`LINK_WITH_SHARED_OSI=ON`) |
 | macOS 15 (x64)   | Apple Clang | vcpkg                             |
 | macOS 14 (arm64) | Apple Clang | vcpkg                             |
 
@@ -95,6 +97,11 @@ Windows preset difference in CI:
 
 - `vcpkg` job: compatibility coverage using the default preset/triplet resolution on Windows runners.
 - `vcpkg-windows-static-md` job: additional coverage for static-library-oriented packaging with dynamic MSVC runtime.
+
+Shared OSI coverage:
+
+- `ubuntu-vcpkg-shared` job: validates `LINK_WITH_SHARED_OSI=ON` produces a working shared library and all tests pass.
+- `windows-vcpkg-shared` job: validates shared OSI DLL generation on Windows (with `WINDOWS_EXPORT_ALL_SYMBOLS`).
 
 ### Unit Tests (in ci_build.yml)
 

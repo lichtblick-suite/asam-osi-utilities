@@ -292,6 +292,74 @@ instead:
 cmake ... -DLINK_WITH_SHARED_OSI=ON
 ```
 
+Or use the `vcpkg-shared` preset:
+
+```bash
+cmake --preset vcpkg-shared -DBUILD_TESTING=ON
+cmake --build --preset vcpkg-shared --parallel
+```
+
+#### When to use shared linking
+
+Dynamic linking is required when **multiple libraries in the same process** each
+need OSI/protobuf. If two libraries statically link their own copy of protobuf,
+the duplicate global state (descriptor pools, generated message registries) causes
+crashes or undefined behavior. The solution: both libraries link the same shared
+OSI and protobuf libraries at runtime.
+
+Typical scenario:
+- Your application loads `libA.so` and `libB.so`
+- Both use OSI messages
+- Both must link against the **same** `libopen_simulation_interface.so` and
+  `libprotobuf.so` to avoid duplicate registration
+
+#### Runtime library discovery
+
+When built with `LINK_WITH_SHARED_OSI=ON`, the shared OSI library must be
+findable at runtime.
+
+**Linux:**
+
+```bash
+# Option 1: Set LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/path/to/install/lib:$LD_LIBRARY_PATH
+./my_app
+
+# Option 2: Install to a system path and run ldconfig
+sudo cp libopen_simulation_interface.so* /usr/local/lib/
+sudo ldconfig
+
+# Option 3: Use RPATH (set at build time — CMake does this by default for
+# installed targets when CMAKE_INSTALL_RPATH is configured)
+```
+
+**macOS:**
+
+```bash
+export DYLD_LIBRARY_PATH=/path/to/install/lib:$DYLD_LIBRARY_PATH
+./my_app
+```
+
+**Windows:**
+
+Place `open_simulation_interface.dll` (and `libprotobuf.dll` if protobuf is
+also shared) in one of:
+- The same directory as the `.exe`
+- A directory listed in the `PATH` environment variable
+
+#### What the consumer CMake code looks like
+
+The consumer-facing API is **identical** regardless of static or shared linking:
+
+```cmake
+find_package(OSIUtilities REQUIRED)
+target_link_libraries(my_app PRIVATE OSIUtilities::OSIUtilities)
+```
+
+CMake handles the transitivity automatically. The only difference is whether the
+OSI and protobuf symbols come from static archives or shared libraries at link
+time.
+
 ---
 
 ## Dependency Visibility Reference

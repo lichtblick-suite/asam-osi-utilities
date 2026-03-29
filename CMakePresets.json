@@ -39,6 +39,14 @@
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
       }
+    },
+    {
+      "name": "vcpkg-shared",
+      "description": "Build with shared (dynamic) OSI library linking",
+      "inherits": "vcpkg",
+      "cacheVariables": {
+        "LINK_WITH_SHARED_OSI": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -55,6 +63,11 @@
     {
       "name": "vcpkg-windows-static-md",
       "configurePreset": "vcpkg-windows-static-md",
+      "configuration": "Release"
+    },
+    {
+      "name": "vcpkg-shared",
+      "configurePreset": "vcpkg-shared",
       "configuration": "Release"
     },
     {
