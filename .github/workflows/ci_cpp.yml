@@ -196,7 +196,13 @@ jobs:
 
       - name: Run Tests
         working-directory: build-vcpkg
-        run: ctest --output-on-failure --parallel $(nproc)
+        run: |
+          # The shared OSI .so lives in a osi-cpp subdirectory of the build tree.
+          # Set LD_LIBRARY_PATH so the test binary can find it at runtime.
+          OSI_LIB_DIR=$(dirname "$(find . -name 'libopen_simulation_interface.so.*' | head -1)")
+          echo "Setting LD_LIBRARY_PATH=$OSI_LIB_DIR"
+          export LD_LIBRARY_PATH="$OSI_LIB_DIR:${LD_LIBRARY_PATH:-}"
+          ctest --output-on-failure --parallel $(nproc)
 
   # ===========================================================================
   # macOS with vcpkg — shared OSI linking
@@ -241,7 +247,13 @@ jobs:
 
       - name: Run Tests
         working-directory: build-vcpkg
-        run: ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
+        run: |
+          # The shared OSI .dylib lives in a osi-cpp subdirectory of the build tree.
+          # Set DYLD_LIBRARY_PATH so the test binary can find it at runtime.
+          OSI_LIB_DIR=$(dirname "$(find . -name 'libopen_simulation_interface*.dylib' | head -1)")
+          echo "Setting DYLD_LIBRARY_PATH=$OSI_LIB_DIR"
+          export DYLD_LIBRARY_PATH="$OSI_LIB_DIR:${DYLD_LIBRARY_PATH:-}"
+          ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
 
   # ===========================================================================
   # Windows with vcpkg (default preset / compatibility coverage)
