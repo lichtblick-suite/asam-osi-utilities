@@ -39,7 +39,18 @@ class SingleChannelBinaryTraceFileWriter final : public TraceFileWriter {
     void Close() override;
 
     /**
-     * @brief Writes a protobuf message to the file
+     * @brief Writes a protobuf message to the file (type-erased, virtual)
+     *
+     * The topic parameter is ignored for this single-channel format.
+     *
+     * @param message The protobuf message to write
+     * @param topic Ignored (single-channel format)
+     * @return true if successful, false otherwise
+     */
+    bool WriteMessage(const google::protobuf::Message& message, const std::string& topic = "") override;
+
+    /**
+     * @brief Writes a protobuf message to the file (compile-time typed)
      * @tparam T Type of the protobuf message
      * @param top_level_message The message to write
      * @return true if successful, false otherwise

@@ -5,9 +5,19 @@
 /**
  * \file
  * \brief Write an OSI `.txth` text trace file.
+ * \deprecated The .txth format is not reliably deserializable. Use .osi or .mcap instead.
  */
 
 #include <osi-utilities/tracefile/TimestampUtils.h>
+
+// Suppress deprecation warning — this example demonstrates the deprecated TXTH writer
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
 #include <osi-utilities/tracefile/writer/TXTHTraceFileWriter.h>
 
 #include <exception>
