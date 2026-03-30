@@ -154,6 +154,119 @@ jobs:
           retention-days: 1
 
   # ===========================================================================
+  # Ubuntu with vcpkg — shared OSI linking
+  # ===========================================================================
+  ubuntu-vcpkg-shared:
+    name: Ubuntu (vcpkg, shared OSI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+
+      # A dynamic vcpkg triplet is required so that protobuf (and abseil) are
+      # also built as shared libraries.  Without this, static protobuf is linked
+      # into BOTH the shared OSI .so AND the consumer binary, causing duplicate
+      # protobuf descriptor registration and a fatal "CheckTypeAndMergeFrom" crash.
+      - name: Configure CMake (shared OSI, dynamic triplet)
+        run: cmake --preset vcpkg-shared-linux -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+
+      - name: Build
+        run: cmake --build --preset vcpkg-shared-linux --parallel $(nproc)
+
+      - name: Verify shared OSI library produced
+        run: |
+          echo "--- Checking for shared OSI library ---"
+          SO=$(find build-vcpkg -name 'libopen_simulation_interface.so*' | head -1)
+          if [ -z "$SO" ]; then
+            echo "ERROR: Shared OSI library (.so) not found in build tree"
+            exit 1
+          fi
+          echo "Found: $SO"
+          file "$SO"
+          echo "--- Checking test executable links shared OSI ---"
+          TEST_EXE=$(find build-vcpkg -name 'unit_tests' -type f | head -1)
+          if [ -n "$TEST_EXE" ]; then
+            ldd "$TEST_EXE" | grep -E 'open_simulation_interface|protobuf' || true
+          fi
+          echo "Shared OSI library verified ✓"
+
+      - name: Run Tests
+        working-directory: build-vcpkg
+        run: |
+          # Add both the shared OSI build dir and vcpkg dynamic libs to the
+          # runtime search path so the test binary can find all shared deps.
+          OSI_LIB_DIR=$(dirname "$(find . -name 'libopen_simulation_interface.so.*' | head -1)")
+          VCPKG_LIB_DIR=$(find . -path '*/x64-linux-dynamic/lib' -type d | head -1)
+          echo "OSI_LIB_DIR=$OSI_LIB_DIR"
+          echo "VCPKG_LIB_DIR=$VCPKG_LIB_DIR"
+          export LD_LIBRARY_PATH="${OSI_LIB_DIR}:${VCPKG_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+          ctest --output-on-failure --parallel $(nproc)
+
+  # ===========================================================================
+  # macOS with vcpkg — shared OSI linking
+  # ===========================================================================
+  macos-vcpkg-shared:
+    name: macOS (vcpkg, shared OSI)
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+
+      # Dynamic triplet required — see Ubuntu shared job comment for rationale.
+      - name: Configure CMake (shared OSI, dynamic triplet)
+        run: cmake --preset vcpkg-shared-macos -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
+
+      - name: Build
+        run: cmake --build --preset vcpkg-shared-macos --parallel $(sysctl -n hw.ncpu)
+
+      - name: Verify shared OSI library produced
+        run: |
+          echo "--- Checking for shared OSI library ---"
+          DYLIB=$(find build-vcpkg -name 'libopen_simulation_interface*.dylib' | head -1)
+          if [ -z "$DYLIB" ]; then
+            echo "ERROR: Shared OSI library (.dylib) not found in build tree"
+            exit 1
+          fi
+          echo "Found: $DYLIB"
+          file "$DYLIB"
+          echo "--- Checking test executable links shared OSI ---"
+          TEST_EXE=$(find build-vcpkg -name 'unit_tests' -type f | head -1)
+          if [ -n "$TEST_EXE" ]; then
+            otool -L "$TEST_EXE" | grep -E 'open_simulation_interface|protobuf' || true
+          fi
+          echo "Shared OSI library verified ✓"
+
+      - name: Run Tests
+        working-directory: build-vcpkg
+        run: |
+          # Add both the shared OSI build dir and vcpkg dynamic libs to the
+          # runtime search path so the test binary can find all shared deps.
+          OSI_LIB_DIR=$(dirname "$(find . -name 'libopen_simulation_interface*.dylib' | head -1)")
+          VCPKG_LIB_DIR=$(find . -path '*/arm64-osx-dynamic/lib' -type d | head -1)
+          echo "OSI_LIB_DIR=$OSI_LIB_DIR"
+          echo "VCPKG_LIB_DIR=$VCPKG_LIB_DIR"
+          export DYLD_LIBRARY_PATH="${OSI_LIB_DIR}:${VCPKG_LIB_DIR}:${DYLD_LIBRARY_PATH:-}"
+          echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
+          ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
+
+  # ===========================================================================
   # Windows with vcpkg (default preset / compatibility coverage)
   # ===========================================================================
   windows-vcpkg:

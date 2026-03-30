@@ -286,11 +286,110 @@ cmake -S externals/asam-osi-utilities -B build-deps \
 
 By default, OSIUtilities links against the **static position-independent** OSI
 library (`open_simulation_interface_pic`). To link against the shared library
-instead:
+instead, pass `-DLINK_WITH_SHARED_OSI=ON`.
+
+#### With system packages (Ubuntu / non-vcpkg)
+
+On Ubuntu, system-installed protobuf (`libprotobuf-dev`) is already a shared
+library. No special triplet is needed — shared OSI works out of the box:
 
 ```bash
-cmake ... -DLINK_WITH_SHARED_OSI=ON
+# Install system dependencies (see dependencies.yml for the full list)
+sudo apt-get install libprotobuf-dev protobuf-compiler liblz4-dev libzstd-dev
+
+# Configure with shared OSI
+cmake --preset base -DBUILD_TESTING=ON -DLINK_WITH_SHARED_OSI=ON
+cmake --build --preset base --parallel
 ```
+
+#### With vcpkg
+
+vcpkg builds static libraries by default. When `LINK_WITH_SHARED_OSI=ON` is
+used with a static vcpkg triplet, protobuf gets statically embedded in both the
+shared `libopen_simulation_interface.so` **and** the consumer binary, creating
+duplicate protobuf descriptor registrations that cause a fatal
+`"CheckTypeAndMergeFrom"` crash at runtime.
+
+The fix: use a **dynamic vcpkg triplet** so that protobuf (and abseil) are also
+built as shared libraries. Platform-specific presets bundle the correct triplet:
+
+```bash
+# Linux
+cmake --preset vcpkg-shared-linux -DBUILD_TESTING=ON
+cmake --build --preset vcpkg-shared-linux --parallel
+
+# macOS
+cmake --preset vcpkg-shared-macos -DBUILD_TESTING=ON
+cmake --build --preset vcpkg-shared-macos --parallel
+```
+
+Or pass the triplet manually:
+
+```bash
+cmake ... -DLINK_WITH_SHARED_OSI=ON -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
+```
+
+#### When to use shared linking
+
+Dynamic linking is required when **multiple libraries in the same process** each
+need OSI/protobuf. If two libraries statically link their own copy of protobuf,
+the duplicate global state (descriptor pools, generated message registries) causes
+crashes or undefined behavior. The solution: both libraries link the same shared
+OSI and protobuf libraries at runtime.
+
+Typical scenario:
+- Your application loads `libA.so` and `libB.so`
+- Both use OSI messages
+- Both must link against the **same** `libopen_simulation_interface.so` and
+  `libprotobuf.so` to avoid duplicate registration
+
+#### Platform support
+
+| Platform | Shared OSI | Notes |
+| --- | --- | --- |
+| **Linux** | ✅ Supported | Set `LINK_WITH_SHARED_OSI=ON`. Tested in CI. |
+| **macOS** | ✅ Supported | Set `LINK_WITH_SHARED_OSI=ON`. Tested in CI. |
+| **Windows (MSVC)** | ⚠️ Not supported | Protobuf-generated code does not emit `__declspec(dllexport)` for data symbols. `WINDOWS_EXPORT_ALL_SYMBOLS` only covers functions, not global data like `_default_instance_`. See the [osi-cpp documentation](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/interface/setup/setting_up_osi_cpp.html) which marks Windows dynamic linking as "NOT RECOMMENDED". Use static linking (`_pic` target) on Windows. |
+
+#### Runtime library discovery
+
+When built with `LINK_WITH_SHARED_OSI=ON`, the shared OSI library must be
+findable at runtime.
+
+**Linux:**
+
+```bash
+# Option 1: Set LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/path/to/install/lib:$LD_LIBRARY_PATH
+./my_app
+
+# Option 2: Install to a system path and run ldconfig
+sudo cp libopen_simulation_interface.so* /usr/local/lib/
+sudo ldconfig
+
+# Option 3: Use RPATH (set at build time — CMake does this by default for
+# installed targets when CMAKE_INSTALL_RPATH is configured)
+```
+
+**macOS:**
+
+```bash
+export DYLD_LIBRARY_PATH=/path/to/install/lib:$DYLD_LIBRARY_PATH
+./my_app
+```
+
+#### What the consumer CMake code looks like
+
+The consumer-facing API is **identical** regardless of static or shared linking:
+
+```cmake
+find_package(OSIUtilities REQUIRED)
+target_link_libraries(my_app PRIVATE OSIUtilities::OSIUtilities)
+```
+
+CMake handles the transitivity automatically. The only difference is whether the
+OSI and protobuf symbols come from static archives or shared libraries at link
+time.
 
 ---
 
