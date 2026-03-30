@@ -286,13 +286,32 @@ cmake -S externals/asam-osi-utilities -B build-deps \
 
 By default, OSIUtilities links against the **static position-independent** OSI
 library (`open_simulation_interface_pic`). To link against the shared library
-instead:
+instead, pass `-DLINK_WITH_SHARED_OSI=ON`.
+
+#### With system packages (Ubuntu / non-vcpkg)
+
+On Ubuntu, system-installed protobuf (`libprotobuf-dev`) is already a shared
+library. No special triplet is needed — shared OSI works out of the box:
 
 ```bash
-cmake ... -DLINK_WITH_SHARED_OSI=ON -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
+# Install system dependencies (see dependencies.yml for the full list)
+sudo apt-get install libprotobuf-dev protobuf-compiler liblz4-dev libzstd-dev
+
+# Configure with shared OSI
+cmake --preset base -DBUILD_TESTING=ON -DLINK_WITH_SHARED_OSI=ON
+cmake --build --preset base --parallel
 ```
 
-Or use a platform-specific shared preset (includes the correct dynamic triplet):
+#### With vcpkg
+
+vcpkg builds static libraries by default. When `LINK_WITH_SHARED_OSI=ON` is
+used with a static vcpkg triplet, protobuf gets statically embedded in both the
+shared `libopen_simulation_interface.so` **and** the consumer binary, creating
+duplicate protobuf descriptor registrations that cause a fatal
+`"CheckTypeAndMergeFrom"` crash at runtime.
+
+The fix: use a **dynamic vcpkg triplet** so that protobuf (and abseil) are also
+built as shared libraries. Platform-specific presets bundle the correct triplet:
 
 ```bash
 # Linux
@@ -304,13 +323,11 @@ cmake --preset vcpkg-shared-macos -DBUILD_TESTING=ON
 cmake --build --preset vcpkg-shared-macos --parallel
 ```
 
-> **Important:** When using shared OSI linking, protobuf (and its dependency
-> abseil) must also be built as shared libraries. If protobuf is static, its code
-> gets embedded in both the shared `libopen_simulation_interface.so` and the
-> consumer binary, creating duplicate protobuf descriptor registrations that
-> cause a fatal `"CheckTypeAndMergeFrom"` crash at runtime. Using a vcpkg dynamic
-> triplet (e.g. `x64-linux-dynamic`, `arm64-osx-dynamic`) ensures all dependencies
-> are shared.
+Or pass the triplet manually:
+
+```bash
+cmake ... -DLINK_WITH_SHARED_OSI=ON -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
+```
 
 #### When to use shared linking
 
