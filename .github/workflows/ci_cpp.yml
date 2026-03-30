@@ -174,43 +174,36 @@ jobs:
       - name: Configure CMake (shared OSI)
         run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests -DLINK_WITH_SHARED_OSI=ON
 
-      - name: Verify shared OSI linkage
-        run: |
-          echo "--- CMake cache: OSI link target ---"
-          grep -E 'LINK_WITH_SHARED_OSI' build-vcpkg/CMakeCache.txt || true
-          echo "--- Checking for shared OSI library ---"
-          find build-vcpkg -name 'libopen_simulation_interface.so*' -o -name 'libopen_simulation_interface.dylib' | head -5
-          if ! find build-vcpkg -name 'libopen_simulation_interface.so*' | grep -q .; then
-            echo "ERROR: Shared OSI library (.so) not found in build tree"
-            exit 1
-          fi
-          echo "Shared OSI library found ✓"
-
       - name: Build
         run: cmake --build --preset vcpkg --parallel $(nproc)
 
-      - name: Verify runtime linkage
+      - name: Verify shared OSI library produced
         run: |
-          echo "--- Checking OSIUtilities library dependencies ---"
-          LIB=$(find build-vcpkg -name 'libOSIUtilities.so' -o -name 'libOSIUtilities.a' | head -1)
-          if [ -n "$LIB" ]; then
-            echo "Found: $LIB"
-            file "$LIB"
-            if file "$LIB" | grep -q 'shared object'; then
-              ldd "$LIB" | grep -E 'open_simulation_interface|protobuf' || true
-            fi
+          echo "--- Checking for shared OSI library ---"
+          SO=$(find build-vcpkg -name 'libopen_simulation_interface.so*' | head -1)
+          if [ -z "$SO" ]; then
+            echo "ERROR: Shared OSI library (.so) not found in build tree"
+            exit 1
           fi
+          echo "Found: $SO"
+          file "$SO"
+          echo "--- Checking test executable links shared OSI ---"
+          TEST_EXE=$(find build-vcpkg -name 'unit_tests' -type f | head -1)
+          if [ -n "$TEST_EXE" ]; then
+            ldd "$TEST_EXE" | grep -E 'open_simulation_interface|protobuf' || true
+          fi
+          echo "Shared OSI library verified ✓"
 
       - name: Run Tests
         working-directory: build-vcpkg
         run: ctest --output-on-failure --parallel $(nproc)
 
   # ===========================================================================
-  # Windows with vcpkg — shared OSI linking
+  # macOS with vcpkg — shared OSI linking
   # ===========================================================================
-  windows-vcpkg-shared:
-    name: Windows (MSVC, vcpkg shared OSI)
-    runs-on: windows-latest
+  macos-vcpkg-shared:
+    name: macOS (vcpkg, shared OSI)
+    runs-on: macos-14
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -224,32 +217,31 @@ jobs:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
       - name: Configure CMake (shared OSI)
-        run: cmake --preset vcpkg -DBUILD_DOCS=OFF -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests -DLINK_WITH_SHARED_OSI=ON
-
-      - name: Verify shared OSI linkage
-        shell: pwsh
-        run: |
-          Write-Host "--- CMake cache: OSI link target ---"
-          Select-String -Path "build-vcpkg/CMakeCache.txt" -Pattern 'LINK_WITH_SHARED_OSI' | ForEach-Object { $_.Line }
-          Write-Host "--- Checking for shared OSI library ---"
-          $dlls = Get-ChildItem -Path build-vcpkg -Recurse -Filter 'open_simulation_interface.dll' -ErrorAction SilentlyContinue
-          $libs = Get-ChildItem -Path build-vcpkg -Recurse -Filter 'open_simulation_interface.lib' -ErrorAction SilentlyContinue
-          if ($dlls) { Write-Host "Found DLL: $($dlls.FullName)" } else { Write-Host "WARNING: No .dll found yet (built later)" }
-          if ($libs) { Write-Host "Found import lib: $($libs.FullName)" } else { Write-Host "WARNING: No import .lib found yet (built later)" }
+        run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests -DLINK_WITH_SHARED_OSI=ON
 
       - name: Build
-        run: cmake --build --preset vcpkg --parallel
+        run: cmake --build --preset vcpkg --parallel $(sysctl -n hw.ncpu)
 
-      - name: Verify DLL produced
-        shell: pwsh
+      - name: Verify shared OSI library produced
         run: |
-          $dlls = Get-ChildItem -Path build-vcpkg -Recurse -Filter 'open_simulation_interface.dll' -ErrorAction SilentlyContinue
-          if (-not $dlls) { throw "Shared OSI DLL not found after build" }
-          Write-Host "Shared OSI DLL found: $($dlls.FullName) ✓"
+          echo "--- Checking for shared OSI library ---"
+          DYLIB=$(find build-vcpkg -name 'libopen_simulation_interface*.dylib' | head -1)
+          if [ -z "$DYLIB" ]; then
+            echo "ERROR: Shared OSI library (.dylib) not found in build tree"
+            exit 1
+          fi
+          echo "Found: $DYLIB"
+          file "$DYLIB"
+          echo "--- Checking test executable links shared OSI ---"
+          TEST_EXE=$(find build-vcpkg -name 'unit_tests' -type f | head -1)
+          if [ -n "$TEST_EXE" ]; then
+            otool -L "$TEST_EXE" | grep -E 'open_simulation_interface|protobuf' || true
+          fi
+          echo "Shared OSI library verified ✓"
 
       - name: Run Tests
         working-directory: build-vcpkg
-        run: ctest -C Release --output-on-failure --parallel
+        run: ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
 
   # ===========================================================================
   # Windows with vcpkg (default preset / compatibility coverage)

@@ -89,9 +89,9 @@ Builds the project on multiple platforms and configurations:
 | Ubuntu Latest    | -           | vcpkg, shared OSI (`LINK_WITH_SHARED_OSI=ON`) |
 | Windows Latest   | MSVC        | vcpkg (default preset)            |
 | Windows Latest   | MSVC        | vcpkg-windows-static-md (packaging-oriented coverage) |
-| Windows Latest   | MSVC        | vcpkg, shared OSI (`LINK_WITH_SHARED_OSI=ON`) |
 | macOS 15 (x64)   | Apple Clang | vcpkg                             |
 | macOS 14 (arm64) | Apple Clang | vcpkg                             |
+| macOS 14 (arm64) | Apple Clang | vcpkg, shared OSI (`LINK_WITH_SHARED_OSI=ON`) |
 
 Windows preset difference in CI:
 
@@ -101,7 +101,8 @@ Windows preset difference in CI:
 Shared OSI coverage:
 
 - `ubuntu-vcpkg-shared` job: validates `LINK_WITH_SHARED_OSI=ON` produces a working shared library and all tests pass.
-- `windows-vcpkg-shared` job: validates shared OSI DLL generation on Windows (with `WINDOWS_EXPORT_ALL_SYMBOLS`).
+- `macos-vcpkg-shared` job: validates shared OSI `.dylib` generation on macOS arm64.
+- Windows shared OSI is **not tested** — protobuf-generated code lacks `__declspec(dllexport)` for data symbols, making shared OSI DLLs unusable on MSVC. See [osi-cpp docs](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/interface/setup/setting_up_osi_cpp.html).
 
 ### Unit Tests (in ci_build.yml)
 

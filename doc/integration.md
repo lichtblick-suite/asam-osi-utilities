@@ -313,6 +313,14 @@ Typical scenario:
 - Both must link against the **same** `libopen_simulation_interface.so` and
   `libprotobuf.so` to avoid duplicate registration
 
+#### Platform support
+
+| Platform | Shared OSI | Notes |
+| --- | --- | --- |
+| **Linux** | ✅ Supported | Set `LINK_WITH_SHARED_OSI=ON`. Tested in CI. |
+| **macOS** | ✅ Supported | Set `LINK_WITH_SHARED_OSI=ON`. Tested in CI. |
+| **Windows (MSVC)** | ⚠️ Not supported | Protobuf-generated code does not emit `__declspec(dllexport)` for data symbols. `WINDOWS_EXPORT_ALL_SYMBOLS` only covers functions, not global data like `_default_instance_`. See the [osi-cpp documentation](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/interface/setup/setting_up_osi_cpp.html) which marks Windows dynamic linking as "NOT RECOMMENDED". Use static linking (`_pic` target) on Windows. |
+
 #### Runtime library discovery
 
 When built with `LINK_WITH_SHARED_OSI=ON`, the shared OSI library must be
@@ -339,13 +347,6 @@ sudo ldconfig
 export DYLD_LIBRARY_PATH=/path/to/install/lib:$DYLD_LIBRARY_PATH
 ./my_app
 ```
-
-**Windows:**
-
-Place `open_simulation_interface.dll` (and `libprotobuf.dll` if protobuf is
-also shared) in one of:
-- The same directory as the `.exe`
-- A directory listed in the `PATH` environment variable
 
 #### What the consumer CMake code looks like
 
