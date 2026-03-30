@@ -289,15 +289,23 @@ library (`open_simulation_interface_pic`). To link against the shared library
 instead:
 
 ```bash
-cmake ... -DLINK_WITH_SHARED_OSI=ON
+cmake ... -DLINK_WITH_SHARED_OSI=ON -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
 ```
 
-Or use the `vcpkg-shared` preset:
+Or use the `vcpkg-shared` preset with a dynamic triplet override:
 
 ```bash
-cmake --preset vcpkg-shared -DBUILD_TESTING=ON
+cmake --preset vcpkg-shared -DBUILD_TESTING=ON -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
 cmake --build --preset vcpkg-shared --parallel
 ```
+
+> **Important:** When using shared OSI linking, protobuf (and its dependency
+> abseil) must also be built as shared libraries. If protobuf is static, its code
+> gets embedded in both the shared `libopen_simulation_interface.so` and the
+> consumer binary, creating duplicate protobuf descriptor registrations that
+> cause a fatal `"CheckTypeAndMergeFrom"` crash at runtime. Using a vcpkg dynamic
+> triplet (e.g. `x64-linux-dynamic`, `arm64-osx-dynamic`) ensures all dependencies
+> are shared.
 
 #### When to use shared linking
 

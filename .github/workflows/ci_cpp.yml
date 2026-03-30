@@ -171,8 +171,17 @@ jobs:
         with:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
-      - name: Configure CMake (shared OSI)
-        run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests -DLINK_WITH_SHARED_OSI=ON
+      # A dynamic vcpkg triplet is required so that protobuf (and abseil) are
+      # also built as shared libraries.  Without this, static protobuf is linked
+      # into BOTH the shared OSI .so AND the consumer binary, causing duplicate
+      # protobuf descriptor registration and a fatal "CheckTypeAndMergeFrom" crash.
+      - name: Configure CMake (shared OSI, dynamic triplet)
+        run: >
+          cmake --preset vcpkg
+          -DBUILD_TESTING=ON
+          -DVCPKG_MANIFEST_FEATURES=tests
+          -DLINK_WITH_SHARED_OSI=ON
+          -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
 
       - name: Build
         run: cmake --build --preset vcpkg --parallel $(nproc)
@@ -197,11 +206,14 @@ jobs:
       - name: Run Tests
         working-directory: build-vcpkg
         run: |
-          # The shared OSI .so lives in a osi-cpp subdirectory of the build tree.
-          # Set LD_LIBRARY_PATH so the test binary can find it at runtime.
+          # Add both the shared OSI build dir and vcpkg dynamic libs to the
+          # runtime search path so the test binary can find all shared deps.
           OSI_LIB_DIR=$(dirname "$(find . -name 'libopen_simulation_interface.so.*' | head -1)")
-          echo "Setting LD_LIBRARY_PATH=$OSI_LIB_DIR"
-          export LD_LIBRARY_PATH="$OSI_LIB_DIR:${LD_LIBRARY_PATH:-}"
+          VCPKG_LIB_DIR=$(find . -path '*/x64-linux-dynamic/lib' -type d | head -1)
+          echo "OSI_LIB_DIR=$OSI_LIB_DIR"
+          echo "VCPKG_LIB_DIR=$VCPKG_LIB_DIR"
+          export LD_LIBRARY_PATH="${OSI_LIB_DIR}:${VCPKG_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           ctest --output-on-failure --parallel $(nproc)
 
   # ===========================================================================
@@ -222,8 +234,14 @@ jobs:
         with:
           vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
 
-      - name: Configure CMake (shared OSI)
-        run: cmake --preset vcpkg -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests -DLINK_WITH_SHARED_OSI=ON
+      # Dynamic triplet required — see Ubuntu shared job comment for rationale.
+      - name: Configure CMake (shared OSI, dynamic triplet)
+        run: >
+          cmake --preset vcpkg
+          -DBUILD_TESTING=ON
+          -DVCPKG_MANIFEST_FEATURES=tests
+          -DLINK_WITH_SHARED_OSI=ON
+          -DVCPKG_TARGET_TRIPLET=arm64-osx-dynamic
 
       - name: Build
         run: cmake --build --preset vcpkg --parallel $(sysctl -n hw.ncpu)
@@ -248,11 +266,14 @@ jobs:
       - name: Run Tests
         working-directory: build-vcpkg
         run: |
-          # The shared OSI .dylib lives in a osi-cpp subdirectory of the build tree.
-          # Set DYLD_LIBRARY_PATH so the test binary can find it at runtime.
+          # Add both the shared OSI build dir and vcpkg dynamic libs to the
+          # runtime search path so the test binary can find all shared deps.
           OSI_LIB_DIR=$(dirname "$(find . -name 'libopen_simulation_interface*.dylib' | head -1)")
-          echo "Setting DYLD_LIBRARY_PATH=$OSI_LIB_DIR"
-          export DYLD_LIBRARY_PATH="$OSI_LIB_DIR:${DYLD_LIBRARY_PATH:-}"
+          VCPKG_LIB_DIR=$(find . -path '*/arm64-osx-dynamic/lib' -type d | head -1)
+          echo "OSI_LIB_DIR=$OSI_LIB_DIR"
+          echo "VCPKG_LIB_DIR=$VCPKG_LIB_DIR"
+          export DYLD_LIBRARY_PATH="${OSI_LIB_DIR}:${VCPKG_LIB_DIR}:${DYLD_LIBRARY_PATH:-}"
+          echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
           ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
 
   # ===========================================================================
