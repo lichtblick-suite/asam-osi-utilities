@@ -176,15 +176,10 @@ jobs:
       # into BOTH the shared OSI .so AND the consumer binary, causing duplicate
       # protobuf descriptor registration and a fatal "CheckTypeAndMergeFrom" crash.
       - name: Configure CMake (shared OSI, dynamic triplet)
-        run: >
-          cmake --preset vcpkg
-          -DBUILD_TESTING=ON
-          -DVCPKG_MANIFEST_FEATURES=tests
-          -DLINK_WITH_SHARED_OSI=ON
-          -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
+        run: cmake --preset vcpkg-shared-linux -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
       - name: Build
-        run: cmake --build --preset vcpkg --parallel $(nproc)
+        run: cmake --build --preset vcpkg-shared-linux --parallel $(nproc)
 
       - name: Verify shared OSI library produced
         run: |
@@ -236,15 +231,10 @@ jobs:
 
       # Dynamic triplet required — see Ubuntu shared job comment for rationale.
       - name: Configure CMake (shared OSI, dynamic triplet)
-        run: >
-          cmake --preset vcpkg
-          -DBUILD_TESTING=ON
-          -DVCPKG_MANIFEST_FEATURES=tests
-          -DLINK_WITH_SHARED_OSI=ON
-          -DVCPKG_TARGET_TRIPLET=arm64-osx-dynamic
+        run: cmake --preset vcpkg-shared-macos -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
 
       - name: Build
-        run: cmake --build --preset vcpkg --parallel $(sysctl -n hw.ncpu)
+        run: cmake --build --preset vcpkg-shared-macos --parallel $(sysctl -n hw.ncpu)
 
       - name: Verify shared OSI library produced
         run: |

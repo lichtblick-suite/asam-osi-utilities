@@ -292,11 +292,16 @@ instead:
 cmake ... -DLINK_WITH_SHARED_OSI=ON -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
 ```
 
-Or use the `vcpkg-shared` preset with a dynamic triplet override:
+Or use a platform-specific shared preset (includes the correct dynamic triplet):
 
 ```bash
-cmake --preset vcpkg-shared -DBUILD_TESTING=ON -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
-cmake --build --preset vcpkg-shared --parallel
+# Linux
+cmake --preset vcpkg-shared-linux -DBUILD_TESTING=ON
+cmake --build --preset vcpkg-shared-linux --parallel
+
+# macOS
+cmake --preset vcpkg-shared-macos -DBUILD_TESTING=ON
+cmake --build --preset vcpkg-shared-macos --parallel
 ```
 
 > **Important:** When using shared OSI linking, protobuf (and its dependency

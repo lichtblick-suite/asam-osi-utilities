@@ -42,10 +42,36 @@
     },
     {
       "name": "vcpkg-shared",
-      "description": "Build with shared (dynamic) OSI library linking",
+      "description": "Base shared-OSI preset (requires a platform-specific triplet override or inheriting preset)",
       "inherits": "vcpkg",
       "cacheVariables": {
         "LINK_WITH_SHARED_OSI": "ON"
+      }
+    },
+    {
+      "name": "vcpkg-shared-linux",
+      "description": "Shared OSI on Linux with dynamic vcpkg triplet (protobuf + abseil also shared)",
+      "inherits": "vcpkg-shared",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux-dynamic"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "vcpkg-shared-macos",
+      "description": "Shared OSI on macOS with dynamic vcpkg triplet (protobuf + abseil also shared)",
+      "inherits": "vcpkg-shared",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "arm64-osx-dynamic"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
       }
     }
   ],
@@ -68,6 +94,16 @@
     {
       "name": "vcpkg-shared",
       "configurePreset": "vcpkg-shared",
+      "configuration": "Release"
+    },
+    {
+      "name": "vcpkg-shared-linux",
+      "configurePreset": "vcpkg-shared-linux",
+      "configuration": "Release"
+    },
+    {
+      "name": "vcpkg-shared-macos",
+      "configurePreset": "vcpkg-shared-macos",
       "configuration": "Release"
     },
     {
