@@ -51,6 +51,8 @@ Linkage expectations:
 | `vcpkg` (Linux/macOS)                  | Preferred/release-oriented dependency model  | Static (`.a`)        |
 | `vcpkg` (Windows)                      | General executable-focused development       | Triplet-dependent    |
 | `vcpkg-windows-static-md` (Windows)    | Packaging/static-linkage-oriented workflows  | Static triplet model |
+| `vcpkg-shared-linux` (Linux)           | Shared OSI library for plugin architectures  | `x64-linux-dynamic` triplet; all deps shared |
+| `vcpkg-shared-macos` (macOS)           | Shared OSI library for plugin architectures  | `arm64-osx-dynamic` triplet; all deps shared |
 
 ---
 

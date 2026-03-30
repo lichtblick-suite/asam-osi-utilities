@@ -86,15 +86,24 @@ Builds the project on multiple platforms and configurations:
 | Ubuntu 24.04     | GCC         | Manual deps                       |
 | Ubuntu 24.04     | Clang       | Manual deps                       |
 | Ubuntu Latest    | -           | vcpkg                             |
+| Ubuntu Latest    | -           | vcpkg, shared OSI, `x64-linux-dynamic` triplet |
 | Windows Latest   | MSVC        | vcpkg (default preset)            |
 | Windows Latest   | MSVC        | vcpkg-windows-static-md (packaging-oriented coverage) |
 | macOS 15 (x64)   | Apple Clang | vcpkg                             |
 | macOS 14 (arm64) | Apple Clang | vcpkg                             |
+| macOS 14 (arm64) | Apple Clang | vcpkg, shared OSI, `arm64-osx-dynamic` triplet |
 
 Windows preset difference in CI:
 
 - `vcpkg` job: compatibility coverage using the default preset/triplet resolution on Windows runners.
 - `vcpkg-windows-static-md` job: additional coverage for static-library-oriented packaging with dynamic MSVC runtime.
+
+Shared OSI coverage:
+
+- `ubuntu-vcpkg-shared` job: validates `LINK_WITH_SHARED_OSI=ON` with `x64-linux-dynamic` triplet produces a working shared library and all tests pass.
+- `macos-vcpkg-shared` job: validates shared OSI `.dylib` with `arm64-osx-dynamic` triplet on macOS arm64.
+- Both jobs use a **dynamic vcpkg triplet** so that protobuf (and abseil) are also shared. Without this, static protobuf is linked into both the shared OSI library and the consumer binary, causing duplicate descriptor registration crashes.
+- Windows shared OSI is **not tested** — protobuf-generated code lacks `__declspec(dllexport)` for data symbols, making shared OSI DLLs unusable on MSVC. See [osi-cpp docs](https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/interface/setup/setting_up_osi_cpp.html).
 
 ### Unit Tests (in ci_build.yml)
 
