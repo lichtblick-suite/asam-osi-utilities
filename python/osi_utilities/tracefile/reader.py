@@ -86,16 +86,17 @@ class TraceFileReaderFactory:
 
         Args:
             path: Path to the trace file. Extension determines the reader type.
-            message_type: Explicit message type for binary/txth files. If provided,
-                overrides filename-based inference. Ignored for MCAP files (which
-                store the schema in the file itself).
+            message_type: Explicit message type for binary/txth files. If
+                provided, overrides filename-based inference. Validated against
+                the overrides filename-based inference. Validated against the
+                schema given in MCAP files.
 
         Returns:
             An opened TraceFileReader instance.
 
         Raises:
-            ValueError: If the file extension is not supported.
-            RuntimeError: If the file cannot be opened.
+            ValueError: If the file extension is not supported. RuntimeError: If
+            the file cannot be opened.
         """
         path = Path(path)
         suffix = path.suffix.lower()
@@ -103,7 +104,7 @@ class TraceFileReaderFactory:
         if suffix == ".mcap":
             from osi_utilities.tracefile.mcap_reader import MCAPTraceFileReader
 
-            reader = MCAPTraceFileReader()
+            reader = MCAPTraceFileReader(message_type=message_type)
         elif suffix == ".osi":
             from osi_utilities.tracefile.binary_reader import BinaryTraceFileReader
 
@@ -112,6 +113,8 @@ class TraceFileReaderFactory:
             else:
                 reader = BinaryTraceFileReader()
         elif suffix == ".txth":
+            logger.warning("The .txth format is not reliably deserializable. Use .osi or .mcap instead.")
+
             from osi_utilities.tracefile.txth_reader import TXTHTraceFileReader
 
             reader = TXTHTraceFileReader()

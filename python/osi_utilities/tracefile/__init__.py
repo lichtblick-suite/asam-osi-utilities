@@ -5,6 +5,7 @@
 
 from osi_utilities.tracefile.binary_reader import BinaryTraceFileReader
 from osi_utilities.tracefile.binary_writer import BinaryTraceFileWriter
+from osi_utilities.tracefile.channel_reader import ChannelReader, open_channel
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
 from osi_utilities.tracefile.mcap_reader import MCAPTraceFileReader
 from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
@@ -22,6 +23,7 @@ from osi_utilities.tracefile.writer import TraceFileWriter
 __all__ = [
     "BinaryTraceFileReader",
     "BinaryTraceFileWriter",
+    "ChannelReader",
     "MCAPChannel",
     "MCAPTraceFileReader",
     "MCAPTraceFileWriter",
@@ -32,6 +34,7 @@ __all__ = [
     "TraceFileWriter",
     "nanoseconds_to_seconds",
     "open_trace_file",
+    "open_channel",
     "seconds_to_nanoseconds",
     "timestamp_to_nanoseconds",
     "timestamp_to_seconds",

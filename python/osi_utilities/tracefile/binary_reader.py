@@ -14,11 +14,14 @@ import struct
 from pathlib import Path
 from typing import IO
 
-from osi_utilities.tracefile._config import BINARY_MESSAGE_LENGTH_PREFIX_SIZE, MAX_EXPECTED_MESSAGE_SIZE
+from osi_utilities.tracefile._config import (
+    BINARY_MESSAGE_LENGTH_PREFIX_SIZE,
+    MAX_EXPECTED_MESSAGE_SIZE,
+)
 from osi_utilities.tracefile._types import (
     MessageType,
     ReadResult,
-    _get_message_class,
+    get_message_class,
     infer_message_type_from_filename,
 )
 from osi_utilities.tracefile.reader import TraceFileReader
@@ -62,7 +65,7 @@ class BinaryTraceFileReader(TraceFileReader):
             return False
 
         try:
-            self._message_class = _get_message_class(self._message_type)
+            self._message_class = get_message_class(self._message_type)
         except ValueError as e:
             logger.error("Failed to get message class: %s", e)
             return False

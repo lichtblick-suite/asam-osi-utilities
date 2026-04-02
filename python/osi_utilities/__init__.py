@@ -12,6 +12,7 @@ from osi_utilities.tracefile._types import (
 )
 from osi_utilities.tracefile.binary_reader import BinaryTraceFileReader
 from osi_utilities.tracefile.binary_writer import BinaryTraceFileWriter
+from osi_utilities.tracefile.channel_reader import ChannelReader, open_channel
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
 from osi_utilities.tracefile.mcap_reader import MCAPTraceFileReader
 from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
@@ -23,6 +24,7 @@ from osi_utilities.tracefile.writer import TraceFileWriter
 __all__ = [
     "BinaryTraceFileReader",
     "BinaryTraceFileWriter",
+    "ChannelReader",
     "ChannelSpecification",
     "MCAPChannel",
     "MCAPTraceFileReader",
@@ -37,4 +39,5 @@ __all__ = [
     "TraceFileWriter",
     "convert_gt2sv",
     "open_trace_file",
+    "open_channel",
 ]

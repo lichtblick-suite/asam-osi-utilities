@@ -88,7 +88,7 @@ def read_back_and_print_summary(path: Path, skip_non_osi: bool) -> None:
         print(f"  ERROR: could not open {path}", file=sys.stderr)
         return
 
-    reader.set_skip_non_osi_msgs(skip_non_osi)
+    reader.set_silence_incompatible_topic_warnings(skip_non_osi)
 
     channel_counts: dict[str, int] = {}
     with reader:

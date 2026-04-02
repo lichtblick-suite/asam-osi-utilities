@@ -17,7 +17,7 @@ from google.protobuf import text_format
 from osi_utilities.tracefile._types import (
     MessageType,
     ReadResult,
-    _get_message_class,
+    get_message_class,
     infer_message_type_from_filename,
 )
 from osi_utilities.tracefile.reader import TraceFileReader
@@ -26,7 +26,17 @@ logger = logging.getLogger(__name__)
 
 
 class TXTHTraceFileReader(TraceFileReader):
-    """Reader for text human-readable OSI trace files (.txth).
+    """
+    .. deprecated::
+    The `.txth` text format is not reliably deserializable. The OSI
+    specification states that it is "not unambiguously deserializable" —
+    protobuf text format output is not guaranteed to be stable across
+    library versions, field ordering may change, and float/double precision
+    varies. Round-tripping (write then read) can silently lose data. Prefer
+    `.osi` (binary) for single-channel or `.mcap` for multi-channel trace
+    files.
+
+    Reader for text human-readable OSI trace files (.txth).
 
     Messages are stored in Google protobuf TextFormat. Each message is
     delimited by reading until the text can be parsed as a complete message.
@@ -51,11 +61,13 @@ class TXTHTraceFileReader(TraceFileReader):
             self._message_type = infer_message_type_from_filename(path.name)
 
         if self._message_type == MessageType.UNKNOWN:
-            logger.error("Cannot determine message type for '%s'. Specify it explicitly.", path)
+            logger.error(
+                "Cannot determine message type for '%s'. Specify it explicitly.", path
+            )
             return False
 
         try:
-            self._message_class = _get_message_class(self._message_type)
+            self._message_class = get_message_class(self._message_type)
         except ValueError as e:
             logger.error("Failed to get message class: %s", e)
             return False
@@ -93,7 +105,9 @@ class TXTHTraceFileReader(TraceFileReader):
         except text_format.ParseError:
             # If full buffer fails, the file may have multiple concatenated messages.
             # Try splitting on the first top-level field name appearing again.
-            logger.debug("Buffer contains multiple messages, splitting at field boundary.")
+            logger.debug(
+                "Buffer contains multiple messages, splitting at field boundary."
+            )
 
         # Multi-message: find the boundary by looking for a repeated top-level field
         # The C++ implementation reads line by line and tries parsing.
