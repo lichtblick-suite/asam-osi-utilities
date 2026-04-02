@@ -88,10 +88,27 @@ class _TraceFileChannelReader(ChannelReader):
 
 
 def open_channel(channel_spec: ChannelSpecification) -> ChannelReader:
-    """Open a unified single-channel reader from a ChannelSpecification.
+    """Open a single-channel reader from a channel specification.
 
-    For .mcap files, selects a topic (specified topic or first available topic).
-    For single-channel files, resolves a synthetic topic name if none is provided.
+    Behavior by trace format:
+    - ``SINGLE_CHANNEL`` (``.osi``): opens the file as one logical channel.
+      If ``message_type`` is missing, it is auto-detected from the filename when possible.
+    - ``MULTI_CHANNEL`` (``.mcap``): resolves exactly one topic
+      (explicit ``channel_spec.topic`` or the first available topic), validates
+      optional ``channel_spec.message_type``, and narrows the underlying reader
+      to that topic.
+
+    Args:
+        channel_spec: Requested channel specification.
+
+    Returns:
+        A ``ChannelReader`` bound to one logical channel.
+
+    Raises:
+        FileNotFoundError: If the trace file does not exist.
+        ValueError: If no topics are available, topic/message type resolution fails,
+            or the trace file format is unsupported.
+        RuntimeError: If a multi-channel spec does not yield an MCAP reader.
     """
 
     if not channel_spec.exists():
@@ -130,7 +147,17 @@ def open_channel(channel_spec: ChannelSpecification) -> ChannelReader:
                 f"Topic '{topic}' not found in MCAP file '{channel_spec.path}'. Available topics: {available_topics}"
             )
 
-        detected_message_type = reader.get_message_type_for_topic(topic)
+        detected_channel_spec = reader.get_channel_specification(topic)
+        detected_message_type = (
+            detected_channel_spec.message_type
+            if detected_channel_spec is not None
+            else None
+        )
+        if detected_channel_spec is None:
+            reader.close()
+            raise ValueError(
+                f"Topic '{topic}' is not an OSI-compatible channel in MCAP file '{channel_spec.path}'."
+            )
         if (
             channel_spec.message_type is not None
             and channel_spec.message_type != detected_message_type
@@ -141,12 +168,22 @@ def open_channel(channel_spec: ChannelSpecification) -> ChannelReader:
                 f"'{message_type_to_class_name(detected_message_type)}'."
             )
 
-        reader.set_topics([topic])
+        resolved_topic = detected_channel_spec.topic
+        if resolved_topic is None:
+            reader.close()
+            raise RuntimeError(
+                f"Resolved channel specification for '{channel_spec.path}' has no topic."
+            )
+
+        reader.set_topics([resolved_topic])
         resolved_spec = ChannelSpecification(
             path=channel_spec.path,
             message_type=detected_message_type,
-            topic=topic,
-            metadata=dict(reader.get_channel_metadata(topic) or channel_spec.metadata),
+            topic=resolved_topic,
+            metadata=dict(
+                (detected_channel_spec.metadata if detected_channel_spec is not None else {})
+                or channel_spec.metadata
+            ),
         )
         return _TraceFileChannelReader(reader=reader, channel_spec=resolved_spec)
 

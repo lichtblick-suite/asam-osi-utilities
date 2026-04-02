@@ -18,6 +18,7 @@ from mcap.well_known import MessageEncoding
 from mcap_protobuf.decoder import DecoderFactory
 
 from osi_utilities.tracefile._types import (
+    ChannelSpecification,
     MessageType,
     ReadResult,
     coerce_message_type,
@@ -42,6 +43,7 @@ class MCAPTraceFileReader(TraceFileReader):
         decoder_mode: str = "precompiled",
     ) -> None:
         self._file: IO[bytes] | None = None
+        self._path: Path | None = None
         self._reader = None
         self._message_iterator = None
         self._summary = None
@@ -97,6 +99,7 @@ class MCAPTraceFileReader(TraceFileReader):
         """
         try:
             self._file = open(path, "rb")  # noqa: SIM115
+            self._path = path
             if self._decoder_mode == "precompiled":
                 self._reader = make_reader(self._file)
             else:
@@ -282,6 +285,7 @@ class MCAPTraceFileReader(TraceFileReader):
         self._message_iterator = None
         self._summary = None
         self._reader = None
+        self._path = None
         if self._file is not None:
             self._file.close()
             self._file = None
@@ -301,6 +305,62 @@ class MCAPTraceFileReader(TraceFileReader):
             for m in self._reader.iter_metadata()
         ]
 
+    def get_channel_specification(self, topic: str) -> ChannelSpecification | None:
+        """Return ChannelSpecification for a specific OSI-compatible topic.
+
+        Returns None when the topic is missing or not a supported OSI schema.
+        """
+        # TODO: Optionally enforce required OSI channel metadata keys during
+        #       channel validation (e.g. osi_version, protobuf_version).
+        if self._summary is None or self._path is None:
+            return None
+
+        for channel in self._summary.channels.values():
+            if channel.topic != topic:
+                continue
+            schema = self._summary.schemas.get(channel.schema_id)
+            if schema is None:
+                return None
+            message_type = schema_name_to_message_type(schema.name)
+            if message_type is MessageType.UNKNOWN:
+                return None
+            return ChannelSpecification(
+                path=self._path,
+                message_type=message_type,
+                topic=channel.topic,
+                metadata=dict(channel.metadata),
+            )
+        return None
+
+    def list_channel_specifications(self) -> list[ChannelSpecification]:
+        """Return ChannelSpecification objects for all OSI-compatible topics."""
+        # TODO: Optionally enforce required OSI channel metadata keys during
+        #       channel validation (e.g. osi_version, protobuf_version).
+        if self._summary is None or self._path is None:
+            return []
+        channel_specs: list[ChannelSpecification] = []
+        for channel in self._summary.channels.values():
+            schema = self._summary.schemas.get(channel.schema_id)
+            if schema is None:
+                continue
+            message_type = schema_name_to_message_type(schema.name)
+            if message_type is MessageType.UNKNOWN:
+                continue
+            channel_specs.append(
+                ChannelSpecification(
+                    path=self._path,
+                    message_type=message_type,
+                    topic=channel.topic,
+                    metadata=dict(channel.metadata),
+                )
+            )
+        return channel_specs
+
+    def get_message_type_for_topic(self, topic: str) -> MessageType | None:
+        """Return the MessageType for a given topic based on its schema."""
+        channel_spec = self.get_channel_specification(topic)
+        return channel_spec.message_type if channel_spec is not None else None
+
     def get_channel_metadata(self, topic: str) -> dict[str, str] | None:
         """Return metadata for a specific channel/topic."""
         if self._summary is None:
@@ -308,18 +368,6 @@ class MCAPTraceFileReader(TraceFileReader):
         for channel in self._summary.channels.values():
             if channel.topic == topic:
                 return dict(channel.metadata)
-        return None
-
-    def get_message_type_for_topic(self, topic: str) -> MessageType | None:
-        """Return the MessageType for a given topic based on its schema."""
-        if self._summary is None:
-            return None
-        for channel in self._summary.channels.values():
-            if channel.topic == topic:
-                schema = self._summary.schemas.get(channel.schema_id)
-                if schema is not None:
-                    msg_type = schema_name_to_message_type(schema.name)
-                    return msg_type if msg_type is not MessageType.UNKNOWN else None
         return None
 
     def _start_iteration(self) -> None:
