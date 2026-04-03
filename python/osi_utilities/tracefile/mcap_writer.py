@@ -33,7 +33,7 @@ from osi_utilities.tracefile._config import (
 )
 from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
 from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
-from osi_utilities.tracefile.writer import TraceFileWriter
+from osi_utilities.tracefile.writer import TraceWriter
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +89,8 @@ def _validate_channel_metadata(metadata: dict[str, str]) -> None:
         logger.info("Missing recommended channel metadata: %s", ", ".join(missing_recommended))
 
 
-class MCAPTraceFileWriter(TraceFileWriter):
-    """Writer for MCAP-format OSI trace files (.mcap).
+class MultiTraceWriter(TraceWriter):
+    """Writer for multi-channel OSI trace files (.mcap).
 
     Supports multi-channel writing with schema registration,
     OSI-compliant file/channel metadata, and FileDescriptorSet-based schemas.

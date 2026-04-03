@@ -40,14 +40,14 @@ with open_trace_file("trace.mcap") as reader:
 ```python
 from pathlib import Path
 from osi3.osi_sensorview_pb2 import SensorView
-from osi_utilities.tracefile import BinaryTraceFileWriter
+from osi_utilities.tracefile import SingleTraceWriter
 
 sensor_view = SensorView()
 sensor_view.version.version_major = 3
 sensor_view.timestamp.seconds = 123
 sensor_view.timestamp.nanos = 456
 
-with BinaryTraceFileWriter() as writer:
+with SingleTraceWriter() as writer:
     writer.open(Path("output.osi"))
     writer.write_message(sensor_view)
 ```

@@ -25,13 +25,13 @@ from osi_utilities.tracefile._types import (
     schema_name_to_message_type,
     get_message_class,
 )
-from osi_utilities.tracefile.reader import TraceFileReader
+from osi_utilities.tracefile.reader import TraceReader
 
 logger = logging.getLogger(__name__)
 
 
-class MCAPTraceFileReader(TraceFileReader):
-    """Reader for MCAP-format OSI trace files (.mcap).
+class MultiTraceReader(TraceReader):
+    """Reader for multi-channel OSI trace files (.mcap).
 
     Supports multi-channel reading with topic-based filtering,
     schema-based message type detection, and metadata access.

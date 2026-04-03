@@ -1,0 +1,4 @@
+- Add ChannelSpecification to everything that accepts any arguments of a channel specification (topic, etc.)
+- Rename to MultiChannelReader/SingleChannelReader
+- Draft open_channels() accepting multiple ChannelSpecifications (different source files, same source file, doesn't matter)
+    - What is the order that messages are yielded? What is the output object type?

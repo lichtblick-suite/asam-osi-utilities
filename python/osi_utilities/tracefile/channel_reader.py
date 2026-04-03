@@ -23,8 +23,8 @@ from osi_utilities.tracefile._types import (
     message_type_to_class_name,
     require_message_type,
 )
-from osi_utilities.tracefile.mcap_reader import MCAPTraceFileReader
-from osi_utilities.tracefile.reader import TraceFileReader, TraceFileReaderFactory
+from osi_utilities.tracefile.mcap_reader import MultiTraceReader
+from osi_utilities.tracefile.reader import TraceReader, TraceReaderFactory
 
 
 class ChannelReader(ABC):
@@ -59,11 +59,11 @@ class ChannelReader(ABC):
 
 
 class _TraceFileChannelReader(ChannelReader):
-    """Adapter exposing a selected channel on top of TraceFileReader implementations."""
+    """Adapter exposing a selected channel on top of TraceReader implementations."""
 
     def __init__(
         self,
-        reader: TraceFileReader,
+        reader: TraceReader,
         channel_spec: ChannelSpecification,
     ) -> None:
         self._reader = reader
@@ -123,16 +123,16 @@ def open_channel(channel_spec: ChannelSpecification) -> ChannelReader:
             if channel_spec.message_type is not None:
                 message_type = require_message_type(channel_spec.message_type)
 
-        reader = TraceFileReaderFactory.create_reader(
+        reader = TraceReaderFactory.create_reader(
             channel_spec.path, message_type=message_type
         )
         return _TraceFileChannelReader(reader=reader, channel_spec=channel_spec)
     elif channel_spec.trace_file_format == TraceFileFormat.MULTI_CHANNEL:
-        reader = TraceFileReaderFactory.create_reader(channel_spec.path)
-        if not isinstance(reader, MCAPTraceFileReader):
+        reader = TraceReaderFactory.create_reader(channel_spec.path)
+        if not isinstance(reader, MultiTraceReader):
             reader.close()
             raise RuntimeError(
-                f"Expected MCAPTraceFileReader for '{channel_spec.path}', got {type(reader).__name__}."
+                f"Expected MultiTraceReader for '{channel_spec.path}', got {type(reader).__name__}."
             )
 
         available_topics = reader.get_available_topics()

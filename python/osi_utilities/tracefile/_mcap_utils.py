@@ -3,7 +3,7 @@
 
 """Shared MCAP utility functions for OSI trace file writing.
 
-Internal helpers used by both MCAPTraceFileWriter and MCAPChannel
+Internal helpers used by both MultiTraceWriter and MCAPChannel
 to avoid code duplication.
 """
 

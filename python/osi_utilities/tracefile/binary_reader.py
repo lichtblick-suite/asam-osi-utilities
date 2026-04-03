@@ -24,12 +24,12 @@ from osi_utilities.tracefile._types import (
     get_message_class,
     infer_message_type_from_filename,
 )
-from osi_utilities.tracefile.reader import TraceFileReader
+from osi_utilities.tracefile.reader import TraceReader
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryTraceFileReader(TraceFileReader):
+class SingleTraceReader(TraceReader):
     """Reader for single-channel binary OSI trace files (.osi).
 
     Each message is stored as: [4-byte LE length][serialized protobuf bytes]

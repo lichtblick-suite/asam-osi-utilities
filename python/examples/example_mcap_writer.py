@@ -13,7 +13,7 @@ from pathlib import Path
 import google.protobuf
 from osi3.osi_sensorview_pb2 import SensorView
 
-from osi_utilities import MCAPTraceFileWriter
+from osi_utilities import MultiTraceWriter
 from osi_utilities.tracefile._config import DEFAULT_CHUNK_SIZE, MAX_CHUNK_SIZE, MIN_CHUNK_SIZE
 from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
 
@@ -51,7 +51,7 @@ def main() -> int:
         "description": "Example MCAP trace file created with the ASAM OSI utilities Python SDK.",
     }
 
-    writer = MCAPTraceFileWriter()
+    writer = MultiTraceWriter()
     if not writer.open(trace_file_path, metadata=metadata):
         print(f"Error: Could not open '{trace_file_path}'", file=sys.stderr)
         return 1

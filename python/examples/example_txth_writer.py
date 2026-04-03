@@ -13,7 +13,7 @@ from pathlib import Path
 import google.protobuf
 from osi3.osi_sensorview_pb2 import SensorView
 
-from osi_utilities import TXTHTraceFileWriter
+from osi_utilities import ProtobufTextFormatTraceWriter
 from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
 
 
@@ -43,7 +43,7 @@ def main() -> int:
     trace_file_path = output_dir / file_name
     print(f"Creating trace file at {trace_file_path}")
 
-    writer = TXTHTraceFileWriter()
+    writer = ProtobufTextFormatTraceWriter()
     if not writer.open(trace_file_path):
         print(f"Error: Could not open '{trace_file_path}'", file=sys.stderr)
         return 1

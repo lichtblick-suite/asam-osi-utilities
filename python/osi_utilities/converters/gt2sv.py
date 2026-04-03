@@ -32,7 +32,7 @@ from pathlib import Path
 from google.protobuf.message import Message
 
 from osi_utilities.tracefile._types import MessageType, TraceFileFormat, get_trace_file_format
-from osi_utilities.tracefile.reader import TraceFileReaderFactory
+from osi_utilities.tracefile.reader import TraceReaderFactory
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ def convert_gt2sv(
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
     # Open reader — we know the input contains GroundTruth messages
-    reader = TraceFileReaderFactory.create_reader(input_path, message_type=MessageType.GROUND_TRUTH)
+    reader = TraceReaderFactory.create_reader(input_path, message_type=MessageType.GROUND_TRUTH)
     if topic is not None and hasattr(reader, "set_topics"):
         reader.set_topics([topic])
 
@@ -112,17 +112,17 @@ def convert_gt2sv(
     if output_format == TraceFileFormat.MULTI_CHANNEL:
         from osi3.osi_sensorview_pb2 import SensorView
 
-        from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
+        from osi_utilities.tracefile.mcap_writer import MultiTraceWriter
 
-        writer = MCAPTraceFileWriter()
+        writer = MultiTraceWriter()
         if not writer.open(output_path):
             raise RuntimeError(f"Failed to open output file: {output_path}")
         output_topic = topic or "SensorView"
         writer.add_channel(output_topic, SensorView)
     elif output_format == TraceFileFormat.SINGLE_CHANNEL:
-        from osi_utilities.tracefile.binary_writer import BinaryTraceFileWriter
+        from osi_utilities.tracefile.binary_writer import SingleTraceWriter
 
-        writer = BinaryTraceFileWriter()
+        writer = SingleTraceWriter()
         if not writer.open(output_path):
             raise RuntimeError(f"Failed to open output file: {output_path}")
         output_topic = ""

@@ -20,12 +20,12 @@ from osi_utilities.tracefile._types import (
     get_message_class,
     infer_message_type_from_filename,
 )
-from osi_utilities.tracefile.reader import TraceFileReader
+from osi_utilities.tracefile.reader import TraceReader
 
 logger = logging.getLogger(__name__)
 
 
-class TXTHTraceFileReader(TraceFileReader):
+class ProtobufTextFormatTraceReader(TraceReader):
     """
     .. deprecated::
     The `.txth` text format is not reliably deserializable. The OSI
@@ -40,6 +40,9 @@ class TXTHTraceFileReader(TraceFileReader):
 
     Messages are stored in Google protobuf TextFormat. Each message is
     delimited by reading until the text can be parsed as a complete message.
+
+    See the
+    `Protocol Buffers Text Format Language Specification <https://protobuf.dev/reference/protobuf/textformat-spec/>`_.
     """
 
     def __init__(self, message_type: MessageType = MessageType.UNKNOWN) -> None:

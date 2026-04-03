@@ -10,33 +10,33 @@ from osi_utilities.tracefile._types import (
     ReadResult,
     TraceFileFormat,
 )
-from osi_utilities.tracefile.binary_reader import BinaryTraceFileReader
-from osi_utilities.tracefile.binary_writer import BinaryTraceFileWriter
+from osi_utilities.tracefile.binary_reader import SingleTraceReader
+from osi_utilities.tracefile.binary_writer import SingleTraceWriter
 from osi_utilities.tracefile.channel_reader import ChannelReader, open_channel
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
-from osi_utilities.tracefile.mcap_reader import MCAPTraceFileReader
-from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
-from osi_utilities.tracefile.reader import TraceFileReader, TraceFileReaderFactory, open_trace_file
-from osi_utilities.tracefile.txth_reader import TXTHTraceFileReader
-from osi_utilities.tracefile.txth_writer import TXTHTraceFileWriter
-from osi_utilities.tracefile.writer import TraceFileWriter
+from osi_utilities.tracefile.mcap_reader import MultiTraceReader
+from osi_utilities.tracefile.mcap_writer import MultiTraceWriter
+from osi_utilities.tracefile.reader import TraceReader, TraceReaderFactory, open_trace_file
+from osi_utilities.tracefile.txth_reader import ProtobufTextFormatTraceReader
+from osi_utilities.tracefile.txth_writer import ProtobufTextFormatTraceWriter
+from osi_utilities.tracefile.writer import TraceWriter
 
 __all__ = [
-    "BinaryTraceFileReader",
-    "BinaryTraceFileWriter",
+    "SingleTraceReader",
+    "SingleTraceWriter",
     "ChannelReader",
     "ChannelSpecification",
     "MCAPChannel",
-    "MCAPTraceFileReader",
-    "MCAPTraceFileWriter",
+    "MultiTraceReader",
+    "MultiTraceWriter",
     "MessageType",
     "ReadResult",
-    "TXTHTraceFileReader",
-    "TXTHTraceFileWriter",
+    "ProtobufTextFormatTraceReader",
+    "ProtobufTextFormatTraceWriter",
     "TraceFileFormat",
-    "TraceFileReader",
-    "TraceFileReaderFactory",
-    "TraceFileWriter",
+    "TraceReader",
+    "TraceReaderFactory",
+    "TraceWriter",
     "convert_gt2sv",
     "open_trace_file",
     "open_channel",

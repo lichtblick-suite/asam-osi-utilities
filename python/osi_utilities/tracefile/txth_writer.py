@@ -15,12 +15,12 @@ from typing import IO
 from google.protobuf import text_format
 from google.protobuf.message import EncodeError, Message
 
-from osi_utilities.tracefile.writer import TraceFileWriter
+from osi_utilities.tracefile.writer import TraceWriter
 
 logger = logging.getLogger(__name__)
 
 
-class TXTHTraceFileWriter(TraceFileWriter):
+class ProtobufTextFormatTraceWriter(TraceWriter):
     """Writer for text human-readable OSI trace files (.txth).
 
     Messages are stored in Google protobuf TextFormat, one after another.

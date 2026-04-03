@@ -15,14 +15,14 @@ from osi_utilities.tracefile._types import MessageType, ReadResult
 logger = logging.getLogger(__name__)
 
 
-class TraceFileReader(ABC):
+class TraceReader(ABC):
     """Abstract base class for reading OSI trace files.
 
     Supports context manager protocol and iteration.
 
     Usage::
 
-        with TraceFileReaderFactory.create_reader("trace.mcap") as reader:
+        with TraceReaderFactory.create_reader("trace.mcap") as reader:
             for result in reader:
                 print(result.message_type, result.message)
     """
@@ -57,7 +57,7 @@ class TraceFileReader(ABC):
     def close(self) -> None:
         """Close the trace file and release resources."""
 
-    def __enter__(self) -> TraceFileReader:
+    def __enter__(self) -> TraceReader:
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
@@ -73,7 +73,7 @@ class TraceFileReader(ABC):
         return result
 
 
-class TraceFileReaderFactory:
+class TraceReaderFactory:
     """Factory for creating trace file readers based on file extension."""
 
     @staticmethod
@@ -81,7 +81,7 @@ class TraceFileReaderFactory:
         path: str | Path,
         *,
         message_type: MessageType | None = None,
-    ) -> TraceFileReader:
+    ) -> TraceReader:
         """Create a trace file reader appropriate for the given file.
 
         Args:
@@ -92,7 +92,7 @@ class TraceFileReaderFactory:
                 schema given in MCAP files.
 
         Returns:
-            An opened TraceFileReader instance.
+            An opened TraceReader instance.
 
         Raises:
             ValueError: If the file extension is not supported. RuntimeError: If
@@ -102,22 +102,22 @@ class TraceFileReaderFactory:
         suffix = path.suffix.lower()
 
         if suffix == ".mcap":
-            from osi_utilities.tracefile.mcap_reader import MCAPTraceFileReader
+            from osi_utilities.tracefile.mcap_reader import MultiTraceReader
 
-            reader = MCAPTraceFileReader(message_type=message_type)
+            reader = MultiTraceReader(message_type=message_type)
         elif suffix == ".osi":
-            from osi_utilities.tracefile.binary_reader import BinaryTraceFileReader
+            from osi_utilities.tracefile.binary_reader import SingleTraceReader
 
             if message_type is not None:
-                reader = BinaryTraceFileReader(message_type=message_type)
+                reader = SingleTraceReader(message_type=message_type)
             else:
-                reader = BinaryTraceFileReader()
+                reader = SingleTraceReader()
         elif suffix == ".txth":
             logger.warning("The .txth format is not reliably deserializable. Use .osi or .mcap instead.")
 
-            from osi_utilities.tracefile.txth_reader import TXTHTraceFileReader
+            from osi_utilities.tracefile.txth_reader import ProtobufTextFormatTraceReader
 
-            reader = TXTHTraceFileReader()
+            reader = ProtobufTextFormatTraceReader(message_type=message_type)
         else:
             raise ValueError(f"Unsupported trace file extension: '{suffix}'")
 
@@ -130,16 +130,16 @@ def open_trace_file(
     path: str | Path,
     *,
     message_type: MessageType | None = None,
-) -> TraceFileReader:
+) -> TraceReader:
     """Convenience function to open a trace file for reading.
 
-    Equivalent to ``TraceFileReaderFactory.create_reader(path)``.
+    Equivalent to ``TraceReaderFactory.create_reader(path)``.
 
     Args:
         path: Path to the trace file.
         message_type: Explicit message type for binary/txth files.
 
     Returns:
-        An opened TraceFileReader instance (use as context manager).
+        An opened TraceReader instance (use as context manager).
     """
-    return TraceFileReaderFactory.create_reader(path, message_type=message_type)
+    return TraceReaderFactory.create_reader(path, message_type=message_type)
