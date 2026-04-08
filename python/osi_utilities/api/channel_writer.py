@@ -128,9 +128,6 @@ class _TraceFileChannelWriter(ChannelWriter):
             )
         return True
 
-    def write_message(self, message: Message, topic: str = "") -> bool:
-        return self.write_message(message)
-
     def close(self) -> None:
         self._writer.close()
 
