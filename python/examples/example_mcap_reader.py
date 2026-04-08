@@ -4,12 +4,12 @@
 """Read OSI MCAP trace files — metadata inspection, topic filtering, and message iteration.
 
 Demonstrates:
-- MCAPTraceFileReader.get_available_topics()
-- MCAPTraceFileReader.get_file_metadata()
-- MCAPTraceFileReader.get_channel_metadata()
-- MCAPTraceFileReader.get_message_type_for_topic()
-- MCAPTraceFileReader.set_topics() for topic filtering
-- TraceFileReaderFactory.create_reader() for format auto-detection
+- MultiTraceReader.get_available_topics()
+- MultiTraceReader.get_file_metadata()
+- MultiTraceReader.get_channel_metadata()
+- MultiTraceReader.get_message_type_for_topic()
+- MultiTraceReader.set_topics() for topic filtering
+- create_reader() for format auto-detection
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from osi_utilities import MCAPTraceFileReader, TraceFileReaderFactory
-from osi_utilities.tracefile.timestamp import timestamp_to_seconds
+from osi_utilities import MultiTraceReader, create_reader
+from osi_utilities.timestamp import timestamp_to_seconds
 
 
 def main() -> int:
@@ -30,7 +30,7 @@ def main() -> int:
     )
     parser.add_argument("input_file", help="Path to the input MCAP trace file")
     parser.add_argument("--topic", action="append", default=[], help="Filter to specific topic(s) (repeatable)")
-    parser.add_argument("--factory", action="store_true", help="Use TraceFileReaderFactory for format auto-detection")
+    parser.add_argument("--factory", action="store_true", help="Use create_reader for format auto-detection")
     args = parser.parse_args()
 
     input_path = Path(args.input_file)
@@ -41,10 +41,10 @@ def main() -> int:
     print("Starting MCAP Reader example:")
     print(f"Reading trace file from {input_path}")
 
-    # --- Option A: Use TraceFileReaderFactory for format auto-detection ---
+    # --- Option A: Use create_reader for format auto-detection ---
     if args.factory:
-        print("\n[Using TraceFileReaderFactory for format auto-detection]")
-        reader = TraceFileReaderFactory.create_reader(input_path)
+        print("\n[Using create_reader for format auto-detection]")
+        reader = create_reader(input_path)
         reader.open(input_path)
         with reader:
             for result in reader:
@@ -53,9 +53,9 @@ def main() -> int:
         print("Finished MCAP Reader example (factory mode)")
         return 0
 
-    # --- Option B: Direct MCAPTraceFileReader for full feature access ---
-    reader = MCAPTraceFileReader()
-    if not reader.open(input_path):
+    # --- Option B: Direct MultiTraceReader for full feature access ---
+    reader = MultiTraceReader()
+    if not reader._open(input_path):
         print(f"Error: Could not open '{input_path}'", file=sys.stderr)
         return 1
 

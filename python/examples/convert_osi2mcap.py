@@ -9,7 +9,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from osi_utilities import BinaryTraceFileReader, MCAPTraceFileWriter, MessageType
+from osi_utilities import SingleTraceReader, MultiTraceWriter, MessageType
 
 VALID_TYPES = {
     "GroundTruth": MessageType.GROUND_TRUTH,
@@ -66,12 +66,12 @@ def main() -> int:
     print(f"Output: {output_path}")
 
     msg_type = VALID_TYPES[args.input_type] if args.input_type else MessageType.UNKNOWN
-    reader = BinaryTraceFileReader(message_type=msg_type)
-    if not reader.open(input_path):
+    reader = SingleTraceReader(message_type=msg_type)
+    if not reader._open(input_path):
         print(f"Error: Could not open input '{input_path}'", file=sys.stderr)
         return 1
 
-    writer = MCAPTraceFileWriter()
+    writer = MultiTraceWriter()
     metadata = {"description": f"Converted from {input_path.name}"}
     writer_kwargs: dict[str, object] = {}
     if args.compression is not None:

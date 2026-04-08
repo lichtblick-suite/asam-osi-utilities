@@ -5,7 +5,7 @@
 
 This example shows two approaches for writing multi-channel MCAP files:
 
-**Part 1 — MCAPTraceFileWriter (pure OSI, multi-topic)**
+**Part 1 — MultiTraceWriter (pure OSI, multi-topic)**
 Uses the high-level writer to register multiple OSI channels (including
 two channels sharing the same schema) and write messages in a simulation loop.
 
@@ -25,10 +25,10 @@ from pathlib import Path
 from osi3.osi_groundtruth_pb2 import GroundTruth
 from osi3.osi_sensorview_pb2 import SensorView
 
-from osi_utilities import MCAPTraceFileReader, MCAPTraceFileWriter
+from osi_utilities import MultiTraceReader, MultiTraceWriter
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
-from osi_utilities.tracefile.mcap_writer import prepare_required_file_metadata
-from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
+from osi_utilities.tracefile.writers.multi import prepare_required_file_metadata
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 
 try:
     from mcap.writer import Writer as McapRawWriter
@@ -83,12 +83,12 @@ def advance_timestamp(message: GroundTruth | SensorView, step_ns: int) -> None:
 
 def read_back_and_print_summary(path: Path, skip_non_osi: bool) -> None:
     """Read an MCAP file back and print a per-channel message count summary."""
-    reader = MCAPTraceFileReader()
-    if not reader.open(path):
+    reader = MultiTraceReader()
+    if not reader._open(path):
         print(f"  ERROR: could not open {path}", file=sys.stderr)
         return
 
-    reader.set_skip_non_osi_msgs(skip_non_osi)
+    reader.set_silence_incompatible_topic_warnings(skip_non_osi)
 
     channel_counts: dict[str, int] = {}
     with reader:
@@ -101,22 +101,22 @@ def read_back_and_print_summary(path: Path, skip_non_osi: bool) -> None:
 
 
 # ===========================================================================
-# Part 1 — Multi-topic writing with MCAPTraceFileWriter
+# Part 1 — Multi-topic writing with MultiTraceWriter
 # ===========================================================================
 
 
 def part1_multi_topic_writer() -> None:
-    """Demonstrate pure-OSI multi-channel writing via MCAPTraceFileWriter.
+    """Demonstrate pure-OSI multi-channel writing via MultiTraceWriter.
 
     Registers three channels (GroundTruth + two SensorView topics that share
     the same protobuf schema) and writes messages in a simulated time loop.
     """
-    print("\n=== Part 1: Multi-topic writing with MCAPTraceFileWriter ===")
+    print("\n=== Part 1: Multi-topic writing with MultiTraceWriter ===")
 
     path = generate_temp_file_path("part1")
     print(f"  Output: {path}")
 
-    writer = MCAPTraceFileWriter()
+    writer = MultiTraceWriter()
 
     metadata = prepare_required_file_metadata()
     metadata["description"] = "Multi-channel example (Part 1) — pure OSI topics."
@@ -257,7 +257,7 @@ def part2_mixed_channel_writer() -> None:
     print(f"  Wrote {NUM_STEPS} steps (1 OSI + 1 non-OSI each) to {path.name}")
 
     # --- read back with non-OSI filtering -----------------------------------
-    # Best practice: when reading a mixed file with MCAPTraceFileReader, enable
+    # Best practice: when reading a mixed file with MultiTraceReader, enable
     # set_skip_non_osi_msgs(True) to silently skip channels that are not recognized
     # OSI types.  Without this flag the reader would log warnings on unknown schemas.
     print("  Reading back with set_skip_non_osi_msgs(True):")

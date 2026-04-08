@@ -13,8 +13,8 @@ from pathlib import Path
 import google.protobuf
 from osi3.osi_sensorview_pb2 import SensorView
 
-from osi_utilities import BinaryTraceFileWriter
-from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
+from osi_utilities import SingleTraceWriter
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 
 
 def _generate_osi_filename(description: str, extension: str, frame_count: int = 10) -> str:
@@ -43,7 +43,7 @@ def main() -> int:
     trace_file_path = output_dir / file_name
     print(f"Creating trace file at {trace_file_path}")
 
-    writer = BinaryTraceFileWriter()
+    writer = SingleTraceWriter()
     if not writer.open(trace_file_path):
         print(f"Error: Could not open '{trace_file_path}'", file=sys.stderr)
         return 1
