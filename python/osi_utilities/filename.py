@@ -31,7 +31,7 @@ _SHORT_CODE_PATTERN = "|".join(
 )
 
 
-# Maps filename pattern substrings to MessageType (matching C++ kFileNameMessageTypeMap)
+# Maps filename pattern substrings to MessageType
 _FILENAME_MESSAGE_TYPE_MAP: dict[str, MessageType] = {
     f"_{short_code}_": message_type
     for short_code, message_type in _SHORT_CODE_TO_MESSAGE_TYPE.items()
@@ -41,12 +41,12 @@ _FILENAME_MESSAGE_TYPE_MAP: dict[str, MessageType] = {
 def infer_message_type_from_filename(filename: str) -> MessageType:
     """Infer message type from filename patterns.
 
-    Matches the C++ kFileNameMessageTypeMap patterns (e.g. ``_gt_``) and also
+    Matches the underscore-delimited patterns (e.g. ``_gt_``) and also
     supports the common convention where the type code appears at the end of
     the stem before the extension (e.g. ``trace_gt.osi``, ``output_sv.mcap``).
     """
     lower_name = filename.lower()
-    # First try the strict C++ patterns (e.g. "_gt_")
+    # First try the strict patterns (e.g. "_gt_")
     for pattern, msg_type in _FILENAME_MESSAGE_TYPE_MAP.items():
         if pattern in lower_name:
             return msg_type

@@ -41,8 +41,7 @@ logger = logging.getLogger(__name__)
 def _wrap_gt_in_sv(gt_msg: Message) -> Message:
     """Wrap a GroundTruth message inside a SensorView message.
 
-    Mirrors the C++ convert_gt2sv logic: copies timestamp,
-    host_vehicle_id, and sets global_ground_truth.
+    Copies timestamp, host_vehicle_id, and sets global_ground_truth.
 
     Uses MergeFromString to avoid cross-class CopyFrom errors when
     the reader returns dynamically-generated protobuf classes (e.g. MCAP).

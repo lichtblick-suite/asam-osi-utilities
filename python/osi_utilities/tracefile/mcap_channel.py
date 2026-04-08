@@ -1,10 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
-"""MCAP channel helper for writing OSI messages to an external MCAP writer.
-
-Mirrors the C++ MCAPTraceFileChannel class for users who manage their own mcap.McapWriter.
-"""
+"""MCAP channel helper for writing OSI messages to an external MCAP writer."""
 
 from __future__ import annotations
 
