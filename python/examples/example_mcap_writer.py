@@ -15,7 +15,7 @@ from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import MultiTraceWriter
 from osi_utilities.tracefile._config import DEFAULT_CHUNK_SIZE, MAX_CHUNK_SIZE, MIN_CHUNK_SIZE
-from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 
 
 def _generate_osi_filename(description: str, extension: str, frame_count: int = 10) -> str:

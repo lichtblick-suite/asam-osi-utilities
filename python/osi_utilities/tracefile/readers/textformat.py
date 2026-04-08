@@ -13,14 +13,13 @@ import logging
 from pathlib import Path
 
 from google.protobuf import text_format
+from osi_utilities._types import MessageType, ReadResult
 
-from osi_utilities.tracefile._types import (
-    MessageType,
-    ReadResult,
+from osi_utilities.message_types import (
     get_message_class,
-    infer_message_type_from_filename,
 )
-from osi_utilities.tracefile.reader import TraceReader
+from osi_utilities.filename import infer_message_type_from_filename
+from osi_utilities.tracefile.readers.base import TraceReader
 
 logger = logging.getLogger(__name__)
 
@@ -45,17 +44,25 @@ class ProtobufTextFormatTraceReader(TraceReader):
     `Protocol Buffers Text Format Language Specification <https://protobuf.dev/reference/protobuf/textformat-spec/>`_.
     """
 
-    def __init__(self, message_type: MessageType = MessageType.UNKNOWN) -> None:
-        self._message_type = message_type
+    def __init__(self) -> None:
+        self._message_type = MessageType.UNKNOWN
         self._message_class: type | None = None
         self._has_next = False
         self._buffer = ""
+
+    def set_message_type(self, message_type: MessageType) -> None:
+        """Set message type to be used on open().
+
+        Pass ``MessageType.UNKNOWN`` to enable filename-based inference.
+        """
+        self._message_type = message_type
 
     def open(self, path: Path) -> bool:
         """Open a .txth trace file.
 
         Args:
             path: Path to the .txth file.
+            message_type: Optional explicit message type.
 
         Returns:
             True on success, False on failure.

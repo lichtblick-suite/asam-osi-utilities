@@ -15,7 +15,7 @@ from typing import IO
 from google.protobuf import text_format
 from google.protobuf.message import EncodeError, Message
 
-from osi_utilities.tracefile.writer import TraceWriter
+from osi_utilities.tracefile.writers.base import TraceWriter
 
 logger = logging.getLogger(__name__)
 

@@ -16,7 +16,7 @@ from mcap.well_known import MessageEncoding
 from mcap.writer import Writer as McapRawWriter
 
 from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
-from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +117,6 @@ class MCAPChannel:
     @staticmethod
     def prepare_required_file_metadata() -> dict[str, str]:
         """Prepare required net.asam.osi.trace metadata."""
-        from osi_utilities.tracefile.mcap_writer import prepare_required_file_metadata
+        from osi_utilities.tracefile.writers.multi import prepare_required_file_metadata
 
         return prepare_required_file_metadata()

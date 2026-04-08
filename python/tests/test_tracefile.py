@@ -19,12 +19,12 @@ from osi_utilities import (
     MultiTraceReader,
     MultiTraceWriter,
     MessageType,
-    TraceReaderFactory,
+    create_reader,
     ProtobufTextFormatTraceReader,
     ProtobufTextFormatTraceWriter,
     open_trace_file,
 )
-from osi_utilities.tracefile._types import (
+from osi_utilities.message_types import (
     ChannelSpecification,
     TraceFileFormat,
     get_trace_file_format,
@@ -103,7 +103,7 @@ class TestBinaryTraceFile:
             assert writer.written_count == 5
 
         with SingleTraceReader(MessageType.GROUND_TRUTH) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) == 5
             for i, r in enumerate(results):
@@ -127,7 +127,7 @@ class TestBinaryTraceFile:
         path.write_bytes(b"\x05\x00")  # only 2 bytes of length header
 
         reader = SingleTraceReader(MessageType.GROUND_TRUTH)
-        assert reader.open(path)
+        assert reader._open(path)
         with pytest.raises(RuntimeError, match="Truncated length header"):
             reader.read_message()
         reader.close()
@@ -137,7 +137,7 @@ class TestBinaryTraceFile:
         path.write_bytes(struct.pack("<I", 100) + b"\x00" * 10)
 
         reader = SingleTraceReader(MessageType.GROUND_TRUTH)
-        assert reader.open(path)
+        assert reader._open(path)
         with pytest.raises(RuntimeError, match="Truncated message body"):
             reader.read_message()
         reader.close()
@@ -147,7 +147,7 @@ class TestBinaryTraceFile:
         path.write_bytes(b"")
 
         reader = SingleTraceReader(MessageType.GROUND_TRUTH)
-        assert reader.open(path)
+        assert reader._open(path)
         assert not reader.has_next()
         assert reader.read_message() is None
         reader.close()
@@ -171,7 +171,7 @@ class TestMCAPTraceFile:
             assert writer.written_count == 3
 
         with MultiTraceReader() as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) == 3
             for i, r in enumerate(results):
@@ -188,7 +188,7 @@ class TestMCAPTraceFile:
             assert writer.write_message(gt)
 
         with MultiTraceReader() as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) == 1
 
@@ -205,7 +205,7 @@ class TestMCAPTraceFile:
             assert writer.write_message(sv, "sv")
 
         with MultiTraceReader() as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) == 2
             types = {r.message_type for r in results}
@@ -226,7 +226,7 @@ class TestMCAPTraceFile:
             writer.write_message(_make_ground_truth())
 
         with MultiTraceReader() as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             metadata = reader.get_file_metadata()
             assert any(m["name"] == "net.asam.osi.trace" for m in metadata)
 
@@ -239,7 +239,7 @@ class TestMCAPTraceFile:
             writer.write_message(_make_ground_truth(), "ch1")
 
         with MultiTraceReader() as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             topics = reader.get_available_topics()
             assert "ch1" in topics
             assert "ch2" in topics
@@ -260,7 +260,7 @@ class TestTXTHTraceFile:
             assert writer.write_message(gt)
 
         with ProtobufTextFormatTraceReader(MessageType.GROUND_TRUTH) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) == 1
             assert results[0].message.timestamp.seconds == 42
@@ -286,7 +286,7 @@ class TestTXTHTraceFile:
                 assert writer.write_message(msg)
             assert writer.written_count == 5
         with ProtobufTextFormatTraceReader(MessageType.GROUND_TRUTH) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) == 5
             for i, r in enumerate(results):
@@ -300,7 +300,7 @@ class TestTXTHTraceFile:
             assert writer.open(path)
             assert writer.write_message(sv)
         with ProtobufTextFormatTraceReader(MessageType.SENSOR_VIEW) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) == 1
             assert results[0].message_type == MessageType.SENSOR_VIEW
@@ -308,19 +308,19 @@ class TestTXTHTraceFile:
 
     def test_open_nonexistent_file(self):
         reader = ProtobufTextFormatTraceReader(MessageType.GROUND_TRUTH)
-        assert not reader.open(Path("/nonexistent/path/file_gt.txth"))
+        assert not reader._open(Path("/nonexistent/path/file_gt.txth"))
 
     def test_open_unknown_type_from_filename(self, tmp_dir: Path):
         path = tmp_dir / "unknown.txth"
         path.write_text("", encoding="utf-8")
         reader = ProtobufTextFormatTraceReader()
-        assert not reader.open(path)
+        assert not reader._open(path)
 
     def test_read_empty_file(self, tmp_dir: Path):
         path = tmp_dir / "empty_gt.txth"
         path.write_text("", encoding="utf-8")
         reader = ProtobufTextFormatTraceReader(MessageType.GROUND_TRUTH)
-        assert reader.open(path)
+        assert reader._open(path)
         assert not reader.has_next()
         assert reader.read_message() is None
         reader.close()
@@ -343,7 +343,7 @@ class TestTXTHTraceFile:
         writer.write_message(_make_ground_truth(2))
         writer.close()
         with ProtobufTextFormatTraceReader(MessageType.GROUND_TRUTH) as r:
-            r.open(path2)
+            r._open(path2)
             results = list(r)
             assert len(results) == 1
             assert results[0].message.timestamp.seconds == 2
@@ -355,7 +355,7 @@ class TestTXTHTraceFile:
             w.open(path)
             w.write_message(_make_ground_truth(7))
         with ProtobufTextFormatTraceReader(MessageType.GROUND_TRUTH) as reader:
-            reader.open(path)
+            reader._open(path)
             results = list(reader)
             assert len(results) == 1
             assert results[0].message_type == MessageType.GROUND_TRUTH
@@ -369,7 +369,7 @@ class TestTXTHTraceFile:
 class TestFactory:
     def test_unsupported_extension(self):
         with pytest.raises(ValueError, match="Unsupported"):
-            TraceReaderFactory.create_reader("file.json")
+            create_reader("file.json")
 
     def test_open_trace_file_binary(self, tmp_dir: Path):
         path = tmp_dir / "factory_gt_data.osi"
@@ -396,7 +396,7 @@ class TestFactory:
         with SingleTraceWriter() as w:
             w.open(path)
             w.write_message(_make_ground_truth())
-        reader = TraceReaderFactory.create_reader(path)
+        reader = create_reader(path)
         assert isinstance(reader, SingleTraceReader)
         reader.close()
 
@@ -405,7 +405,7 @@ class TestFactory:
         with MultiTraceWriter() as w:
             w.open(path)
             w.write_message(_make_ground_truth())
-        reader = TraceReaderFactory.create_reader(path)
+        reader = create_reader(path)
         assert isinstance(reader, MultiTraceReader)
         reader.close()
 
@@ -414,17 +414,17 @@ class TestFactory:
         with ProtobufTextFormatTraceWriter() as w:
             w.open(path)
             w.write_message(_make_ground_truth())
-        reader = TraceReaderFactory.create_reader(path)
+        reader = create_reader(path)
         assert isinstance(reader, ProtobufTextFormatTraceReader)
         reader.close()
 
     def test_factory_no_extension(self):
         with pytest.raises(ValueError, match="Unsupported"):
-            TraceReaderFactory.create_reader("noextension")
+            create_reader("noextension")
 
     def test_factory_empty_path(self):
         with pytest.raises((ValueError, Exception)):
-            TraceReaderFactory.create_reader("")
+            create_reader("")
 
     def test_open_trace_file_txth(self, tmp_dir: Path):
         path = tmp_dir / "factory_gt_data.txth"
@@ -522,7 +522,7 @@ class TestNcapGroundTruth:
         path = TEST_DATA_DIR / filename
         _skip_if_lfs(path)
         with SingleTraceReader(msg_type) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) > 0
             for r in results:
@@ -533,7 +533,7 @@ class TestNcapGroundTruth:
         path = TEST_DATA_DIR / filename
         _skip_if_lfs(path)
         with SingleTraceReader(msg_type) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             result = reader.read_message()
             assert result is not None
             assert len(result.message.moving_object) > 0
@@ -543,7 +543,7 @@ class TestNcapGroundTruth:
         path = TEST_DATA_DIR / filename
         _skip_if_lfs(path)
         with SingleTraceReader(msg_type) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) >= 2
             for i in range(1, len(results)):
@@ -563,7 +563,7 @@ class TestNcapSensorView:
         path = TEST_DATA_DIR / filename
         _skip_if_lfs(path)
         with SingleTraceReader(msg_type) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) > 0
             for r in results:
@@ -574,7 +574,7 @@ class TestNcapSensorView:
         path = TEST_DATA_DIR / filename
         _skip_if_lfs(path)
         with SingleTraceReader(msg_type) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             result = reader.read_message()
             assert result is not None
             assert result.message.HasField("global_ground_truth")
@@ -584,7 +584,7 @@ class TestNcapSensorView:
         path = TEST_DATA_DIR / filename
         _skip_if_lfs(path)
         with SingleTraceReader(msg_type) as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             result = reader.read_message()
             assert result is not None
             sv_ts = result.message.timestamp
@@ -601,7 +601,7 @@ class TestNcapMcap:
         path = TEST_DATA_DIR / "ccrs_gt_ncap.mcap"
         _skip_if_lfs(path)
         with MultiTraceReader() as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) > 0
             for r in results:

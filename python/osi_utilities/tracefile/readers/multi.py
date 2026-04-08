@@ -16,16 +16,15 @@ from mcap.exceptions import McapError
 from mcap.reader import make_reader
 from mcap.well_known import MessageEncoding
 from mcap_protobuf.decoder import DecoderFactory
+from osi_utilities._types import MessageType, ReadResult
+from osi_utilities.api.types import ChannelSpecification
 
-from osi_utilities.tracefile._types import (
-    ChannelSpecification,
-    MessageType,
-    ReadResult,
+from osi_utilities.message_types import (
     coerce_message_type,
-    schema_name_to_message_type,
     get_message_class,
+    schema_name_to_message_type,
 )
-from osi_utilities.tracefile.reader import TraceReader
+from osi_utilities.tracefile.readers.base import TraceReader
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,6 @@ class MultiTraceReader(TraceReader):
 
     def __init__(
         self,
-        expected_message_type: MessageType | str | None = None,
         decoder_mode: str = "precompiled",
     ) -> None:
         self._file: IO[bytes] | None = None
@@ -49,7 +47,7 @@ class MultiTraceReader(TraceReader):
         self._summary = None
         self._silence_incompatible_topic_warnings = False
         self._topics: list[str] | None = None
-        self._expected_message_type = coerce_message_type(expected_message_type)
+        self._topic_message_types: dict[str, MessageType] = {}
         self._decoder_mode = "precompiled"
         self._set_decoder_mode(decoder_mode)
 
@@ -74,19 +72,6 @@ class MultiTraceReader(TraceReader):
         - ``mcap-contained``: decode via schema descriptor sets embedded in MCAP
         """
         self._set_decoder_mode(decoder_mode)
-
-    def set_expected_message_type(
-        self, expected_message_type: MessageType | str | None
-    ) -> None:
-        """Set optional expected message type for filtering.
-
-        When set, only messages with this type are yielded.
-        """
-        self._expected_message_type = coerce_message_type(expected_message_type)
-
-    def get_expected_message_type(self) -> MessageType | None:
-        """Return the currently configured expected message type filter."""
-        return self._expected_message_type
 
     def open(self, path: Path) -> bool:
         """Open an MCAP trace file.
@@ -126,6 +111,22 @@ class MultiTraceReader(TraceReader):
         """
         self._topics = topics if topics else None
         self._start_iteration()
+
+    def set_topic_message_types(
+        self, topic_message_types: dict[str, MessageType | str | None]
+    ) -> None:
+        """Set expected message types per topic.
+
+        Args:
+            topic_message_types: Mapping of topic name to expected message type.
+                Entries with ``None`` remove expectations for that topic.
+        """
+        normalized: dict[str, MessageType] = {}
+        for topic, message_type in topic_message_types.items():
+            coerced = coerce_message_type(message_type)
+            if coerced is not None:
+                normalized[topic] = coerced
+        self._topic_message_types = normalized
 
     def set_silence_incompatible_topic_warnings(self, silence: bool) -> None:
         """Configure whether to skip incompatible messages with or without warning.
@@ -177,16 +178,13 @@ class MultiTraceReader(TraceReader):
                     )
                 continue
 
-            if (
-                self._expected_message_type is not None
-                and msg_type != self._expected_message_type
-            ):
+            expected_message_type = self._topic_message_types.get(channel.topic)
+            if expected_message_type is not None and msg_type != expected_message_type:
                 if not self._silence_incompatible_topic_warnings:
                     logger.warning(
-                        "Skipping message of type '%s' on channel '%s' due to message type mismatch (expected: '%s', actual: '%s')",
-                        msg_type,
+                        "Message type mismatch on channel '%s' (expected: '%s', actual: '%s').",
                         channel.topic,
-                        self._expected_message_type,
+                        expected_message_type,
                         msg_type,
                     )
                 continue

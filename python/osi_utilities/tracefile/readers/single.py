@@ -14,17 +14,16 @@ import struct
 from pathlib import Path
 from typing import IO
 
+from osi_utilities._types import MessageType, ReadResult
 from osi_utilities.tracefile._config import (
     BINARY_MESSAGE_LENGTH_PREFIX_SIZE,
     MAX_EXPECTED_MESSAGE_SIZE,
 )
-from osi_utilities.tracefile._types import (
-    MessageType,
-    ReadResult,
+from osi_utilities.message_types import (
     get_message_class,
-    infer_message_type_from_filename,
 )
-from osi_utilities.tracefile.reader import TraceReader
+from osi_utilities.filename import infer_message_type_from_filename
+from osi_utilities.tracefile.readers.base import TraceReader
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +36,17 @@ class SingleTraceReader(TraceReader):
     The message type can be specified explicitly or inferred from the filename.
     """
 
-    def __init__(self, message_type: MessageType = MessageType.UNKNOWN) -> None:
-        """Initialize the binary trace file reader.
-
-        Args:
-            message_type: The expected message type. If UNKNOWN, will be inferred from filename.
-        """
-        self._message_type = message_type
+    def __init__(self, enable_message_type_inference: bool = True) -> None:
+        """Initialize the single-channel trace file reader."""
+        self._enable_message_type_inference = enable_message_type_inference
+        self._message_type = MessageType.UNKNOWN if self._enable_message_type_inference else None
         self._file: IO[bytes] | None = None
         self._message_class: type | None = None
         self._has_next = False
+
+    def set_message_type(self, message_type: MessageType) -> None:
+        """Set message type to be used on open(). """
+        self._message_type = message_type
 
     def open(self, path: Path) -> bool:
         """Open a binary .osi trace file.
@@ -78,19 +78,6 @@ class SingleTraceReader(TraceReader):
 
         self._has_next = self._peek_has_data()
         return True
-
-    def open_with_type(self, path: Path, message_type: MessageType) -> bool:
-        """Open a binary .osi trace file with an explicit message type.
-
-        Args:
-            path: Path to the .osi file.
-            message_type: The message type to use.
-
-        Returns:
-            True on success, False on failure.
-        """
-        self._message_type = message_type
-        return self.open(path)
 
     def read_message(self) -> ReadResult | None:
         """Read the next message from the binary trace file.
@@ -137,6 +124,8 @@ class SingleTraceReader(TraceReader):
         if self._file is not None:
             self._file.close()
             self._file = None
+        self._message_class = None
+        self._message_type = MessageType.UNKNOWN if self._enable_message_type_inference else None
         self._has_next = False
 
     @property

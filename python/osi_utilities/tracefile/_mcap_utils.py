@@ -34,8 +34,8 @@ def extract_timestamp_ns(message: Message) -> int:
     """Extract timestamp in nanoseconds from an OSI message.
 
     .. deprecated::
-        Use :func:`osi_utilities.tracefile.timestamp.timestamp_to_nanoseconds` instead.
+        Use :func:`osi_utilities.timestamp.timestamp_to_nanoseconds` instead.
     """
-    from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
+    from osi_utilities.timestamp import timestamp_to_nanoseconds
 
     return timestamp_to_nanoseconds(message)

@@ -14,7 +14,7 @@ import google.protobuf
 from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import ProtobufTextFormatTraceWriter
-from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 
 
 def _generate_osi_filename(description: str, extension: str, frame_count: int = 10) -> str:

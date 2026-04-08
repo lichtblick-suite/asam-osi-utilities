@@ -3,23 +3,37 @@
 
 """Python utilities for reading and writing ASAM OSI trace files."""
 
-from osi_utilities.converters.gt2sv import convert_gt2sv
-from osi_utilities.tracefile._types import (
+from typing import Any
+
+from osi_utilities.api import (
+    ChannelReader,
     ChannelSpecification,
     MessageType,
     ReadResult,
     TraceFileFormat,
+    open_channel,
 )
-from osi_utilities.tracefile.binary_reader import SingleTraceReader
-from osi_utilities.tracefile.binary_writer import SingleTraceWriter
-from osi_utilities.tracefile.channel_reader import ChannelReader, open_channel
+from osi_utilities.tracefile.readers import (
+    MultiTraceReader,
+    ProtobufTextFormatTraceReader,
+    SingleTraceReader,
+    TraceReader,
+)
+from osi_utilities.tracefile.writers import (
+    MultiTraceWriter,
+    ProtobufTextFormatTraceWriter,
+    SingleTraceWriter,
+    TraceWriter,
+)
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
-from osi_utilities.tracefile.mcap_reader import MultiTraceReader
-from osi_utilities.tracefile.mcap_writer import MultiTraceWriter
-from osi_utilities.tracefile.reader import TraceReader, TraceReaderFactory, open_trace_file
-from osi_utilities.tracefile.txth_reader import ProtobufTextFormatTraceReader
-from osi_utilities.tracefile.txth_writer import ProtobufTextFormatTraceWriter
-from osi_utilities.tracefile.writer import TraceWriter
+from osi_utilities.tracefile.configure import create_reader
+
+
+def convert_gt2sv(*args: Any, **kwargs: Any) -> Any:
+    """Lazily import and call the GT->SV converter."""
+    from osi_utilities.converters.gt2sv import convert_gt2sv as _convert_gt2sv
+
+    return _convert_gt2sv(*args, **kwargs)
 
 __all__ = [
     "SingleTraceReader",
@@ -35,9 +49,8 @@ __all__ = [
     "ProtobufTextFormatTraceWriter",
     "TraceFileFormat",
     "TraceReader",
-    "TraceReaderFactory",
+    "create_reader",
     "TraceWriter",
     "convert_gt2sv",
-    "open_trace_file",
     "open_channel",
 ]

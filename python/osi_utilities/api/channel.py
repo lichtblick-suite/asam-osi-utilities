@@ -12,19 +12,18 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from pathlib import Path
 
 from google.protobuf.message import Message
+from osi_utilities._types import MessageType, TraceFileFormat
+from osi_utilities.api.types import ChannelSpecification
 
-from osi_utilities.tracefile._types import (
-    ChannelSpecification,
-    MessageType,
-    TraceFileFormat,
+from osi_utilities.message_types import (
     message_type_to_class_name,
     require_message_type,
 )
-from osi_utilities.tracefile.mcap_reader import MultiTraceReader
-from osi_utilities.tracefile.reader import TraceReader, TraceReaderFactory
+from osi_utilities.tracefile.readers.multi import MultiTraceReader
+from osi_utilities.tracefile.readers.base import TraceReader
+from osi_utilities.tracefile.configure import configure_reader, create_reader
 
 
 class ChannelReader(ABC):
@@ -123,12 +122,18 @@ def open_channel(channel_spec: ChannelSpecification) -> ChannelReader:
             if channel_spec.message_type is not None:
                 message_type = require_message_type(channel_spec.message_type)
 
-        reader = TraceReaderFactory.create_reader(
-            channel_spec.path, message_type=message_type
-        )
+        reader = create_reader(channel_spec.path)
+        if message_type is not None:
+            channel_spec = channel_spec.with_message_type(message_type)
+        configure_reader(reader, channel_spec)
+        if not reader.open(channel_spec.path):
+            raise RuntimeError(f"Failed to open trace file: {channel_spec.path}")
         return _TraceFileChannelReader(reader=reader, channel_spec=channel_spec)
     elif channel_spec.trace_file_format == TraceFileFormat.MULTI_CHANNEL:
-        reader = TraceReaderFactory.create_reader(channel_spec.path)
+        reader = create_reader(channel_spec.path)
+        configure_reader(reader, channel_spec)
+        if not reader.open(channel_spec.path):
+            raise RuntimeError(f"Failed to open trace file: {channel_spec.path}")
         if not isinstance(reader, MultiTraceReader):
             reader.close()
             raise RuntimeError(

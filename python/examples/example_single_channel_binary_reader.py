@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from osi_utilities import SingleTraceReader, MessageType
-from osi_utilities.tracefile.timestamp import timestamp_to_seconds
+from osi_utilities.timestamp import timestamp_to_seconds
 
 VALID_TYPES = {
     "GroundTruth": MessageType.GROUND_TRUTH,
@@ -51,7 +51,7 @@ def main() -> int:
 
     msg_type = VALID_TYPES[args.message_type] if args.message_type else MessageType.UNKNOWN
     reader = SingleTraceReader(message_type=msg_type)
-    if not reader.open(input_path):
+    if not reader._open(input_path):
         print(f"Error: Could not open '{input_path}'", file=sys.stderr)
         return 1
 

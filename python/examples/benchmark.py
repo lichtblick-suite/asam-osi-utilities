@@ -132,7 +132,7 @@ def _run_synthetic(num_messages: int) -> int:
     _print_row("MCAP", "write", time.perf_counter() - t0, total_mb)
 
     reader = MultiTraceReader()
-    reader.open(mcap_path)
+    reader._open(mcap_path)
 
     t0 = time.perf_counter()
     count = 0
@@ -152,7 +152,7 @@ def _run_synthetic(num_messages: int) -> int:
     _print_row(".osi", "write", time.perf_counter() - t0, total_mb)
 
     reader = SingleTraceReader(message_type=MessageType.SENSOR_VIEW)
-    reader.open(osi_path)
+    reader._open(osi_path)
 
     t0 = time.perf_counter()
     count = 0
@@ -172,7 +172,7 @@ def _run_synthetic(num_messages: int) -> int:
     _print_row(".txth", "write", time.perf_counter() - t0, total_mb)
 
     reader = ProtobufTextFormatTraceReader(message_type=MessageType.SENSOR_VIEW)
-    reader.open(txth_path)
+    reader._open(txth_path)
 
     t0 = time.perf_counter()
     count = 0
@@ -221,7 +221,7 @@ def _run_file(input_path: Path, message_type: MessageType) -> int:
 
     # Read benchmark
     reader = SingleTraceReader(message_type=message_type)
-    if not reader.open(input_path):
+    if not reader._open(input_path):
         print(f"ERROR: Could not open: {input_path}", file=sys.stderr)
         return 1
 

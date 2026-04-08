@@ -67,7 +67,7 @@ def main() -> int:
 
     msg_type = VALID_TYPES[args.input_type] if args.input_type else MessageType.UNKNOWN
     reader = SingleTraceReader(message_type=msg_type)
-    if not reader.open(input_path):
+    if not reader._open(input_path):
         print(f"Error: Could not open input '{input_path}'", file=sys.stderr)
         return 1
 

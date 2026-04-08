@@ -37,7 +37,7 @@ from osi_utilities import (
 from osi_utilities.tracefile._config import MAX_EXPECTED_MESSAGE_SIZE
 from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
 from osi_utilities.tracefile.mcap_writer import prepare_required_file_metadata
-from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 
 # ===========================================================================
 # Fixtures
@@ -92,7 +92,7 @@ class TestMCAPChannel:
             writer.finish()
 
         with MultiTraceReader() as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             ch_meta = reader.get_channel_metadata("gt")
             assert ch_meta is not None
             assert ch_meta["custom_key"] == "custom_value"
@@ -121,7 +121,7 @@ class TestMCAPChannel:
             writer.finish()
 
         with MultiTraceReader() as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) == 1
             assert results[0].message.timestamp.seconds == 7
@@ -189,7 +189,7 @@ class TestBinaryReaderErrors:
             w.write_message(_make_ground_truth())
 
         reader = SingleTraceReader(MessageType.GROUND_TRUTH)
-        reader.open(path)
+        reader._open(path)
         reader.close()
         assert reader.read_message() is None
         assert not reader.has_next()
@@ -203,10 +203,10 @@ class TestBinaryReaderErrors:
                 w.write_message(_make_ground_truth())
 
         reader = SingleTraceReader(MessageType.GROUND_TRUTH)
-        assert reader.open(path1)
+        assert reader._open(path1)
         # Opening a second file without closing should still work
         # (the implementation resets internal state)
-        result = reader.open(path2)
+        result = reader._open(path2)
         # Either way, we should be able to read from it
         assert result or reader.read_message() is not None or True
         reader.close()
@@ -218,7 +218,7 @@ class TestBinaryReaderErrors:
         path.write_bytes(struct.pack("<I", huge_size))
 
         reader = SingleTraceReader(MessageType.GROUND_TRUTH)
-        reader.open(path)
+        reader._open(path)
         with pytest.raises(RuntimeError, match="exceeds maximum"):
             reader.read_message()
         reader.close()
@@ -227,7 +227,7 @@ class TestBinaryReaderErrors:
         path = tmp_dir / "unknown.osi"
         path.write_bytes(b"")
         reader = SingleTraceReader(MessageType.UNKNOWN)
-        assert not reader.open(path)
+        assert not reader._open(path)
 
 
 class TestMCAPReaderErrors:
@@ -235,7 +235,7 @@ class TestMCAPReaderErrors:
         path = tmp_dir / "invalid.mcap"
         path.write_bytes(b"this is not an mcap file")
         reader = MultiTraceReader()
-        assert not reader.open(path)
+        assert not reader._open(path)
 
     def test_read_empty_mcap(self, tmp_dir: Path):
         path = tmp_dir / "empty.mcap"
@@ -245,7 +245,7 @@ class TestMCAPReaderErrors:
             writer.finish()
 
         with MultiTraceReader() as reader:
-            assert reader.open(path)
+            assert reader._open(path)
             results = list(reader)
             assert len(results) == 0
 
@@ -260,11 +260,30 @@ class TestMCAPReaderErrors:
             writer.write_message(_make_ground_truth(3), "gt")
 
         with MultiTraceReader() as reader:
-            reader.open(path)
+            reader._open(path)
             reader.set_topics(["gt"])
             results = list(reader)
             assert len(results) == 2
             assert all(r.message_type == MessageType.GROUND_TRUTH for r in results)
+
+    def test_set_topic_message_types_warns_on_mismatch(self, tmp_dir: Path, caplog):
+        path = tmp_dir / "topic_type_mismatch.mcap"
+        with MultiTraceWriter() as writer:
+            writer.open(path)
+            writer.add_channel("gt", GroundTruth)
+            writer.add_channel("sv", SensorView)
+            writer.write_message(_make_ground_truth(1), "gt")
+            writer.write_message(_make_sensor_view(2), "sv")
+
+        with MultiTraceReader() as reader:
+            assert reader._open(path)
+            reader.set_topic_message_types({"sv": MessageType.GROUND_TRUTH})
+            results = list(reader)
+            assert len(results) == 2
+            assert any(
+                "Message type mismatch on channel 'sv'" in rec.message
+                for rec in caplog.records
+            )
 
     def test_get_channel_metadata(self, tmp_dir: Path):
         path = tmp_dir / "ch_meta.mcap"
@@ -275,7 +294,7 @@ class TestMCAPReaderErrors:
             writer.write_message(_make_ground_truth(), "gt")
 
         with MultiTraceReader() as reader:
-            reader.open(path)
+            reader._open(path)
             meta = reader.get_channel_metadata("gt")
             assert meta is not None
             assert meta["my_key"] == "my_value"
@@ -290,7 +309,7 @@ class TestMCAPReaderErrors:
             writer.write_message(_make_ground_truth(), "gt")
 
         with MultiTraceReader() as reader:
-            reader.open(path)
+            reader._open(path)
             msg_type = reader.get_message_type_for_topic("gt")
             assert msg_type == MessageType.GROUND_TRUTH
             assert reader.get_message_type_for_topic("nonexistent") is None
@@ -309,7 +328,7 @@ class TestMCAPReaderErrors:
 
         # Verify that the OSI message is read and no errors occur
         with MultiTraceReader() as reader:
-            reader.open(path)
+            reader._open(path)
             reader.set_skip_non_osi_msgs(True)
             results = list(reader)
             assert len(results) == 1
@@ -325,7 +344,7 @@ class TestTXTHReaderErrors:
             w.write_message(_make_ground_truth(2))
 
         with ProtobufTextFormatTraceReader(MessageType.GROUND_TRUTH) as reader:
-            reader.open(path)
+            reader._open(path)
             results = list(reader)
             assert len(results) == 2
             assert results[0].message.timestamp.seconds == 1
@@ -335,7 +354,7 @@ class TestTXTHReaderErrors:
         path = tmp_dir / "bad_gt.txth"
         path.write_text("this is not valid protobuf text {{{", encoding="utf-8")
         reader = ProtobufTextFormatTraceReader(MessageType.GROUND_TRUTH)
-        reader.open(path)
+        reader._open(path)
         with pytest.raises(RuntimeError, match="Failed to parse"):
             reader.read_message()
         reader.close()
@@ -347,7 +366,7 @@ class TestTXTHReaderErrors:
             w.write_message(_make_ground_truth())
 
         reader = ProtobufTextFormatTraceReader(MessageType.GROUND_TRUTH)
-        reader.open(path)
+        reader._open(path)
         reader.close()
         assert reader.read_message() is None
         assert not reader.has_next()
@@ -356,7 +375,7 @@ class TestTXTHReaderErrors:
         path = tmp_dir / "unknown.txth"
         path.write_text("", encoding="utf-8")
         reader = ProtobufTextFormatTraceReader(MessageType.UNKNOWN)
-        assert not reader.open(path)
+        assert not reader._open(path)
 
 
 # ===========================================================================
@@ -382,7 +401,7 @@ class TestBinaryWriterErrors:
             assert w.written_count == 1
 
         with SingleTraceReader(MessageType.GROUND_TRUTH) as r:
-            r.open(path)
+            r._open(path)
             results = list(r)
             assert len(results) == 1
 
@@ -399,7 +418,7 @@ class TestBinaryWriterErrors:
         writer.close()
 
         with SingleTraceReader(MessageType.GROUND_TRUTH) as r:
-            r.open(path2)
+            r._open(path2)
             results = list(r)
             assert len(results) == 1
             assert results[0].message.timestamp.seconds == 2
@@ -419,7 +438,7 @@ class TestMCAPWriterErrors:
             writer.write_message(_make_ground_truth())
 
         with MultiTraceReader() as reader:
-            reader.open(path)
+            reader._open(path)
             metadata = reader.get_file_metadata()
             osi_meta = [m for m in metadata if m["name"] == "net.asam.osi.trace"]
             assert len(osi_meta) == 1
@@ -434,7 +453,7 @@ class TestMCAPWriterErrors:
             writer.write_message(_make_ground_truth())
 
         with MultiTraceReader() as reader:
-            reader.open(path)
+            reader._open(path)
             metadata = reader.get_file_metadata()
             custom = [m for m in metadata if m["name"] == "custom.data"]
             assert len(custom) == 1
@@ -451,7 +470,7 @@ class TestMCAPWriterErrors:
             writer.write_message(_make_ground_truth(2), "gt2")
 
         with MultiTraceReader() as reader:
-            reader.open(path)
+            reader._open(path)
             results = list(reader)
             assert len(results) == 2
 
@@ -469,7 +488,7 @@ class TestMCAPWriterErrors:
         writer.close()
 
         with MultiTraceReader() as r:
-            r.open(path2)
+            r._open(path2)
             results = list(r)
             assert len(results) == 1
             assert results[0].message.timestamp.seconds == 2
@@ -529,7 +548,7 @@ class TestCrossFormatRoundtrip:
             w.write_message(gt)
 
         with SingleTraceReader(MessageType.GROUND_TRUTH) as r:
-            r.open(path)
+            r._open(path)
             results = list(r)
             assert len(results) == 1
             read_gt = results[0].message
@@ -554,7 +573,7 @@ class TestCrossFormatRoundtrip:
             w.write_message(gt)
 
         with MultiTraceReader() as r:
-            r.open(path)
+            r._open(path)
             results = list(r)
             assert len(results) == 1
             read_gt = results[0].message
@@ -576,7 +595,7 @@ class TestCrossFormatRoundtrip:
             w.write_message(sv)
 
         with SingleTraceReader(MessageType.SENSOR_VIEW) as r:
-            r.open(osi_path)
+            r._open(osi_path)
             results = list(r)
             assert len(results) == 1
             assert results[0].message_type == MessageType.SENSOR_VIEW
@@ -588,7 +607,7 @@ class TestCrossFormatRoundtrip:
             w.write_message(sv)
 
         with MultiTraceReader() as r:
-            r.open(mcap_path)
+            r._open(mcap_path)
             results = list(r)
             assert len(results) == 1
             assert results[0].message_type == MessageType.SENSOR_VIEW
@@ -640,7 +659,7 @@ class TestMultiTypeRoundtrip:
             w.open(path)
             w.write_message(msg)
         with SingleTraceReader(msg_type) as r:
-            r.open(path)
+            r._open(path)
             results = list(r)
             assert len(results) == 1
             assert results[0].message_type == msg_type
@@ -654,7 +673,7 @@ class TestMultiTypeRoundtrip:
             w.open(path)
             w.write_message(msg)
         with MultiTraceReader() as r:
-            r.open(path)
+            r._open(path)
             results = list(r)
             assert len(results) == 1
             assert results[0].message_type == msg_type
@@ -668,7 +687,7 @@ class TestMultiTypeRoundtrip:
             w.open(path)
             w.write_message(msg)
         with ProtobufTextFormatTraceReader(msg_type) as r:
-            r.open(path)
+            r._open(path)
             results = list(r)
             assert len(results) == 1
             assert results[0].message_type == msg_type

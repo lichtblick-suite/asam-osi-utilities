@@ -93,7 +93,7 @@ class TestConvertGt2svBinary:
         convert_gt2sv(gt_path, sv_path)
 
         with SingleTraceReader(MessageType.SENSOR_VIEW) as reader:
-            assert reader.open(sv_path)
+            assert reader._open(sv_path)
             results = list(reader)
             assert len(results) == 3
             for r in results:
@@ -107,7 +107,7 @@ class TestConvertGt2svBinary:
         convert_gt2sv(gt_path, sv_path)
 
         with SingleTraceReader(MessageType.SENSOR_VIEW) as reader:
-            assert reader.open(sv_path)
+            assert reader._open(sv_path)
             for i, result in enumerate(reader):
                 sv = result.message
                 assert sv.HasField("global_ground_truth")
@@ -124,7 +124,7 @@ class TestConvertGt2svBinary:
         convert_gt2sv(gt_path, sv_path)
 
         with SingleTraceReader(MessageType.SENSOR_VIEW) as reader:
-            assert reader.open(sv_path)
+            assert reader._open(sv_path)
             results = list(reader)
             assert results[0].message.timestamp.seconds == 0
             assert results[1].message.timestamp.seconds == 1
@@ -137,7 +137,7 @@ class TestConvertGt2svBinary:
         convert_gt2sv(gt_path, sv_path)
 
         with SingleTraceReader(MessageType.SENSOR_VIEW) as reader:
-            assert reader.open(sv_path)
+            assert reader._open(sv_path)
             result = next(iter(reader))
             assert result.message.HasField("host_vehicle_id")
             assert result.message.host_vehicle_id.value == 0
@@ -155,7 +155,7 @@ class TestConvertGt2svMCAP:
 
         assert count == 4
         with MultiTraceReader() as reader:
-            assert reader.open(sv_path)
+            assert reader._open(sv_path)
             results = list(reader)
             assert len(results) == 4
             for r in results:
@@ -169,7 +169,7 @@ class TestConvertGt2svMCAP:
         convert_gt2sv(gt_path, sv_path)
 
         with MultiTraceReader() as reader:
-            assert reader.open(sv_path)
+            assert reader._open(sv_path)
             for i, result in enumerate(reader):
                 sv = result.message
                 assert sv.HasField("global_ground_truth")
@@ -197,7 +197,7 @@ class TestConvertGt2svCrossFormat:
 
         assert count == 3
         with MultiTraceReader() as reader:
-            assert reader.open(sv_path)
+            assert reader._open(sv_path)
             results = list(reader)
             assert len(results) == 3
             for r in results:
@@ -212,7 +212,7 @@ class TestConvertGt2svCrossFormat:
 
         assert count == 3
         with SingleTraceReader(MessageType.SENSOR_VIEW) as reader:
-            assert reader.open(sv_path)
+            assert reader._open(sv_path)
             results = list(reader)
             assert len(results) == 3
 
@@ -249,7 +249,7 @@ class TestConvertGt2svEdgeCases:
 
         assert count == 1
         with SingleTraceReader(MessageType.SENSOR_VIEW) as reader:
-            assert reader.open(sv_path)
+            assert reader._open(sv_path)
             results = list(reader)
             assert len(results) == 1
             assert results[0].message.HasField("global_ground_truth")

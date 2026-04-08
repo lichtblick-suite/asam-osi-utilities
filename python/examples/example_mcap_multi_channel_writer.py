@@ -27,8 +27,8 @@ from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import MultiTraceReader, MultiTraceWriter
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
-from osi_utilities.tracefile.mcap_writer import prepare_required_file_metadata
-from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
+from osi_utilities.tracefile.writers.multi import prepare_required_file_metadata
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 
 try:
     from mcap.writer import Writer as McapRawWriter
@@ -84,7 +84,7 @@ def advance_timestamp(message: GroundTruth | SensorView, step_ns: int) -> None:
 def read_back_and_print_summary(path: Path, skip_non_osi: bool) -> None:
     """Read an MCAP file back and print a per-channel message count summary."""
     reader = MultiTraceReader()
-    if not reader.open(path):
+    if not reader._open(path):
         print(f"  ERROR: could not open {path}", file=sys.stderr)
         return
 

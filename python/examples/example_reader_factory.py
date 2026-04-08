@@ -5,7 +5,7 @@
 
 Demonstrates:
 - open_trace_file() — one-liner to open any .osi, .mcap, or .txth file
-- TraceReaderFactory.create_reader() — explicit factory pattern
+- create_reader() — explicit factory function
 - timestamp_to_seconds(), timestamp_to_nanoseconds() — timestamp conversion
 - nanoseconds_to_seconds(), seconds_to_nanoseconds() — unit conversion
 - MessageType enum — OSI message type identification
@@ -19,9 +19,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from osi_utilities import MessageType, TraceReaderFactory, open_trace_file
-from osi_utilities.tracefile._types import infer_message_type_from_filename, parse_osi_trace_filename
-from osi_utilities.tracefile.timestamp import (
+from osi_utilities import MessageType, create_reader, open_trace_file
+from osi_utilities.message_types import infer_message_type_from_filename, parse_osi_trace_filename
+from osi_utilities.timestamp import (
     nanoseconds_to_seconds,
     seconds_to_nanoseconds,
     timestamp_to_nanoseconds,
@@ -83,10 +83,10 @@ def main() -> int:
 
     print(f"Read {count} messages via open_trace_file()\n")
 
-    # --- Method 2: TraceReaderFactory.create_reader() — explicit factory ---
-    print("=== Method 2: TraceReaderFactory.create_reader() ===")
+    # --- Method 2: create_reader() — explicit factory ---
+    print("=== Method 2: create_reader() ===")
     print(f"Input: {input_path}")
-    reader2 = TraceReaderFactory.create_reader(input_path, message_type=msg_type)
+    reader2 = create_reader(input_path)
     reader2.open(input_path)
 
     count2 = 0
@@ -94,7 +94,7 @@ def main() -> int:
         for result in reader2:
             count2 += 1
 
-    print(f"Read {count2} messages via TraceReaderFactory (same result, explicit API)")
+    print(f"Read {count2} messages via create_reader (same result, explicit API)")
     print(
         "\nBoth methods auto-detect format from extension: .osi → BinaryReader, .mcap → MCAPReader, .txth → TXTHReader"
     )
