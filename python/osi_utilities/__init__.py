@@ -7,11 +7,13 @@ from typing import Any
 
 from osi_utilities.api import (
     ChannelReader,
+    ChannelWriter,
     ChannelSpecification,
     MessageType,
     ReadResult,
     TraceFileFormat,
     open_channel,
+    open_channel_writer,
 )
 from osi_utilities.tracefile.readers import (
     MultiTraceReader,
@@ -40,6 +42,7 @@ __all__ = [
     "SingleTraceWriter",
     "ChannelReader",
     "ChannelSpecification",
+    "ChannelWriter",
     "MCAPChannel",
     "MultiTraceReader",
     "MultiTraceWriter",
@@ -53,4 +56,5 @@ __all__ = [
     "TraceWriter",
     "convert_gt2sv",
     "open_channel",
+    "open_channel_writer",
 ]
