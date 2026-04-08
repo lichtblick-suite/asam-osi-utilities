@@ -181,7 +181,7 @@ class TestMCAPChannel:
 # ===========================================================================
 
 
-class TestBinaryReaderErrors:
+class TestSingleTraceReaderErrors:
     def test_read_after_close(self, tmp_dir: Path):
         path = tmp_dir / "close_gt.osi"
         with SingleTraceWriter() as w:
@@ -254,7 +254,7 @@ class TestBinaryReaderErrors:
         reader.close()
 
 
-class TestMCAPReaderErrors:
+class TestMultiTraceReaderErrors:
     def test_open_invalid_mcap(self, tmp_dir: Path):
         path = tmp_dir / "invalid.mcap"
         path.write_bytes(b"this is not an mcap file")
@@ -386,7 +386,7 @@ class TestMCAPReaderErrors:
             assert results[0].message_type == MessageType.GROUND_TRUTH
 
 
-class TestTXTHReaderErrors:
+class TestProtobufTextFormatTraceReaderErrors:
     def test_multi_message_txth(self, tmp_dir: Path):
         path = tmp_dir / "multi_gt.txth"
         with ProtobufTextFormatTraceWriter() as w:
@@ -457,7 +457,7 @@ class TestTXTHReaderErrors:
 # ===========================================================================
 
 
-class TestBinaryWriterErrors:
+class TestSingleTraceWriterErrors:
     def test_write_after_close(self, tmp_dir: Path):
         path = tmp_dir / "closed_gt.osi"
         writer = SingleTraceWriter()
@@ -502,7 +502,7 @@ class TestBinaryWriterErrors:
             assert results[0].message.timestamp.seconds == 2
 
 
-class TestMCAPWriterErrors:
+class TestMultiTraceWriterErrors:
     def test_add_channel_before_open(self):
         writer = MultiTraceWriter()
         with pytest.raises(RuntimeError, match="not open"):
@@ -587,7 +587,7 @@ class TestMCAPWriterErrors:
             assert not writer.write_message(_make_ground_truth(), "nonexistent")
 
 
-class TestTXTHWriterErrors:
+class TestProtobufTextFormatTraceWriterErrors:
     def test_write_multiple_messages(self, tmp_dir: Path):
         path = tmp_dir / "multi_gt.txth"
         with ProtobufTextFormatTraceWriter() as w:

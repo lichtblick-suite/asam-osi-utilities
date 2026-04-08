@@ -84,11 +84,11 @@ class TestMessageType:
 
 
 # ===========================================================================
-# Binary reader/writer
+# Single-channel trace reader/writer
 # ===========================================================================
 
 
-class TestBinaryTraceFile:
+class TestSingleTraceFile:
     def test_write_and_read(self, tmp_dir: Path):
         path = tmp_dir / "test_gt.osi"
         messages = [_make_ground_truth(i) for i in range(5)]
@@ -159,11 +159,11 @@ class TestBinaryTraceFile:
 
 
 # ===========================================================================
-# MCAP reader/writer
+# Multi-channel trace reader/writer
 # ===========================================================================
 
 
-class TestMCAPTraceFile:
+class TestMultiTraceFile:
     def test_write_and_read(self, tmp_dir: Path):
         path = tmp_dir / "test.mcap"
         messages = [_make_ground_truth(i) for i in range(3)]
