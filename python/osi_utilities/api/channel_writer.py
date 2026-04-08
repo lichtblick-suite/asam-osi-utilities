@@ -4,7 +4,7 @@
 """Unified single-channel writer API across OSI trace container formats.
 
 This module introduces a format-agnostic channel writer abstraction:
-- Single-channel files (.osi, .txth, .osi.xz) are exposed as one logical channel
+- Single-channel files (.osi, .txth) are exposed as one logical channel
 - Multi-channel files (.mcap) are written to one selected topic/channel
 """
 
@@ -144,7 +144,7 @@ def open_channel_writer(channel_spec: ChannelSpecification) -> ChannelWriter:
     """Open a single-channel writer from a channel specification.
 
     Behavior by trace format:
-    - ``SINGLE_CHANNEL`` (``.osi``, ``.txth``, ``.osi.xz``): writes one logical channel.
+    - ``SINGLE_CHANNEL`` (``.osi``, ``.txth``): writes one logical channel.
       If ``message_type`` is missing, it is inferred from the first written message.
     - ``MULTI_CHANNEL`` (``.mcap``): resolves one topic/channel and registers it lazily
       on first write with message class and channel metadata.
