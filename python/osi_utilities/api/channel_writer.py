@@ -4,8 +4,10 @@
 """Unified single-channel writer API across OSI trace container formats.
 
 This module introduces a format-agnostic channel writer abstraction:
-- Single-channel files (.osi, .txth) are exposed as one logical channel
-- Multi-channel files (.mcap) are written to one selected topic/channel
+- Single-channel specifications (TraceFileFormat.SINGLE_CHANNEL) are written to
+a single channel trace (.osi or .txth depending on the path suffix).
+- Multi-channel specifications (TraceFileFormat.MULTI_CHANNEL) are written to
+the specified topic/channel in a multi-channel trace (.mcap).
 """
 
 from __future__ import annotations
