@@ -236,6 +236,23 @@ class TestBinaryReaderErrors:
         reader.set_message_type(MessageType.UNKNOWN)
         assert not reader.open(path)
 
+    def test_has_next_transitions_to_false_at_eof(self, tmp_dir: Path):
+        path = tmp_dir / "has_next_gt.osi"
+        with SingleTraceWriter() as writer:
+            assert writer.open(path)
+            assert writer.write_message(_make_ground_truth())
+
+        reader = SingleTraceReader()
+        reader.set_message_type(MessageType.GROUND_TRUTH)
+        assert reader.open(path)
+        assert reader.has_next()
+        result = reader.read_message()
+        assert result is not None
+        assert not reader.has_next()
+        assert reader.read_message() is None
+        assert not reader.has_next()
+        reader.close()
+
 
 class TestMCAPReaderErrors:
     def test_open_invalid_mcap(self, tmp_dir: Path):
@@ -255,6 +272,33 @@ class TestMCAPReaderErrors:
             assert reader.open(path)
             results = list(reader)
             assert len(results) == 0
+
+    def test_read_after_close(self, tmp_dir: Path):
+        path = tmp_dir / "close.mcap"
+        with MultiTraceWriter() as writer:
+            assert writer.open(path)
+            assert writer.write_message(_make_ground_truth())
+
+        reader = MultiTraceReader()
+        assert reader.open(path)
+        reader.close()
+        assert reader.read_message() is None
+        assert not reader.has_next()
+
+    def test_has_next_transitions_to_false_at_eof(self, tmp_dir: Path):
+        path = tmp_dir / "has_next.mcap"
+        with MultiTraceWriter() as writer:
+            assert writer.open(path)
+            assert writer.write_message(_make_ground_truth())
+
+        with MultiTraceReader() as reader:
+            assert reader.open(path)
+            assert reader.has_next()
+            result = reader.read_message()
+            assert result is not None
+            assert not reader.has_next()
+            assert reader.read_message() is None
+            assert not reader.has_next()
 
     def test_set_topics_filter(self, tmp_dir: Path):
         path = tmp_dir / "filter.mcap"
@@ -389,6 +433,23 @@ class TestTXTHReaderErrors:
         reader = ProtobufTextFormatTraceReader()
         reader.set_message_type(MessageType.UNKNOWN)
         assert not reader.open(path)
+
+    def test_has_next_transitions_to_false_at_eof(self, tmp_dir: Path):
+        path = tmp_dir / "has_next_gt.txth"
+        with ProtobufTextFormatTraceWriter() as writer:
+            assert writer.open(path)
+            assert writer.write_message(_make_ground_truth())
+
+        reader = ProtobufTextFormatTraceReader()
+        reader.set_message_type(MessageType.GROUND_TRUTH)
+        assert reader.open(path)
+        assert reader.has_next()
+        result = reader.read_message()
+        assert result is not None
+        assert not reader.has_next()
+        assert reader.read_message() is None
+        assert not reader.has_next()
+        reader.close()
 
 
 # ===========================================================================
