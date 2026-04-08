@@ -161,7 +161,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--topic",
         default=None,
-        help="Topic name to read from MCAP input (default: first channel)",
+        help="Topic name to read from MCAP input",
     )
     parser.add_argument(
         "-v",
