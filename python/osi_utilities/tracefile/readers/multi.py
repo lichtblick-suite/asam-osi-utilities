@@ -150,6 +150,7 @@ class MultiTraceReader(TraceReader):
             try:
                 schema, channel, raw_message = next(self._message_iterator)
             except StopIteration:
+                self._message_iterator = None
                 return None
 
             # Skip non-protobuf messages (e.g. JSON channels in mixed files)
