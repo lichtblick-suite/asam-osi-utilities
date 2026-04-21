@@ -39,7 +39,7 @@ class SingleTraceReader(TraceReader):
     def __init__(self, enable_message_type_inference: bool = True) -> None:
         """Initialize the single-channel trace file reader."""
         self._enable_message_type_inference = enable_message_type_inference
-        self._message_type = MessageType.UNKNOWN if self._enable_message_type_inference else None
+        self._message_type: MessageType | None = MessageType.UNKNOWN if self._enable_message_type_inference else None
         self._file: IO[bytes] | None = None
         self._message_class: type | None = None
         self._has_next = False
@@ -57,6 +57,10 @@ class SingleTraceReader(TraceReader):
         Returns:
             True on success, False on failure.
         """
+        if self._message_type is None:
+            logger.error("No message type configured for '%s'. Call set_message_type() first.", path)
+            return False
+
         if self._message_type == MessageType.UNKNOWN:
             self._message_type = infer_message_type_from_filename(path.name)
 
@@ -129,7 +133,7 @@ class SingleTraceReader(TraceReader):
         self._has_next = False
 
     @property
-    def message_type(self) -> MessageType:
+    def message_type(self) -> MessageType | None:
         """The message type being read."""
         return self._message_type
 

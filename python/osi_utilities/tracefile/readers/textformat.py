@@ -140,16 +140,17 @@ class ProtobufTextFormatTraceReader(TraceReader):
 
         # Find the next occurrence of this field after the first message
         split_idx = None
-        in_first_message = True
         for i, line in enumerate(lines):
             if i == 0:
                 continue
             stripped = line.strip()
-            if stripped.startswith(first_field) and not line[0].isspace():
-                # This is a new top-level field with the same name = new message boundary
-                if in_first_message:
-                    split_idx = i
-                    break
+            if not line[0:1].isspace() and (
+                stripped.startswith(first_field + ":")
+                or stripped.startswith(first_field + " {")
+                or stripped == first_field + " {"
+            ):
+                split_idx = i
+                break
 
         if split_idx is not None:
             msg_text = "\n".join(lines[:split_idx])
