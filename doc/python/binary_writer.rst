@@ -4,7 +4,7 @@
 SingleTraceWriter
 =====================
 
-.. autoclass:: osi_utilities.tracefile.binary_writer.SingleTraceWriter
+.. autoclass:: osi_utilities.tracefile.writers.single.SingleTraceWriter
    :members:
    :undoc-members:
    :show-inheritance:

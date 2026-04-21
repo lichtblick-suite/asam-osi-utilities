@@ -58,8 +58,7 @@ Channel abstraction writing uses `open_channel_writer(...)`:
 ```python
 from pathlib import Path
 from osi3.osi_groundtruth_pb2 import GroundTruth
-from osi_utilities import ChannelSpecification, MessageType
-from osi_utilities.api.channel_writer import open_channel_writer
+from osi_utilities import ChannelSpecification, MessageType, open_channel_writer
 
 spec = ChannelSpecification(
     path=Path("output.osi"),

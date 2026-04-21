@@ -260,7 +260,7 @@ def part2_mixed_channel_writer() -> None:
     # Best practice: when reading a mixed file with MultiTraceReader, enable
     # set_skip_non_osi_msgs(True) to silently skip channels that are not recognized
     # OSI types.  Without this flag the reader would log warnings on unknown schemas.
-    print("  Reading back with set_skip_non_osi_msgs(True):")
+    print("  Reading back with set_silence_incompatible_topic_warnings(True):")
     read_back_and_print_summary(path, skip_non_osi=True)
 
 
