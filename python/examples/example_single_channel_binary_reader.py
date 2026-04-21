@@ -9,7 +9,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from osi_utilities import SingleTraceReader, MessageType
+from osi_utilities import MessageType, SingleTraceReader
 from osi_utilities.timestamp import timestamp_to_seconds
 
 VALID_TYPES = {
@@ -50,8 +50,9 @@ def main() -> int:
     print("Starting single-channel binary reader example:")
 
     msg_type = VALID_TYPES[args.message_type] if args.message_type else MessageType.UNKNOWN
-    reader = SingleTraceReader(message_type=msg_type)
-    if not reader._open(input_path):
+    reader = SingleTraceReader()
+    reader.set_message_type(msg_type)
+    if not reader.open(input_path):
         print(f"Error: Could not open '{input_path}'", file=sys.stderr)
         return 1
 

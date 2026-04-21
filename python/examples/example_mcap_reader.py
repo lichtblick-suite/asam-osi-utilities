@@ -55,7 +55,7 @@ def main() -> int:
 
     # --- Option B: Direct MultiTraceReader for full feature access ---
     reader = MultiTraceReader()
-    if not reader._open(input_path):
+    if not reader.open(input_path):
         print(f"Error: Could not open '{input_path}'", file=sys.stderr)
         return 1
 

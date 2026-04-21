@@ -15,7 +15,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from osi_utilities import ChannelSpecification, MessageType, open_channel
+from osi_utilities import ChannelSpecification, open_channel
 from osi_utilities.timestamp import timestamp_to_seconds
 
 

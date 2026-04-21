@@ -50,8 +50,9 @@ def main() -> int:
     print("Starting TXTH reader example:")
 
     msg_type = VALID_TYPES[args.message_type] if args.message_type else MessageType.UNKNOWN
-    reader = ProtobufTextFormatTraceReader(message_type=msg_type)
-    if not reader._open(input_path):
+    reader = ProtobufTextFormatTraceReader()
+    reader.set_message_type(msg_type)
+    if not reader.open(input_path):
         print(f"Error: Could not open '{input_path}'", file=sys.stderr)
         return 1
 

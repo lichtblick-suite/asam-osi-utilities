@@ -18,13 +18,13 @@ from pathlib import Path
 from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import (
-    SingleTraceReader,
-    SingleTraceWriter,
+    MessageType,
     MultiTraceReader,
     MultiTraceWriter,
-    MessageType,
     ProtobufTextFormatTraceReader,
     ProtobufTextFormatTraceWriter,
+    SingleTraceReader,
+    SingleTraceWriter,
 )
 
 # ---------------------------------------------------------------------------
@@ -132,7 +132,7 @@ def _run_synthetic(num_messages: int) -> int:
     _print_row("MCAP", "write", time.perf_counter() - t0, total_mb)
 
     reader = MultiTraceReader()
-    reader._open(mcap_path)
+    reader.open(mcap_path)
 
     t0 = time.perf_counter()
     count = 0
@@ -151,8 +151,9 @@ def _run_synthetic(num_messages: int) -> int:
             writer.write_message(msg)
     _print_row(".osi", "write", time.perf_counter() - t0, total_mb)
 
-    reader = SingleTraceReader(message_type=MessageType.SENSOR_VIEW)
-    reader._open(osi_path)
+    reader = SingleTraceReader()
+    reader.set_message_type(MessageType.SENSOR_VIEW)
+    reader.open(osi_path)
 
     t0 = time.perf_counter()
     count = 0
@@ -171,8 +172,9 @@ def _run_synthetic(num_messages: int) -> int:
             writer.write_message(msg)
     _print_row(".txth", "write", time.perf_counter() - t0, total_mb)
 
-    reader = ProtobufTextFormatTraceReader(message_type=MessageType.SENSOR_VIEW)
-    reader._open(txth_path)
+    reader = ProtobufTextFormatTraceReader()
+    reader.set_message_type(MessageType.SENSOR_VIEW)
+    reader.open(txth_path)
 
     t0 = time.perf_counter()
     count = 0
@@ -220,8 +222,9 @@ def _run_file(input_path: Path, message_type: MessageType) -> int:
     print(f"Size:    {file_size} bytes ({file_size / (1024.0 * 1024.0):.1f} MiB)")
 
     # Read benchmark
-    reader = SingleTraceReader(message_type=message_type)
-    if not reader._open(input_path):
+    reader = SingleTraceReader()
+    reader.set_message_type(message_type)
+    if not reader.open(input_path):
         print(f"ERROR: Could not open: {input_path}", file=sys.stderr)
         return 1
 

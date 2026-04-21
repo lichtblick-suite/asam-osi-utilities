@@ -9,7 +9,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from osi_utilities import SingleTraceReader, MultiTraceWriter, MessageType
+from osi_utilities import MessageType, MultiTraceWriter, SingleTraceReader
 
 VALID_TYPES = {
     "GroundTruth": MessageType.GROUND_TRUTH,
@@ -66,8 +66,9 @@ def main() -> int:
     print(f"Output: {output_path}")
 
     msg_type = VALID_TYPES[args.input_type] if args.input_type else MessageType.UNKNOWN
-    reader = SingleTraceReader(message_type=msg_type)
-    if not reader._open(input_path):
+    reader = SingleTraceReader()
+    reader.set_message_type(msg_type)
+    if not reader.open(input_path):
         print(f"Error: Could not open input '{input_path}'", file=sys.stderr)
         return 1
 
