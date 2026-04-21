@@ -211,8 +211,8 @@ class TestSingleTraceReaderErrors:
         # Opening a second file without closing should still work
         # (the implementation resets internal state)
         result = reader.open(path2)
-        # Either way, we should be able to read from it
-        assert result or reader.read_message() is not None or True
+        # Either the second open succeeded, or we can still read from the reader
+        assert result or reader.read_message() is not None
         reader.close()
 
     def test_corrupt_message_size(self, tmp_dir: Path):

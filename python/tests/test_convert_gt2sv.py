@@ -30,7 +30,7 @@ def _make_ground_truth(index: int = 0, num_objects: int = 2) -> GroundTruth:
     gt = GroundTruth()
     gt.timestamp.seconds = index
     gt.timestamp.nanos = index * 100_000
-    gt.host_vehicle_id.value = 0
+    gt.host_vehicle_id.value = 42
     for obj_id in range(1, num_objects + 1):
         mo = gt.moving_object.add()
         mo.id.value = obj_id
@@ -144,7 +144,7 @@ class TestConvertGt2svBinary:
             assert reader.open(sv_path)
             result = next(iter(reader))
             assert result.message.HasField("host_vehicle_id")
-            assert result.message.host_vehicle_id.value == 0
+            assert result.message.host_vehicle_id.value == 42
 
 
 class TestConvertGt2svMCAP:

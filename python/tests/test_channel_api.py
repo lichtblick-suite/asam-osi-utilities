@@ -316,3 +316,91 @@ class TestChannelRoundtrip:
         assert len(messages) == 4
         for i, msg in enumerate(messages):
             assert msg.timestamp.seconds == i
+
+    def test_txth_roundtrip(self, tmp_dir: Path):
+        path = tmp_dir / "roundtrip.txth"
+        write_spec = ChannelSpecification(path=path, message_type=MessageType.GROUND_TRUTH)
+
+        with open_channel_writer(write_spec) as ch:
+            ch.write_message(_make_ground_truth(0))
+
+        read_spec = ChannelSpecification(path=path, message_type=MessageType.GROUND_TRUTH)
+        with open_channel(read_spec) as ch:
+            messages = list(ch)
+        assert len(messages) == 1
+        assert messages[0].timestamp.seconds == 0
+
+
+# ===========================================================================
+# Multi-channel auto-topic selection
+# ===========================================================================
+
+
+class TestOpenChannelMultiChannelAutoTopic:
+    def test_auto_topic_selects_first(self, tmp_dir: Path):
+        """When no topic is specified, open_channel picks the first available topic."""
+        path = tmp_dir / "multi.mcap"
+        _write_mcap_multi_channel(path)
+
+        spec = ChannelSpecification(path=path)
+        with open_channel(spec) as ch:
+            messages = list(ch)
+        # First topic written is "gt" with 2 messages
+        assert len(messages) == 2
+        for msg in messages:
+            assert isinstance(msg, GroundTruth)
+
+
+# ===========================================================================
+# Iterator protocol
+# ===========================================================================
+
+
+class TestChannelReaderIterator:
+    def test_stop_iteration_after_exhaustion(self, tmp_dir: Path):
+        """Calling next() past the end raises StopIteration."""
+        path = tmp_dir / "test_gt.osi"
+        _write_binary(path, count=1)
+
+        spec = ChannelSpecification(path=path, message_type=MessageType.GROUND_TRUTH)
+        with open_channel(spec) as ch:
+            next(ch)  # consume the single message
+            with pytest.raises(StopIteration):
+                next(ch)
+
+
+# ===========================================================================
+# MCAP writer auto-topic value
+# ===========================================================================
+
+
+class TestOpenChannelWriterAutoTopicValue:
+    def test_auto_topic_uses_file_stem(self, tmp_dir: Path):
+        """When no topic is given for MCAP, the file stem is used."""
+        path = tmp_dir / "my_output.mcap"
+        spec = ChannelSpecification(path=path, message_type=MessageType.GROUND_TRUTH)
+
+        with open_channel_writer(spec) as ch:
+            ch.write_message(_make_ground_truth(0))
+            resolved = ch.get_channel_specification()
+            assert resolved.topic == "my_output"
+
+
+# ===========================================================================
+# Metadata mutation safety
+# ===========================================================================
+
+
+class TestMetadataMutationSafety:
+    def test_add_channel_does_not_mutate_caller_metadata(self, tmp_dir: Path):
+        """MultiTraceWriter.add_channel must not mutate the caller's metadata dict."""
+        path = tmp_dir / "meta_test.mcap"
+        original_meta = {"my_key": "my_value"}
+        meta_copy = dict(original_meta)
+
+        with MultiTraceWriter() as writer:
+            assert writer.open(path)
+            writer.add_channel("gt", GroundTruth, metadata=original_meta)
+            writer.write_message(_make_ground_truth(0), "gt")
+
+        assert original_meta == meta_copy

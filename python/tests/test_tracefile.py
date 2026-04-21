@@ -644,3 +644,61 @@ class TestNcapMcap:
             assert len(results) > 0
             for r in results:
                 assert r.message_type == MessageType.GROUND_TRUTH
+
+
+# ===========================================================================
+# configure_reader_for_channels
+# ===========================================================================
+
+
+class TestConfigureReaderForChannels:
+    def test_empty_specs(self):
+        from osi_utilities.tracefile.configure import configure_reader_for_channels
+
+        reader = MultiTraceReader()
+        configure_reader_for_channels(reader, [])
+
+    def test_single_spec(self, tmp_dir: Path):
+        from osi_utilities.tracefile.configure import configure_reader_for_channels
+
+        path = tmp_dir / "test.mcap"
+        with MultiTraceWriter() as w:
+            assert w.open(path)
+            w.add_channel("gt", GroundTruth)
+            w.write_message(_make_ground_truth(0), "gt")
+
+        reader = MultiTraceReader()
+        configure_reader_for_channels(
+            reader,
+            [ChannelSpecification(path=path, topic="gt", message_type=MessageType.GROUND_TRUTH)],
+        )
+        assert reader.open(path)
+        messages = list(reader)
+        assert len(messages) == 1
+        reader.close()
+
+    def test_conflicting_paths_raises(self):
+        from osi_utilities.tracefile.configure import configure_reader_for_channels
+
+        reader = MultiTraceReader()
+        with pytest.raises(ValueError, match="same path"):
+            configure_reader_for_channels(
+                reader,
+                [
+                    ChannelSpecification(path=Path("file1.mcap"), topic="gt"),
+                    ChannelSpecification(path=Path("file2.mcap"), topic="sv"),
+                ],
+            )
+
+    def test_conflicting_message_types_raises(self):
+        from osi_utilities.tracefile.configure import configure_reader_for_channels
+
+        reader = MultiTraceReader()
+        with pytest.raises(ValueError, match="Conflicting"):
+            configure_reader_for_channels(
+                reader,
+                [
+                    ChannelSpecification(path=Path("file.mcap"), topic="gt", message_type=MessageType.GROUND_TRUTH),
+                    ChannelSpecification(path=Path("file.mcap"), topic="gt", message_type=MessageType.SENSOR_VIEW),
+                ],
+            )
