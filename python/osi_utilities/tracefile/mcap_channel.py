@@ -12,8 +12,8 @@ from google.protobuf.message import EncodeError, Message
 from mcap.well_known import MessageEncoding
 from mcap.writer import Writer as McapRawWriter
 
-from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
 from osi_utilities.timestamp import timestamp_to_nanoseconds
+from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
 
 logger = logging.getLogger(__name__)
 

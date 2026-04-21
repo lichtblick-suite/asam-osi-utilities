@@ -25,19 +25,19 @@ from osi3.osi_trafficcommandupdate_pb2 import TrafficCommandUpdate
 from osi3.osi_trafficupdate_pb2 import TrafficUpdate
 
 from osi_utilities import (
-    SingleTraceReader,
-    SingleTraceWriter,
     MCAPChannel,
+    MessageType,
     MultiTraceReader,
     MultiTraceWriter,
-    MessageType,
     ProtobufTextFormatTraceReader,
     ProtobufTextFormatTraceWriter,
+    SingleTraceReader,
+    SingleTraceWriter,
 )
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 from osi_utilities.tracefile._config import MAX_EXPECTED_MESSAGE_SIZE
 from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
 from osi_utilities.tracefile.writers.multi import prepare_required_file_metadata
-from osi_utilities.timestamp import timestamp_to_nanoseconds
 
 # ===========================================================================
 # Fixtures
@@ -331,10 +331,7 @@ class TestMultiTraceReaderErrors:
             reader.set_topic_message_types({"sv": MessageType.GROUND_TRUTH})
             results = list(reader)
             assert len(results) == 1
-            assert any(
-                "Message type mismatch on channel 'sv'" in rec.message
-                for rec in caplog.records
-            )
+            assert any("Message type mismatch on channel 'sv'" in rec.message for rec in caplog.records)
 
     def test_get_channel_metadata(self, tmp_dir: Path):
         path = tmp_dir / "ch_meta.mcap"
@@ -395,7 +392,6 @@ class TestProtobufTextFormatTraceReaderErrors:
             w.write_message(_make_ground_truth(2))
 
         with ProtobufTextFormatTraceReader() as reader:
-
             reader.set_message_type(MessageType.GROUND_TRUTH)
             reader.open(path)
             results = list(reader)
@@ -475,7 +471,6 @@ class TestSingleTraceWriterErrors:
             assert w.written_count == 1
 
         with SingleTraceReader() as r:
-
             r.set_message_type(MessageType.GROUND_TRUTH)
             r.open(path)
             results = list(r)
@@ -494,7 +489,6 @@ class TestSingleTraceWriterErrors:
         writer.close()
 
         with SingleTraceReader() as r:
-
             r.set_message_type(MessageType.GROUND_TRUTH)
             r.open(path2)
             results = list(r)
@@ -626,7 +620,6 @@ class TestCrossFormatRoundtrip:
             w.write_message(gt)
 
         with SingleTraceReader() as r:
-
             r.set_message_type(MessageType.GROUND_TRUTH)
             r.open(path)
             results = list(r)
@@ -675,7 +668,6 @@ class TestCrossFormatRoundtrip:
             w.write_message(sv)
 
         with SingleTraceReader() as r:
-
             r.set_message_type(MessageType.SENSOR_VIEW)
             r.open(osi_path)
             results = list(r)
@@ -776,5 +768,3 @@ class TestMultiTypeRoundtrip:
             assert len(results) == 1
             assert results[0].message_type == msg_type
             assert results[0].message.timestamp.seconds == 77
-
-

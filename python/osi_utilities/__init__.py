@@ -7,14 +7,16 @@ from typing import Any
 
 from osi_utilities.api import (
     ChannelReader,
-    ChannelWriter,
     ChannelSpecification,
+    ChannelWriter,
     MessageType,
     ReadResult,
     TraceFileFormat,
     open_channel,
     open_channel_writer,
 )
+from osi_utilities.tracefile.configure import create_reader
+from osi_utilities.tracefile.mcap_channel import MCAPChannel
 from osi_utilities.tracefile.readers import (
     MultiTraceReader,
     ProtobufTextFormatTraceReader,
@@ -27,8 +29,6 @@ from osi_utilities.tracefile.writers import (
     SingleTraceWriter,
     TraceWriter,
 )
-from osi_utilities.tracefile.mcap_channel import MCAPChannel
-from osi_utilities.tracefile.configure import create_reader
 
 
 def convert_gt2sv(*args: Any, **kwargs: Any) -> Any:
@@ -36,6 +36,7 @@ def convert_gt2sv(*args: Any, **kwargs: Any) -> Any:
     from osi_utilities.converters.gt2sv import convert_gt2sv as _convert_gt2sv
 
     return _convert_gt2sv(*args, **kwargs)
+
 
 __all__ = [
     "SingleTraceReader",

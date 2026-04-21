@@ -2,9 +2,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
 import logging
-from pathlib import Path
 import re
 from datetime import datetime
+from pathlib import Path
 
 from osi_utilities._types import MessageType
 
@@ -26,15 +26,12 @@ _SHORT_CODE_TO_MESSAGE_TYPE: dict[str, MessageType] = {
 }
 
 # Longest-first to avoid prefix ambiguity (e.g. svc before sv)
-_SHORT_CODE_PATTERN = "|".join(
-    sorted(_SHORT_CODE_TO_MESSAGE_TYPE.keys(), key=len, reverse=True)
-)
+_SHORT_CODE_PATTERN = "|".join(sorted(_SHORT_CODE_TO_MESSAGE_TYPE.keys(), key=len, reverse=True))
 
 
 # Maps filename pattern substrings to MessageType
 _FILENAME_MESSAGE_TYPE_MAP: dict[str, MessageType] = {
-    f"_{short_code}_": message_type
-    for short_code, message_type in _SHORT_CODE_TO_MESSAGE_TYPE.items()
+    f"_{short_code}_": message_type for short_code, message_type in _SHORT_CODE_TO_MESSAGE_TYPE.items()
 }
 
 
@@ -85,9 +82,7 @@ def parse_osi_trace_filename(filename: str) -> dict:
         timestamp = datetime.strptime(match.group("timestamp"), "%Y%m%dT%H%M%SZ")
         return {
             "timestamp": timestamp,
-            "message_type": _SHORT_CODE_TO_MESSAGE_TYPE.get(
-                match.group("message_type")
-            ),
+            "message_type": _SHORT_CODE_TO_MESSAGE_TYPE.get(match.group("message_type")),
             "osi_version": match.group("osi_version"),
             "protobuf_version": match.group("protobuf_version"),
             "number_of_frames": int(match.group("number_of_frames")),

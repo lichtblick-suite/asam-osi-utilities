@@ -12,11 +12,11 @@ import pytest
 from osi3.osi_groundtruth_pb2 import GroundTruth
 
 from osi_utilities import (
-    SingleTraceReader,
-    SingleTraceWriter,
+    MessageType,
     MultiTraceReader,
     MultiTraceWriter,
-    MessageType,
+    SingleTraceReader,
+    SingleTraceWriter,
     convert_gt2sv,
 )
 
@@ -93,7 +93,6 @@ class TestConvertGt2svBinary:
         convert_gt2sv(gt_path, sv_path)
 
         with SingleTraceReader() as reader:
-
             reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             results = list(reader)
@@ -109,7 +108,6 @@ class TestConvertGt2svBinary:
         convert_gt2sv(gt_path, sv_path)
 
         with SingleTraceReader() as reader:
-
             reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             for i, result in enumerate(reader):
@@ -128,7 +126,6 @@ class TestConvertGt2svBinary:
         convert_gt2sv(gt_path, sv_path)
 
         with SingleTraceReader() as reader:
-
             reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             results = list(reader)
@@ -143,7 +140,6 @@ class TestConvertGt2svBinary:
         convert_gt2sv(gt_path, sv_path)
 
         with SingleTraceReader() as reader:
-
             reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             result = next(iter(reader))
@@ -263,5 +259,3 @@ class TestConvertGt2svEdgeCases:
             results = list(reader)
             assert len(results) == 1
             assert results[0].message.HasField("global_ground_truth")
-
-

@@ -15,14 +15,14 @@ from pathlib import Path
 from typing import IO
 
 from osi_utilities._types import MessageType, ReadResult
+from osi_utilities.filename import infer_message_type_from_filename
+from osi_utilities.message_types import (
+    get_message_class,
+)
 from osi_utilities.tracefile._config import (
     BINARY_MESSAGE_LENGTH_PREFIX_SIZE,
     MAX_EXPECTED_MESSAGE_SIZE,
 )
-from osi_utilities.message_types import (
-    get_message_class,
-)
-from osi_utilities.filename import infer_message_type_from_filename
 from osi_utilities.tracefile.readers.base import TraceReader
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class SingleTraceReader(TraceReader):
         self._has_next = False
 
     def set_message_type(self, message_type: MessageType) -> None:
-        """Set message type to be used on open(). """
+        """Set message type to be used on open()."""
         self._message_type = message_type
 
     def open(self, path: Path) -> bool:

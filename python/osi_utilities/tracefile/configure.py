@@ -1,13 +1,12 @@
 # SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
- 
+
 import logging
 from pathlib import Path
 
 from osi_utilities.api.types import ChannelSpecification, MessageType
 from osi_utilities.message_types import require_message_type
 from osi_utilities.tracefile.readers.base import TraceReader
-
 
 logger = logging.getLogger(__name__)
 
@@ -62,14 +61,10 @@ def configure_reader(reader: TraceReader, channel_spec: ChannelSpecification) ->
         and channel_spec.message_type is not None
         and hasattr(reader, "set_topic_message_types")
     ):
-        reader.set_topic_message_types(
-            {channel_spec.topic: require_message_type(channel_spec.message_type)}
-        )
+        reader.set_topic_message_types({channel_spec.topic: require_message_type(channel_spec.message_type)})
 
 
-def configure_reader_for_channels(
-    reader: TraceReader, channel_specs: list[ChannelSpecification]
-) -> None:
+def configure_reader_for_channels(reader: TraceReader, channel_specs: list[ChannelSpecification]) -> None:
     """Configure a reader from multiple channel specifications.
 
     Intended for multi-channel use-cases where several logical channels from the
@@ -84,9 +79,7 @@ def configure_reader_for_channels(
 
     paths = {Path(spec.path) for spec in channel_specs}
     if len(paths) > 1:
-        raise ValueError(
-            "configure_reader_for_channels requires all channel specs to reference the same path."
-        )
+        raise ValueError("configure_reader_for_channels requires all channel specs to reference the same path.")
 
     # Configure topics and per-topic message type expectations (for multi readers).
     topics: list[str] = []
@@ -101,8 +94,7 @@ def configure_reader_for_channels(
             existing = topic_message_types.get(spec.topic)
             if existing is not None and existing != msg_type:
                 raise ValueError(
-                    f"Conflicting message type expectations for topic '{spec.topic}': "
-                    f"{existing} vs {msg_type}."
+                    f"Conflicting message type expectations for topic '{spec.topic}': {existing} vs {msg_type}."
                 )
             topic_message_types[spec.topic] = msg_type
 
@@ -115,13 +107,9 @@ def configure_reader_for_channels(
     # Configure single-channel readers when a single consistent type is specified.
     if hasattr(reader, "set_message_type"):
         single_types = {
-            require_message_type(spec.message_type)
-            for spec in channel_specs
-            if spec.message_type is not None
+            require_message_type(spec.message_type) for spec in channel_specs if spec.message_type is not None
         }
         if len(single_types) > 1:
-            raise ValueError(
-                f"Conflicting message type expectations for single reader: {single_types}."
-            )
+            raise ValueError(f"Conflicting message type expectations for single reader: {single_types}.")
         if len(single_types) == 1:
             reader.set_message_type(next(iter(single_types)))

@@ -21,6 +21,7 @@ from mcap.well_known import MessageEncoding
 from mcap.writer import CompressionType
 from mcap.writer import Writer as McapRawWriter
 
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 from osi_utilities.tracefile._config import (
     DEFAULT_CHUNK_SIZE,
     MAX_CHUNK_SIZE,
@@ -32,7 +33,6 @@ from osi_utilities.tracefile._config import (
     OSI_TRACE_REQUIRED_METADATA_KEYS,
 )
 from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
-from osi_utilities.timestamp import timestamp_to_nanoseconds
 from osi_utilities.tracefile.writers.base import TraceWriter
 
 logger = logging.getLogger(__name__)

@@ -14,16 +14,16 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 
 from google.protobuf.message import Message
+
 from osi_utilities._types import MessageType, TraceFileFormat
 from osi_utilities.api.types import ChannelSpecification
-
 from osi_utilities.message_types import (
     message_type_to_class_name,
     require_message_type,
 )
-from osi_utilities.tracefile.readers.multi import MultiTraceReader
-from osi_utilities.tracefile.readers.base import TraceReader
 from osi_utilities.tracefile.configure import configure_reader, create_reader
+from osi_utilities.tracefile.readers.base import TraceReader
+from osi_utilities.tracefile.readers.multi import MultiTraceReader
 
 
 class ChannelReader(ABC):
@@ -136,9 +136,7 @@ def open_channel(channel_spec: ChannelSpecification) -> ChannelReader:
             raise RuntimeError(f"Failed to open trace file: {channel_spec.path}")
         if not isinstance(reader, MultiTraceReader):
             reader.close()
-            raise RuntimeError(
-                f"Expected MultiTraceReader for '{channel_spec.path}', got {type(reader).__name__}."
-            )
+            raise RuntimeError(f"Expected MultiTraceReader for '{channel_spec.path}', got {type(reader).__name__}.")
 
         available_topics = reader.get_available_topics()
         if not available_topics:
@@ -153,45 +151,33 @@ def open_channel(channel_spec: ChannelSpecification) -> ChannelReader:
             )
 
         detected_channel_spec = reader.get_channel_specification(topic)
-        detected_message_type = (
-            detected_channel_spec.message_type
-            if detected_channel_spec is not None
-            else None
-        )
+        detected_message_type = detected_channel_spec.message_type if detected_channel_spec is not None else None
         if detected_channel_spec is None:
             reader.close()
-            raise ValueError(
-                f"Topic '{topic}' is not an OSI-compatible channel in MCAP file '{channel_spec.path}'."
-            )
-        if (
-            channel_spec.message_type is not None
-            and channel_spec.message_type != detected_message_type
-        ):
+            raise ValueError(f"Topic '{topic}' is not an OSI-compatible channel in MCAP file '{channel_spec.path}'.")
+        if channel_spec.message_type is not None and channel_spec.message_type != detected_message_type:
             reader.close()
-            raise ValueError(
-                f"Specified message type '{message_type_to_class_name(channel_spec.message_type)}' does not match detected message type "
-                f"'{message_type_to_class_name(detected_message_type)}'."
-            )
+            specified = message_type_to_class_name(channel_spec.message_type)
+            detected = message_type_to_class_name(detected_message_type)
+            raise ValueError(f"Specified message type '{specified}' does not match detected message type '{detected}'.")
 
         resolved_topic = detected_channel_spec.topic
         if resolved_topic is None:
             reader.close()
-            raise RuntimeError(
-                f"Resolved channel specification for '{channel_spec.path}' has no topic."
-            )
+            raise RuntimeError(f"Resolved channel specification for '{channel_spec.path}' has no topic.")
 
         reader.set_topics([resolved_topic])
+        detected_metadata = (
+            dict(detected_channel_spec.metadata)
+            if detected_channel_spec is not None and detected_channel_spec.metadata
+            else dict(channel_spec.metadata)
+        )
         resolved_spec = ChannelSpecification(
             path=channel_spec.path,
             message_type=detected_message_type,
             topic=resolved_topic,
-            metadata=dict(
-                (detected_channel_spec.metadata if detected_channel_spec is not None else {})
-                or channel_spec.metadata
-            ),
+            metadata=detected_metadata,
         )
         return _TraceFileChannelReader(reader=reader, channel_spec=resolved_spec)
 
-    raise ValueError(
-        f"Unsupported trace file format: {channel_spec.trace_file_format} for '{channel_spec.path}'."
-    )
+    raise ValueError(f"Unsupported trace file format: {channel_spec.trace_file_format} for '{channel_spec.path}'.")

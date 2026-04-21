@@ -14,15 +14,15 @@ from osi3.osi_groundtruth_pb2 import GroundTruth
 from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import (
-    SingleTraceReader,
-    SingleTraceWriter,
+    MessageType,
     MultiTraceReader,
     MultiTraceWriter,
-    MessageType,
-    create_reader,
     ProtobufTextFormatTraceReader,
     ProtobufTextFormatTraceWriter,
+    SingleTraceReader,
+    SingleTraceWriter,
     TraceFileFormat,
+    create_reader,
 )
 from osi_utilities.api.types import ChannelSpecification
 from osi_utilities.filename import infer_message_type_from_filename, parse_osi_trace_filename
@@ -100,7 +100,6 @@ class TestSingleTraceFile:
             assert writer.written_count == 5
 
         with SingleTraceReader() as reader:
-
             reader.set_message_type(MessageType.GROUND_TRUTH)
             assert reader.open(path)
             results = list(reader)
@@ -265,7 +264,6 @@ class TestTXTHTraceFile:
             assert writer.write_message(gt)
 
         with ProtobufTextFormatTraceReader() as reader:
-
             reader.set_message_type(MessageType.GROUND_TRUTH)
             assert reader.open(path)
             results = list(reader)
@@ -646,5 +644,3 @@ class TestNcapMcap:
             assert len(results) > 0
             for r in results:
                 assert r.message_type == MessageType.GROUND_TRUTH
-
-

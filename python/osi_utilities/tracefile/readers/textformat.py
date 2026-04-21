@@ -13,12 +13,12 @@ import logging
 from pathlib import Path
 
 from google.protobuf import text_format
-from osi_utilities._types import MessageType, ReadResult
 
+from osi_utilities._types import MessageType, ReadResult
+from osi_utilities.filename import infer_message_type_from_filename
 from osi_utilities.message_types import (
     get_message_class,
 )
-from osi_utilities.filename import infer_message_type_from_filename
 from osi_utilities.tracefile.readers.base import TraceReader
 
 logger = logging.getLogger(__name__)
@@ -71,9 +71,7 @@ class ProtobufTextFormatTraceReader(TraceReader):
             self._message_type = infer_message_type_from_filename(path.name)
 
         if self._message_type == MessageType.UNKNOWN:
-            logger.error(
-                "Cannot determine message type for '%s'. Specify it explicitly.", path
-            )
+            logger.error("Cannot determine message type for '%s'. Specify it explicitly.", path)
             return False
 
         try:
@@ -115,9 +113,7 @@ class ProtobufTextFormatTraceReader(TraceReader):
         except text_format.ParseError:
             # If full buffer fails, the file may have multiple concatenated messages.
             # Try splitting on the first top-level field name appearing again.
-            logger.debug(
-                "Buffer contains multiple messages, splitting at field boundary."
-            )
+            logger.debug("Buffer contains multiple messages, splitting at field boundary.")
 
         # Multi-message: find the boundary by looking for a repeated top-level field
         # The C++ implementation reads line by line and tries parsing.

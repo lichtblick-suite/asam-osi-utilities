@@ -1,4 +1,4 @@
-﻿# osi-utilities (Python)
+# osi-utilities (Python)
 
 Python utilities for reading and writing ASAM OSI (Open Simulation Interface) trace files.
 

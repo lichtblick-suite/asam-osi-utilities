@@ -8,15 +8,14 @@ from __future__ import annotations
 import logging
 
 from google.protobuf.message import Message
+
 from osi_utilities._types import MessageType
 
 logger = logging.getLogger(__name__)
 
 
 _MESSAGE_NAME_TO_TYPE: dict[str, MessageType] = {
-    message_type.value: message_type
-    for message_type in MessageType
-    if message_type is not MessageType.UNKNOWN
+    message_type.value: message_type for message_type in MessageType if message_type is not MessageType.UNKNOWN
 }
 
 
@@ -101,17 +100,10 @@ def coerce_message_type(value: MessageType | str | None) -> MessageType | None:
         try:
             return MessageType[value]
         except KeyError as exc:
-            allowed = sorted(
-                [m.value for m in MessageType if m is not MessageType.UNKNOWN]
-            )
-            raise ValueError(
-                f"Unsupported OSI message type: {value!r}. Allowed values: {allowed}"
-            ) from exc
+            allowed = sorted([m.value for m in MessageType if m is not MessageType.UNKNOWN])
+            raise ValueError(f"Unsupported OSI message type: {value!r}. Allowed values: {allowed}") from exc
 
-    raise TypeError(
-        f"Unsupported type for message_type: {type(value).__name__}. "
-        "Expected MessageType, str, or None."
-    )
+    raise TypeError(f"Unsupported type for message_type: {type(value).__name__}. Expected MessageType, str, or None.")
 
 
 def require_message_type(value: MessageType | str | None) -> MessageType:

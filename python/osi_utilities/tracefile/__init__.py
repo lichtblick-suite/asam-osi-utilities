@@ -3,6 +3,13 @@
 
 """Trace file reader/writer implementations for MCAP, binary .osi, and text .txth formats."""
 
+from osi_utilities.timestamp import (
+    nanoseconds_to_seconds,
+    seconds_to_nanoseconds,
+    timestamp_to_nanoseconds,
+    timestamp_to_seconds,
+)
+from osi_utilities.tracefile.configure import create_reader
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
 from osi_utilities.tracefile.readers import (
     MultiTraceReader,
@@ -15,13 +22,6 @@ from osi_utilities.tracefile.writers import (
     ProtobufTextFormatTraceWriter,
     SingleTraceWriter,
     TraceWriter,
-)
-from osi_utilities.tracefile.configure import create_reader
-from osi_utilities.timestamp import (
-    nanoseconds_to_seconds,
-    seconds_to_nanoseconds,
-    timestamp_to_nanoseconds,
-    timestamp_to_seconds,
 )
 
 __all__ = [

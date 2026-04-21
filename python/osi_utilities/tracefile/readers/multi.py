@@ -16,9 +16,9 @@ from mcap.exceptions import McapError
 from mcap.reader import make_reader
 from mcap.well_known import MessageEncoding
 from mcap_protobuf.decoder import DecoderFactory
+
 from osi_utilities._types import MessageType, ReadResult
 from osi_utilities.api.types import ChannelSpecification
-
 from osi_utilities.message_types import (
     coerce_message_type,
     get_message_class,
@@ -50,6 +50,8 @@ class MultiTraceReader(TraceReader):
         self._topic_message_types: dict[str, MessageType] = {}
         self._decoder_mode = "precompiled"
         self._set_decoder_mode(decoder_mode)
+        self._peeked_result: ReadResult | None = None
+        self._peek_exhausted = False
 
         self._decoder_factory = DecoderFactory()
         self._mcap_contained_decoders: dict[int, object] = {}
@@ -59,8 +61,7 @@ class MultiTraceReader(TraceReader):
         mode = decoder_mode.lower().replace("_", "-")
         if mode not in {"precompiled", "mcap-contained"}:
             raise ValueError(
-                f"Unsupported decoder_mode '{decoder_mode}'. "
-                "Expected one of: precompiled, mcap-contained."
+                f"Unsupported decoder_mode '{decoder_mode}'. Expected one of: precompiled, mcap-contained."
             )
         self._decoder_mode = mode
 
@@ -88,9 +89,7 @@ class MultiTraceReader(TraceReader):
             if self._decoder_mode == "precompiled":
                 self._reader = make_reader(self._file)
             else:
-                self._reader = make_reader(
-                    self._file, decoder_factories=[self._decoder_factory]
-                )
+                self._reader = make_reader(self._file, decoder_factories=[self._decoder_factory])
             self._summary = self._reader.get_summary()
             self._mcap_contained_decoders.clear()
             self._precompiled_message_classes.clear()
@@ -112,9 +111,7 @@ class MultiTraceReader(TraceReader):
         self._topics = topics if topics else None
         self._start_iteration()
 
-    def set_topic_message_types(
-        self, topic_message_types: dict[str, MessageType | str | None]
-    ) -> None:
+    def set_topic_message_types(self, topic_message_types: dict[str, MessageType | str | None]) -> None:
         """Set expected message types per topic.
 
         Args:
@@ -143,6 +140,15 @@ class MultiTraceReader(TraceReader):
         Returns:
             ReadResult on success, None if no more messages.
         """
+        if self._peeked_result is not None:
+            result = self._peeked_result
+            self._peeked_result = None
+            self._peek_exhausted = False
+            return result
+
+        if self._peek_exhausted:
+            return None
+
         if self._message_iterator is None:
             return None
 
@@ -174,9 +180,7 @@ class MultiTraceReader(TraceReader):
             msg_type = schema_name_to_message_type(schema.name)
             if msg_type == MessageType.UNKNOWN:
                 if not self._silence_incompatible_topic_warnings:
-                    logger.warning(
-                        "Skipping non-OSI message with schema '%s'", schema.name
-                    )
+                    logger.warning("Skipping non-OSI message with schema '%s'", schema.name)
                 continue
 
             expected_message_type = self._topic_message_types.get(channel.topic)
@@ -237,9 +241,7 @@ class MultiTraceReader(TraceReader):
                 message = message_class()
                 message.ParseFromString(payload)
                 return message
-            except (
-                Exception
-            ) as exc:  # noqa: BLE001 - protobuf parser raises broad exceptions
+            except Exception as exc:  # noqa: BLE001 - protobuf parser raises broad exceptions
                 logger.warning(
                     "Failed to decode precompiled protobuf message on channel '%s': %s",
                     topic,
@@ -273,15 +275,26 @@ class MultiTraceReader(TraceReader):
         return None
 
     def has_next(self) -> bool:
-        """Check if there are more messages.
+        """Check if there are more messages to read.
 
-        Note: May return True even if only non-OSI messages remain.
+        Peeks ahead in the iterator to give an accurate answer.
         """
-        return self._message_iterator is not None
+        if self._peeked_result is not None:
+            return True
+        if self._peek_exhausted:
+            return False
+        peeked = self.read_message()
+        if peeked is None:
+            self._peek_exhausted = True
+            return False
+        self._peeked_result = peeked
+        return True
 
     def close(self) -> None:
         """Close the MCAP file."""
         self._message_iterator = None
+        self._peeked_result = None
+        self._peek_exhausted = False
         self._summary = None
         self._reader = None
         self._path = None
@@ -299,10 +312,7 @@ class MultiTraceReader(TraceReader):
         """Return file-level metadata entries."""
         if self._reader is None:
             return []
-        return [
-            {"name": m.name, "data": dict(m.metadata)}
-            for m in self._reader.iter_metadata()
-        ]
+        return [{"name": m.name, "data": dict(m.metadata)} for m in self._reader.iter_metadata()]
 
     def get_channel_specification(self, topic: str) -> ChannelSpecification | None:
         """Return ChannelSpecification for a specific OSI-compatible topic.
@@ -371,7 +381,7 @@ class MultiTraceReader(TraceReader):
 
     def _start_iteration(self) -> None:
         """(Re)start the raw message iterator."""
+        self._peeked_result = None
+        self._peek_exhausted = False
         if self._reader is not None:
-            self._message_iterator = iter(
-                self._reader.iter_messages(topics=self._topics)
-            )
+            self._message_iterator = iter(self._reader.iter_messages(topics=self._topics))

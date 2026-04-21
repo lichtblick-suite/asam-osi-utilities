@@ -1,9 +1,12 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping
 
 from osi_utilities._types import MessageType, TraceFileFormat
 
@@ -78,9 +81,7 @@ class ChannelSpecification:
         """Check if the file at path exists."""
         return self.path.exists() and self.path.is_file()
 
-    def with_message_type(
-        self, message_type: MessageType | str
-    ) -> ChannelSpecification:
+    def with_message_type(self, message_type: MessageType | str) -> ChannelSpecification:
         """Return a new ChannelSpecification with a different message type."""
         return ChannelSpecification(
             path=self.path,
@@ -116,9 +117,7 @@ class ChannelSpecification:
             metadata=dict(metadata),
         )
 
-    def with_metadata_updates(
-        self, updates: Mapping[str, str]
-    ) -> ChannelSpecification:
+    def with_metadata_updates(self, updates: Mapping[str, str]) -> ChannelSpecification:
         """Return a new ChannelSpecification with metadata updated by key."""
         merged = dict(self.metadata)
         merged.update(dict(updates))

@@ -1,4 +1,4 @@
-﻿# SPDX-License-Identifier: MPL-2.0
+# SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
 """Unified single-channel writer API across OSI trace container formats.
@@ -90,17 +90,14 @@ class _TraceFileChannelWriter(ChannelWriter):
 
         if hasattr(message, "version"):
             message_version = (
-                f"{message.version.version_major}."
-                f"{message.version.version_minor}."
-                f"{message.version.version_patch}"
+                f"{message.version.version_major}.{message.version.version_minor}.{message.version.version_patch}"
             )
             configured_version = self._channel_metadata.get(OSI_CHANNEL_OSI_VERSION_KEY)
             if configured_version is None:
                 self._channel_metadata[OSI_CHANNEL_OSI_VERSION_KEY] = message_version
             elif configured_version != message_version:
                 raise ValueError(
-                    f"Configured OSI version '{configured_version}' does not match "
-                    f"message version '{message_version}'."
+                    f"Configured OSI version '{configured_version}' does not match message version '{message_version}'."
                 )
 
         configured_pb_version = self._channel_metadata.get(OSI_CHANNEL_PROTOBUF_VERSION_KEY)
@@ -125,9 +122,7 @@ class _TraceFileChannelWriter(ChannelWriter):
         self._ensure_mcap_channel(message)
         success = self._writer.write_message(message, self._channel_spec.topic or "")
         if not success:
-            raise RuntimeError(
-                f"Failed to write message to '{self._channel_spec.path}'."
-            )
+            raise RuntimeError(f"Failed to write message to '{self._channel_spec.path}'.")
         return True
 
     def close(self) -> None:
@@ -162,10 +157,7 @@ def open_channel_writer(channel_spec: ChannelSpecification) -> ChannelWriter:
         RuntimeError: If underlying writer cannot be opened.
     """
 
-    suffixes = "".join(channel_spec.path.suffixes).lower()
-
     if channel_spec.trace_file_format == TraceFileFormat.SINGLE_CHANNEL:
-
         if channel_spec.path.suffix.lower() == ".osi":
             writer = SingleTraceWriter()
             if not writer.open(channel_spec.path):
@@ -190,9 +182,7 @@ def open_channel_writer(channel_spec: ChannelSpecification) -> ChannelWriter:
             )
             return _TraceFileChannelWriter(writer=writer, channel_spec=resolved_spec)
 
-        raise ValueError(
-            f"Unsupported single-channel trace file extension for writing: '{suffixes}'."
-        )
+        raise ValueError(f"Unsupported single-channel trace file extension for writing: '{channel_spec.path.suffix}'.")
 
     if channel_spec.trace_file_format == TraceFileFormat.MULTI_CHANNEL:
         message_type: MessageType | None = None
@@ -211,6 +201,4 @@ def open_channel_writer(channel_spec: ChannelSpecification) -> ChannelWriter:
         )
         return _TraceFileChannelWriter(writer=writer, channel_spec=resolved_spec)
 
-    raise ValueError(
-        f"Unsupported trace file format: {channel_spec.trace_file_format} for '{channel_spec.path}'."
-    )
+    raise ValueError(f"Unsupported trace file format: {channel_spec.trace_file_format} for '{channel_spec.path}'.")
