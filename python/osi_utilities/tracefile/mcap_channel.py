@@ -70,7 +70,7 @@ class MCAPChannel:
             )
             self._schema_cache[schema_name] = schema_id
 
-        channel_meta = metadata or {}
+        channel_meta = dict(metadata) if metadata else {}
         if "net.asam.osi.trace.channel.protobuf_version" not in channel_meta:
             channel_meta["net.asam.osi.trace.channel.protobuf_version"] = google.protobuf.__version__
 

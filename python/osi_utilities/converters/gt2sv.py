@@ -107,28 +107,32 @@ def convert_gt2sv(
     if not reader.open(input_path):
         raise RuntimeError(f"Failed to open input file: {input_path}")
 
-    # Determine output format and create appropriate writer
-    output_format = get_trace_file_format(output_path)
+    try:
+        # Determine output format and create appropriate writer
+        output_format = get_trace_file_format(output_path)
 
-    if output_format == TraceFileFormat.MULTI_CHANNEL:
-        from osi3.osi_sensorview_pb2 import SensorView
+        if output_format == TraceFileFormat.MULTI_CHANNEL:
+            from osi3.osi_sensorview_pb2 import SensorView
 
-        from osi_utilities.tracefile.writers.multi import MultiTraceWriter
+            from osi_utilities.tracefile.writers.multi import MultiTraceWriter
 
-        writer = MultiTraceWriter()
-        if not writer.open(output_path):
-            raise RuntimeError(f"Failed to open output file: {output_path}")
-        output_topic = topic or "SensorView"
-        writer.add_channel(output_topic, SensorView)
-    elif output_format == TraceFileFormat.SINGLE_CHANNEL:
-        from osi_utilities.tracefile.writers.single import SingleTraceWriter
+            writer = MultiTraceWriter()
+            if not writer.open(output_path):
+                raise RuntimeError(f"Failed to open output file: {output_path}")
+            output_topic = topic or "SensorView"
+            writer.add_channel(output_topic, SensorView)
+        elif output_format == TraceFileFormat.SINGLE_CHANNEL:
+            from osi_utilities.tracefile.writers.single import SingleTraceWriter
 
-        writer = SingleTraceWriter()
-        if not writer.open(output_path):
-            raise RuntimeError(f"Failed to open output file: {output_path}")
-        output_topic = ""
-    else:
-        raise ValueError(f"Unsupported output format: {output_path.suffix}")
+            writer = SingleTraceWriter()
+            if not writer.open(output_path):
+                raise RuntimeError(f"Failed to open output file: {output_path}")
+            output_topic = ""
+        else:
+            raise ValueError(f"Unsupported output format: {output_path.suffix}")
+    except Exception:
+        reader.close()
+        raise
 
     frame_count = 0
     with writer, reader:

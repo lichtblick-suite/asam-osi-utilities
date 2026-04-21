@@ -27,11 +27,12 @@ class TraceWriter(ABC):
     """
 
     @abstractmethod
-    def open(self, path: Path) -> bool:
+    def open(self, path: Path, **kwargs: object) -> bool:
         """Open a trace file for writing.
 
         Args:
             path: Path to the output file.
+            **kwargs: Format-specific options (e.g. metadata, compression, chunk_size).
 
         Returns:
             True if the file was opened successfully, False otherwise.

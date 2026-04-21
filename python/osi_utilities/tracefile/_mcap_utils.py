@@ -20,10 +20,11 @@ def build_file_descriptor_set(message_class: type[Message]) -> FileDescriptorSet
     seen: set[str] = set()
 
     def _append(fd: FileDescriptor) -> None:
+        if fd.name in seen:
+            return
+        seen.add(fd.name)
         for dep in fd.dependencies:
-            if dep.name not in seen:
-                seen.add(dep.name)
-                _append(dep)
+            _append(dep)
         fd.CopyToProto(fds.file.add())
 
     _append(message_class.DESCRIPTOR.file)

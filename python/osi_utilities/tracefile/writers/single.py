@@ -32,11 +32,12 @@ class SingleTraceWriter(TraceWriter):
         self._path: Path | None = None
         self._written_count = 0
 
-    def open(self, path: Path) -> bool:
+    def open(self, path: Path, **kwargs: object) -> bool:
         """Open a binary .osi trace file for writing.
 
         Args:
             path: Path to the output file. Must have .osi extension.
+            **kwargs: Unused. Accepted for base-class compatibility.
 
         Returns:
             True on success, False on failure.

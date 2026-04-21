@@ -105,7 +105,7 @@ class MultiTraceWriter(TraceWriter):
         self._schema_cache: dict[str, int] = {}  # schema_name -> schema_id
         self._written_count = 0
 
-    def open(
+    def open(  # type: ignore[override]
         self,
         path: Path,
         metadata: dict[str, str] | None = None,
@@ -203,7 +203,7 @@ class MultiTraceWriter(TraceWriter):
         if topic in self._active_channels:
             raise RuntimeError(f"Channel with topic '{topic}' already exists")
 
-        channel_meta = metadata if metadata is not None else {}
+        channel_meta = dict(metadata) if metadata is not None else {}
         _validate_channel_metadata(channel_meta)
 
         # Auto-fill protobuf version if not set
@@ -294,21 +294,26 @@ class MultiTraceWriter(TraceWriter):
 
     def close(self) -> None:
         """Finalize and close the MCAP file."""
-        if self._mcap_writer is not None:
-            self._mcap_writer.finish()
-            logger.info(
-                "Wrote %d messages to channels [%s] in '%s'",
-                self._written_count,
-                ", ".join(self._active_channels.keys()),
-                self._path,
-            )
+        try:
+            if self._mcap_writer is not None:
+                self._mcap_writer.finish()
+                logger.info(
+                    "Wrote %d messages to channels [%s] in '%s'",
+                    self._written_count,
+                    ", ".join(self._active_channels.keys()),
+                    self._path,
+                )
+        finally:
             self._mcap_writer = None
-        if self._file is not None:
-            self._file.close()
-            self._file = None
-        self._active_channels.clear()
-        self._channel_metadata.clear()
-        self._schema_cache.clear()
+            if self._file is not None:
+                try:
+                    self._file.close()
+                except OSError:
+                    logger.debug("Error closing MCAP file handle", exc_info=True)
+                self._file = None
+            self._active_channels.clear()
+            self._channel_metadata.clear()
+            self._schema_cache.clear()
 
     @property
     def written_count(self) -> int:

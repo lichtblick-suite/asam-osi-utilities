@@ -134,50 +134,53 @@ def open_channel(channel_spec: ChannelSpecification) -> ChannelReader:
         configure_reader(reader, channel_spec)
         if not reader.open(channel_spec.path):
             raise RuntimeError(f"Failed to open trace file: {channel_spec.path}")
-        if not isinstance(reader, MultiTraceReader):
-            reader.close()
-            raise RuntimeError(f"Expected MultiTraceReader for '{channel_spec.path}', got {type(reader).__name__}.")
+        try:
+            if not isinstance(reader, MultiTraceReader):
+                raise RuntimeError(f"Expected MultiTraceReader for '{channel_spec.path}', got {type(reader).__name__}.")
 
-        available_topics = reader.get_available_topics()
-        if not available_topics:
-            reader.close()
-            raise ValueError(f"No topics found in MCAP file '{channel_spec.path}'.")
+            available_topics = reader.get_available_topics()
+            if not available_topics:
+                raise ValueError(f"No topics found in MCAP file '{channel_spec.path}'.")
 
-        topic = channel_spec.topic or available_topics[0]
-        if topic not in available_topics:
-            reader.close()
-            raise ValueError(
-                f"Topic '{topic}' not found in MCAP file '{channel_spec.path}'. Available topics: {available_topics}"
+            topic = channel_spec.topic or available_topics[0]
+            if topic not in available_topics:
+                raise ValueError(
+                    f"Topic '{topic}' not found in MCAP file '{channel_spec.path}'. "
+                    f"Available topics: {available_topics}"
+                )
+
+            detected_channel_spec = reader.get_channel_specification(topic)
+            detected_message_type = detected_channel_spec.message_type if detected_channel_spec is not None else None
+            if detected_channel_spec is None:
+                raise ValueError(
+                    f"Topic '{topic}' is not an OSI-compatible channel in MCAP file '{channel_spec.path}'."
+                )
+            if channel_spec.message_type is not None and channel_spec.message_type != detected_message_type:
+                specified = message_type_to_class_name(channel_spec.message_type)
+                detected = message_type_to_class_name(detected_message_type)
+                raise ValueError(
+                    f"Specified message type '{specified}' does not match detected message type '{detected}'."
+                )
+
+            resolved_topic = detected_channel_spec.topic
+            if resolved_topic is None:
+                raise RuntimeError(f"Resolved channel specification for '{channel_spec.path}' has no topic.")
+
+            reader.set_topics([resolved_topic])
+            detected_metadata = (
+                dict(detected_channel_spec.metadata)
+                if detected_channel_spec is not None and detected_channel_spec.metadata
+                else dict(channel_spec.metadata)
             )
-
-        detected_channel_spec = reader.get_channel_specification(topic)
-        detected_message_type = detected_channel_spec.message_type if detected_channel_spec is not None else None
-        if detected_channel_spec is None:
+            resolved_spec = ChannelSpecification(
+                path=channel_spec.path,
+                message_type=detected_message_type,
+                topic=resolved_topic,
+                metadata=detected_metadata,
+            )
+            return _TraceFileChannelReader(reader=reader, channel_spec=resolved_spec)
+        except Exception:
             reader.close()
-            raise ValueError(f"Topic '{topic}' is not an OSI-compatible channel in MCAP file '{channel_spec.path}'.")
-        if channel_spec.message_type is not None and channel_spec.message_type != detected_message_type:
-            reader.close()
-            specified = message_type_to_class_name(channel_spec.message_type)
-            detected = message_type_to_class_name(detected_message_type)
-            raise ValueError(f"Specified message type '{specified}' does not match detected message type '{detected}'.")
-
-        resolved_topic = detected_channel_spec.topic
-        if resolved_topic is None:
-            reader.close()
-            raise RuntimeError(f"Resolved channel specification for '{channel_spec.path}' has no topic.")
-
-        reader.set_topics([resolved_topic])
-        detected_metadata = (
-            dict(detected_channel_spec.metadata)
-            if detected_channel_spec is not None and detected_channel_spec.metadata
-            else dict(channel_spec.metadata)
-        )
-        resolved_spec = ChannelSpecification(
-            path=channel_spec.path,
-            message_type=detected_message_type,
-            topic=resolved_topic,
-            metadata=detected_metadata,
-        )
-        return _TraceFileChannelReader(reader=reader, channel_spec=resolved_spec)
+            raise
 
     raise ValueError(f"Unsupported trace file format: {channel_spec.trace_file_format} for '{channel_spec.path}'.")
