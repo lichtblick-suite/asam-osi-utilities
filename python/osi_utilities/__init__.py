@@ -15,6 +15,13 @@ from osi_utilities.api import (
     open_channel,
     open_channel_writer,
 )
+from osi_utilities.filename import infer_message_type_from_filename, parse_osi_trace_filename
+from osi_utilities.timestamp import (
+    nanoseconds_to_seconds,
+    seconds_to_nanoseconds,
+    timestamp_to_nanoseconds,
+    timestamp_to_seconds,
+)
 from osi_utilities.tracefile.configure import create_reader
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
 from osi_utilities.tracefile.readers import (
@@ -56,6 +63,12 @@ __all__ = [
     "create_reader",
     "TraceWriter",
     "convert_gt2sv",
+    "infer_message_type_from_filename",
+    "nanoseconds_to_seconds",
     "open_channel",
     "open_channel_writer",
+    "parse_osi_trace_filename",
+    "seconds_to_nanoseconds",
+    "timestamp_to_nanoseconds",
+    "timestamp_to_seconds",
 ]

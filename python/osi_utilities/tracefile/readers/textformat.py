@@ -25,17 +25,16 @@ logger = logging.getLogger(__name__)
 
 
 class ProtobufTextFormatTraceReader(TraceReader):
-    """
-    .. deprecated::
-    The `.txth` text format is not reliably deserializable. The OSI
-    specification states that it is "not unambiguously deserializable" —
-    protobuf text format output is not guaranteed to be stable across
-    library versions, field ordering may change, and float/double precision
-    varies. Round-tripping (write then read) can silently lose data. Prefer
-    `.osi` (binary) for single-channel or `.mcap` for multi-channel trace
-    files.
+    """Reader for text human-readable OSI trace files (.txth).
 
-    Reader for text human-readable OSI trace files (.txth).
+    .. deprecated:: 0.3.0
+        The ``.txth`` text format is not reliably deserializable. The OSI
+        specification states that it is "not unambiguously deserializable" —
+        protobuf text format output is not guaranteed to be stable across
+        library versions, field ordering may change, and float/double precision
+        varies. Round-tripping (write then read) can silently lose data. Prefer
+        ``.osi`` (binary) for single-channel or ``.mcap`` for multi-channel trace
+        files.
 
     Messages are stored in Google protobuf TextFormat. Each message is
     delimited by reading until the text can be parsed as a complete message.
@@ -62,11 +61,14 @@ class ProtobufTextFormatTraceReader(TraceReader):
 
         Args:
             path: Path to the .txth file.
-            message_type: Optional explicit message type.
 
         Returns:
             True on success, False on failure.
         """
+        if self._message_class is not None:
+            logger.error("Reader is already open. Call close() before re-opening.")
+            return False
+
         if self._message_type == MessageType.UNKNOWN:
             self._message_type = infer_message_type_from_filename(path.name)
 
@@ -174,6 +176,8 @@ class ProtobufTextFormatTraceReader(TraceReader):
     def close(self) -> None:
         self._buffer = ""
         self._has_next = False
+        self._message_type = MessageType.UNKNOWN
+        self._message_class = None
 
     @property
     def message_type(self) -> MessageType:

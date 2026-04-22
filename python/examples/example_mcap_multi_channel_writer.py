@@ -27,8 +27,7 @@ from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import MultiTraceReader, MultiTraceWriter
 from osi_utilities.timestamp import timestamp_to_nanoseconds
-from osi_utilities.tracefile.mcap_channel import MCAPChannel
-from osi_utilities.tracefile.writers.multi import prepare_required_file_metadata
+from osi_utilities.tracefile import MCAPChannel, prepare_required_file_metadata
 
 try:
     from mcap.writer import Writer as McapRawWriter

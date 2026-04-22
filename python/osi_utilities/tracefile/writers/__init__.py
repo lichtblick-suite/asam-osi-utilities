@@ -4,7 +4,7 @@
 """Tracefile writer implementations."""
 
 from osi_utilities.tracefile.writers.base import TraceWriter
-from osi_utilities.tracefile.writers.multi import MultiTraceWriter
+from osi_utilities.tracefile.writers.multi import MultiTraceWriter, prepare_required_file_metadata
 from osi_utilities.tracefile.writers.single import SingleTraceWriter
 from osi_utilities.tracefile.writers.textformat import ProtobufTextFormatTraceWriter
 
@@ -13,4 +13,5 @@ __all__ = [
     "ProtobufTextFormatTraceWriter",
     "SingleTraceWriter",
     "TraceWriter",
+    "prepare_required_file_metadata",
 ]

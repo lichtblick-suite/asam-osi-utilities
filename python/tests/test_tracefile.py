@@ -702,3 +702,130 @@ class TestConfigureReaderForChannels:
                     ChannelSpecification(path=Path("file.mcap"), topic="gt", message_type=MessageType.SENSOR_VIEW),
                 ],
             )
+
+
+# ===========================================================================
+# Consistency: double-open guards, close state reset, re-exports
+# ===========================================================================
+
+
+class TestReaderDoubleOpenGuard:
+    """Readers must refuse to open() when already open (F3)."""
+
+    def test_single_reader_double_open_returns_false(self, tmp_path: Path):
+        path = tmp_path / "trace_gt.osi"
+        gt = _make_ground_truth()
+        data = gt.SerializeToString()
+        path.write_bytes(struct.pack("<I", len(data)) + data)
+
+        reader = SingleTraceReader()
+        reader.set_message_type(MessageType.GROUND_TRUTH)
+        assert reader.open(path) is True
+        assert reader.open(path) is False  # double-open blocked
+        reader.close()
+
+    def test_multi_reader_double_open_returns_false(self, tmp_path: Path):
+        path = tmp_path / "trace.mcap"
+        writer = MultiTraceWriter()
+        assert writer.open(path, {"version": "1.0.0"})
+        writer.add_channel("gt", GroundTruth, {})
+        writer.write_message(_make_ground_truth(), "gt")
+        writer.close()
+
+        reader = MultiTraceReader()
+        assert reader.open(path) is True
+        assert reader.open(path) is False  # double-open blocked
+        reader.close()
+
+    def test_txth_reader_double_open_returns_false(self, tmp_path: Path):
+        path = tmp_path / "trace_gt.txth"
+        writer = ProtobufTextFormatTraceWriter()
+        assert writer.open(path)
+        writer.write_message(_make_ground_truth())
+        writer.close()
+
+        reader = ProtobufTextFormatTraceReader()
+        reader.set_message_type(MessageType.GROUND_TRUTH)
+        assert reader.open(path) is True
+        assert reader.open(path) is False  # double-open blocked
+        reader.close()
+
+    def test_txth_reader_double_open_after_consuming_all(self, tmp_path: Path):
+        """Guard must work even when buffer is empty after reading all messages."""
+        path = tmp_path / "trace_gt.txth"
+        writer = ProtobufTextFormatTraceWriter()
+        assert writer.open(path)
+        writer.write_message(_make_ground_truth())
+        writer.close()
+
+        reader = ProtobufTextFormatTraceReader()
+        reader.set_message_type(MessageType.GROUND_TRUTH)
+        assert reader.open(path) is True
+        reader.read_message()  # consume only message — buffer now empty
+        assert reader.open(path) is False  # must still block
+        reader.close()
+
+
+class TestTxthReaderCloseReset:
+    """ProtobufTextFormatTraceReader.close() must fully reset state (F2)."""
+
+    def test_close_resets_message_type_and_class(self, tmp_path: Path):
+        path = tmp_path / "trace_gt.txth"
+        writer = ProtobufTextFormatTraceWriter()
+        assert writer.open(path)
+        writer.write_message(_make_ground_truth())
+        writer.close()
+
+        reader = ProtobufTextFormatTraceReader()
+        reader.set_message_type(MessageType.GROUND_TRUTH)
+        assert reader.open(path) is True
+        assert reader.message_type == MessageType.GROUND_TRUTH
+
+        reader.close()
+        assert reader.message_type == MessageType.UNKNOWN
+        assert reader._message_class is None  # noqa: SLF001
+        assert reader._has_next is False  # noqa: SLF001
+
+
+class TestReExports:
+    """Public re-exports must be accessible from top-level packages (F5-F7)."""
+
+    def test_tracefile_exports_config_constants(self):
+        from osi_utilities.tracefile import DEFAULT_CHUNK_SIZE, MAX_CHUNK_SIZE, MIN_CHUNK_SIZE
+
+        assert DEFAULT_CHUNK_SIZE == 16 * 1024 * 1024
+        assert MIN_CHUNK_SIZE == 1 * 1024 * 1024
+        assert MAX_CHUNK_SIZE == 32 * 1024 * 1024
+
+    def test_tracefile_exports_prepare_required_file_metadata(self):
+        from osi_utilities.tracefile import prepare_required_file_metadata
+
+        metadata = prepare_required_file_metadata()
+        assert isinstance(metadata, dict)
+        assert "version" in metadata
+
+    def test_writers_exports_prepare_required_file_metadata(self):
+        from osi_utilities.tracefile.writers import prepare_required_file_metadata
+
+        metadata = prepare_required_file_metadata()
+        assert isinstance(metadata, dict)
+
+    def test_top_level_exports_filename_utilities(self):
+        from osi_utilities import infer_message_type_from_filename, parse_osi_trace_filename
+
+        assert infer_message_type_from_filename("trace_gt.osi") == MessageType.GROUND_TRUTH
+        assert parse_osi_trace_filename("not_valid") == {}
+
+    def test_top_level_exports_timestamp_functions(self):
+        from osi_utilities import (
+            nanoseconds_to_seconds,
+            seconds_to_nanoseconds,
+            timestamp_to_nanoseconds,
+            timestamp_to_seconds,
+        )
+
+        assert nanoseconds_to_seconds(1_000_000_000) == 1.0
+        assert seconds_to_nanoseconds(1.0) == 1_000_000_000
+        # timestamp_to_* require protobuf messages; just verify they're callable
+        assert callable(timestamp_to_nanoseconds)
+        assert callable(timestamp_to_seconds)

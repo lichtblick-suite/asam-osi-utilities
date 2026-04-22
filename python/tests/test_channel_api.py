@@ -217,13 +217,12 @@ class TestOpenChannelWriterBinary:
             resolved = ch.get_channel_specification()
             assert resolved.message_type == MessageType.GROUND_TRUTH
 
-    def test_write_binary_type_mismatch_raises(self, tmp_dir: Path):
+    def test_write_binary_type_mismatch_returns_false(self, tmp_dir: Path):
         path = tmp_dir / "output.osi"
         spec = ChannelSpecification(path=path, message_type=MessageType.SENSOR_VIEW)
 
         with open_channel_writer(spec) as ch:
-            with pytest.raises(ValueError, match="does not match"):
-                ch.write_message(_make_ground_truth(0))
+            assert ch.write_message(_make_ground_truth(0)) is False
 
 
 class TestOpenChannelWriterTXTH:

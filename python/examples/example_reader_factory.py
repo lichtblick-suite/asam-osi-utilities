@@ -19,10 +19,14 @@ import argparse
 import sys
 from pathlib import Path
 
-from osi_utilities import ChannelSpecification, MessageType, create_reader, open_channel
-from osi_utilities.filename import infer_message_type_from_filename, parse_osi_trace_filename
-from osi_utilities.timestamp import (
+from osi_utilities import (
+    ChannelSpecification,
+    MessageType,
+    create_reader,
+    infer_message_type_from_filename,
     nanoseconds_to_seconds,
+    open_channel,
+    parse_osi_trace_filename,
     seconds_to_nanoseconds,
     timestamp_to_nanoseconds,
     timestamp_to_seconds,

@@ -83,6 +83,10 @@ class MultiTraceReader(TraceReader):
         Returns:
             True on success, False on failure.
         """
+        if self._file is not None:
+            logger.error("Reader is already open. Call close() before re-opening.")
+            return False
+
         try:
             self._file = open(path, "rb")  # noqa: SIM115
             self._path = path

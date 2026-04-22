@@ -118,12 +118,16 @@ class _TraceFileChannelWriter(ChannelWriter):
         self._channel_registered = True
 
     def write_message(self, message: Message) -> bool:
-        self._ensure_message_type(message)
-        self._ensure_mcap_channel(message)
+        try:
+            self._ensure_message_type(message)
+            self._ensure_mcap_channel(message)
+        except (ValueError, RuntimeError) as exc:
+            logger.error("Channel write pre-check failed for '%s': %s", self._channel_spec.path, exc)
+            return False
         success = self._writer.write_message(message, self._channel_spec.topic or "")
         if not success:
-            raise RuntimeError(f"Failed to write message to '{self._channel_spec.path}'.")
-        return True
+            logger.error("Failed to write message to '%s'.", self._channel_spec.path)
+        return success
 
     def close(self) -> None:
         self._writer.close()

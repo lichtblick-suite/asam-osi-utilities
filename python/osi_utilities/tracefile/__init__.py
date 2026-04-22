@@ -9,6 +9,11 @@ from osi_utilities.timestamp import (
     timestamp_to_nanoseconds,
     timestamp_to_seconds,
 )
+from osi_utilities.tracefile._config import (
+    DEFAULT_CHUNK_SIZE,
+    MAX_CHUNK_SIZE,
+    MIN_CHUNK_SIZE,
+)
 from osi_utilities.tracefile.configure import create_reader
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
 from osi_utilities.tracefile.readers import (
@@ -22,9 +27,13 @@ from osi_utilities.tracefile.writers import (
     ProtobufTextFormatTraceWriter,
     SingleTraceWriter,
     TraceWriter,
+    prepare_required_file_metadata,
 )
 
 __all__ = [
+    "DEFAULT_CHUNK_SIZE",
+    "MAX_CHUNK_SIZE",
+    "MIN_CHUNK_SIZE",
     "SingleTraceReader",
     "SingleTraceWriter",
     "MCAPChannel",
@@ -36,6 +45,7 @@ __all__ = [
     "create_reader",
     "TraceWriter",
     "nanoseconds_to_seconds",
+    "prepare_required_file_metadata",
     "seconds_to_nanoseconds",
     "timestamp_to_nanoseconds",
     "timestamp_to_seconds",

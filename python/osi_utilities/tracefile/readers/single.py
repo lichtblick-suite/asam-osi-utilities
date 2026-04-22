@@ -57,6 +57,10 @@ class SingleTraceReader(TraceReader):
         Returns:
             True on success, False on failure.
         """
+        if self._file is not None:
+            logger.error("Reader is already open. Call close() before re-opening.")
+            return False
+
         if self._message_type is None:
             logger.error("No message type configured for '%s'. Call set_message_type() first.", path)
             return False
@@ -80,7 +84,12 @@ class SingleTraceReader(TraceReader):
             logger.error("Failed to open file '%s': %s", path, e)
             return False
 
-        self._has_next = self._peek_has_data()
+        try:
+            self._has_next = self._peek_has_data()
+        except Exception:
+            self._file.close()
+            self._file = None
+            raise
         return True
 
     def read_message(self) -> ReadResult | None:
