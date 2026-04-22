@@ -9,7 +9,7 @@ import pytest
 from google.protobuf.descriptor_pb2 import FileDescriptorProto
 from osi3.osi_groundtruth_pb2 import GroundTruth
 
-from osi_utilities.tracefile.timestamp import (
+from osi_utilities.timestamp import (
     nanoseconds_to_seconds,
     seconds_to_nanoseconds,
     timestamp_to_nanoseconds,

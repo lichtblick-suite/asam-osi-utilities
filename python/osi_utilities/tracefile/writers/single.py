@@ -16,12 +16,12 @@ from typing import IO
 
 from google.protobuf.message import EncodeError, Message
 
-from osi_utilities.tracefile.writer import TraceFileWriter
+from osi_utilities.tracefile.writers.base import TraceWriter
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryTraceFileWriter(TraceFileWriter):
+class SingleTraceWriter(TraceWriter):
     """Writer for single-channel binary OSI trace files (.osi).
 
     Each message is stored as: [4-byte LE length][serialized protobuf bytes]

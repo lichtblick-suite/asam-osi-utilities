@@ -31,8 +31,9 @@ from pathlib import Path
 
 from google.protobuf.message import Message
 
-from osi_utilities.tracefile._types import MessageType, TraceFileFormat, get_trace_file_format
-from osi_utilities.tracefile.reader import TraceFileReaderFactory
+from osi_utilities.api.types import ChannelSpecification, MessageType, TraceFileFormat
+from osi_utilities.tracefile.configure import configure_reader, create_reader
+from osi_utilities.tracefile.format import get_trace_file_format
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +41,7 @@ logger = logging.getLogger(__name__)
 def _wrap_gt_in_sv(gt_msg: Message) -> Message:
     """Wrap a GroundTruth message inside a SensorView message.
 
-    Mirrors the C++ convert_gt2sv logic: copies timestamp,
-    host_vehicle_id, and sets global_ground_truth.
+    Copies timestamp, host_vehicle_id, and sets global_ground_truth.
 
     Uses MergeFromString to avoid cross-class CopyFrom errors when
     the reader returns dynamically-generated protobuf classes (e.g. MCAP).
@@ -84,8 +84,7 @@ def convert_gt2sv(
     Args:
         input_path: Path to the input GroundTruth trace file.
         output_path: Path to the output SensorView trace file.
-        topic: Topic filter for MCAP input files. If ``None``, reads the
-            first/only channel.
+        topic: Topic filter for MCAP input files.
 
     Returns:
         Number of frames converted.
@@ -102,9 +101,11 @@ def convert_gt2sv(
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
     # Open reader — we know the input contains GroundTruth messages
-    reader = TraceFileReaderFactory.create_reader(input_path, message_type=MessageType.GROUND_TRUTH)
-    if topic is not None and hasattr(reader, "set_topics"):
-        reader.set_topics([topic])
+    reader = create_reader(input_path)
+    input_channel_spec = ChannelSpecification(path=input_path, message_type=MessageType.GROUND_TRUTH, topic=topic)
+    configure_reader(reader, input_channel_spec)
+    if not reader.open(input_path):
+        raise RuntimeError(f"Failed to open input file: {input_path}")
 
     # Determine output format and create appropriate writer
     output_format = get_trace_file_format(output_path)
@@ -112,17 +113,17 @@ def convert_gt2sv(
     if output_format == TraceFileFormat.MULTI_CHANNEL:
         from osi3.osi_sensorview_pb2 import SensorView
 
-        from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
+        from osi_utilities.tracefile.writers.multi import MultiTraceWriter
 
-        writer = MCAPTraceFileWriter()
+        writer = MultiTraceWriter()
         if not writer.open(output_path):
             raise RuntimeError(f"Failed to open output file: {output_path}")
         output_topic = topic or "SensorView"
         writer.add_channel(output_topic, SensorView)
     elif output_format == TraceFileFormat.SINGLE_CHANNEL:
-        from osi_utilities.tracefile.binary_writer import BinaryTraceFileWriter
+        from osi_utilities.tracefile.writers.single import SingleTraceWriter
 
-        writer = BinaryTraceFileWriter()
+        writer = SingleTraceWriter()
         if not writer.open(output_path):
             raise RuntimeError(f"Failed to open output file: {output_path}")
         output_topic = ""
@@ -160,7 +161,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--topic",
         default=None,
-        help="Topic name to read from MCAP input (default: first channel)",
+        help="Topic name to read from MCAP input",
     )
     parser.add_argument(
         "-v",

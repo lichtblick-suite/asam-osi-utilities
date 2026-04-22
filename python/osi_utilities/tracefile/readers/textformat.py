@@ -13,36 +13,56 @@ import logging
 from pathlib import Path
 
 from google.protobuf import text_format
+from osi_utilities._types import MessageType, ReadResult
 
-from osi_utilities.tracefile._types import (
-    MessageType,
-    ReadResult,
-    _get_message_class,
-    infer_message_type_from_filename,
+from osi_utilities.message_types import (
+    get_message_class,
 )
-from osi_utilities.tracefile.reader import TraceFileReader
+from osi_utilities.filename import infer_message_type_from_filename
+from osi_utilities.tracefile.readers.base import TraceReader
 
 logger = logging.getLogger(__name__)
 
 
-class TXTHTraceFileReader(TraceFileReader):
-    """Reader for text human-readable OSI trace files (.txth).
+class ProtobufTextFormatTraceReader(TraceReader):
+    """
+    .. deprecated::
+    The `.txth` text format is not reliably deserializable. The OSI
+    specification states that it is "not unambiguously deserializable" —
+    protobuf text format output is not guaranteed to be stable across
+    library versions, field ordering may change, and float/double precision
+    varies. Round-tripping (write then read) can silently lose data. Prefer
+    `.osi` (binary) for single-channel or `.mcap` for multi-channel trace
+    files.
+
+    Reader for text human-readable OSI trace files (.txth).
 
     Messages are stored in Google protobuf TextFormat. Each message is
     delimited by reading until the text can be parsed as a complete message.
+
+    See the
+    `Protocol Buffers Text Format Language Specification <https://protobuf.dev/reference/protobuf/textformat-spec/>`_.
     """
 
-    def __init__(self, message_type: MessageType = MessageType.UNKNOWN) -> None:
-        self._message_type = message_type
+    def __init__(self) -> None:
+        self._message_type = MessageType.UNKNOWN
         self._message_class: type | None = None
         self._has_next = False
         self._buffer = ""
+
+    def set_message_type(self, message_type: MessageType) -> None:
+        """Set message type to be used on open().
+
+        Pass ``MessageType.UNKNOWN`` to enable filename-based inference.
+        """
+        self._message_type = message_type
 
     def open(self, path: Path) -> bool:
         """Open a .txth trace file.
 
         Args:
             path: Path to the .txth file.
+            message_type: Optional explicit message type.
 
         Returns:
             True on success, False on failure.
@@ -51,11 +71,13 @@ class TXTHTraceFileReader(TraceFileReader):
             self._message_type = infer_message_type_from_filename(path.name)
 
         if self._message_type == MessageType.UNKNOWN:
-            logger.error("Cannot determine message type for '%s'. Specify it explicitly.", path)
+            logger.error(
+                "Cannot determine message type for '%s'. Specify it explicitly.", path
+            )
             return False
 
         try:
-            self._message_class = _get_message_class(self._message_type)
+            self._message_class = get_message_class(self._message_type)
         except ValueError as e:
             logger.error("Failed to get message class: %s", e)
             return False
@@ -93,7 +115,9 @@ class TXTHTraceFileReader(TraceFileReader):
         except text_format.ParseError:
             # If full buffer fails, the file may have multiple concatenated messages.
             # Try splitting on the first top-level field name appearing again.
-            logger.debug("Buffer contains multiple messages, splitting at field boundary.")
+            logger.debug(
+                "Buffer contains multiple messages, splitting at field boundary."
+            )
 
         # Multi-message: find the boundary by looking for a repeated top-level field
         # The C++ implementation reads line by line and tries parsing.
