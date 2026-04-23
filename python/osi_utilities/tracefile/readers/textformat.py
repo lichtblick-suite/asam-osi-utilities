@@ -97,9 +97,7 @@ class ProtobufTextFormatTraceReader(TraceReader):
             ReadResult on success, None if no more messages.
 
         Raises:
-            RuntimeError: If parsing fails after boundary-splitting.
-                The channel-reader abstraction (:class:`ChannelReader`)
-                catches this and converts it to end-of-stream.
+            RuntimeError: If parsing fails.
         """
         if self._message_class is None or not self._buffer.strip():
             self._has_next = False
