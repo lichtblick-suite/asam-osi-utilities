@@ -369,6 +369,71 @@ class TestChannelReaderIterator:
 
 
 # ===========================================================================
+# Error normalization at channel layer
+# ===========================================================================
+
+
+class TestChannelReaderErrorNormalization:
+    """Verify that RuntimeError from underlying readers is caught and surfaced via read_error."""
+
+    def test_truncated_binary_returns_none_and_sets_read_error(self, tmp_dir: Path):
+        """A truncated .osi file should not crash the channel reader."""
+        path = tmp_dir / "truncated_gt.osi"
+        _write_binary(path, count=3)
+
+        # Truncate the file mid-message
+        data = path.read_bytes()
+        path.write_bytes(data[: len(data) - 5])
+
+        spec = ChannelSpecification(path=path, message_type=MessageType.GROUND_TRUTH)
+        with open_channel(spec) as ch:
+            messages = list(ch)
+            assert ch.read_error is not None
+
+        # Should have read at least 1 message before corruption
+        assert len(messages) >= 1
+
+    def test_clean_read_has_no_error(self, tmp_dir: Path):
+        """read_error is None after a clean read of all messages."""
+        path = tmp_dir / "clean_gt.osi"
+        _write_binary(path, count=3)
+
+        spec = ChannelSpecification(path=path, message_type=MessageType.GROUND_TRUTH)
+        with open_channel(spec) as ch:
+            messages = list(ch)
+            assert ch.read_error is None
+        assert len(messages) == 3
+
+    def test_mcap_clean_read_has_no_error(self, tmp_dir: Path):
+        """read_error is None after a clean MCAP read."""
+        path = tmp_dir / "clean.mcap"
+        _write_mcap(path, count=2, topic="GroundTruth")
+
+        spec = ChannelSpecification(path=path, topic="GroundTruth")
+        with open_channel(spec) as ch:
+            messages = list(ch)
+            assert ch.read_error is None
+        assert len(messages) == 2
+
+    def test_truncated_binary_iteration_is_safe(self, tmp_dir: Path):
+        """for-loop over a truncated .osi file terminates without exception."""
+        path = tmp_dir / "trunc_iter_gt.osi"
+        _write_binary(path, count=5)
+
+        # Corrupt by truncating to remove some messages
+        data = path.read_bytes()
+        path.write_bytes(data[: len(data) // 2])
+
+        spec = ChannelSpecification(path=path, message_type=MessageType.GROUND_TRUTH)
+        # Must not raise — for-loop should terminate cleanly
+        collected = []
+        with open_channel(spec) as ch:
+            for msg in ch:
+                collected.append(msg)
+        assert len(collected) >= 1
+
+
+# ===========================================================================
 # MCAP writer auto-topic value
 # ===========================================================================
 

@@ -141,6 +141,11 @@ class MultiTraceReader(TraceReader):
     def read_message(self) -> ReadResult | None:
         """Read the next message from the MCAP file.
 
+        Unlike the single-channel and text-format readers, this reader
+        does **not** raise on individual message failures.  Non-OSI,
+        schema-less, or undecodable messages are logged at WARNING level
+        and silently skipped so that healthy channels remain readable.
+
         Returns:
             ReadResult on success, None if no more messages.
         """

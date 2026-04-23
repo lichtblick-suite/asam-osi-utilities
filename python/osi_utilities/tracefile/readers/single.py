@@ -100,6 +100,10 @@ class SingleTraceReader(TraceReader):
 
         Raises:
             RuntimeError: If the message is truncated or deserialization fails.
+                Binary corruption is typically unrecoverable because the
+                length-delimited framing is lost.  The channel-reader
+                abstraction (:class:`ChannelReader`) catches this and
+                converts it to end-of-stream.
         """
         if self._file is None or self._message_class is None:
             return None

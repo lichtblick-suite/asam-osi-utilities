@@ -6,10 +6,17 @@
 This module introduces a format-agnostic channel reader abstraction:
 - Single-channel files (.osi, .txth) are exposed as one logical channel
 - Multi-channel files (.mcap) are narrowed to one selected topic/channel
+
+Error handling is normalized at this layer: underlying reader errors
+(``RuntimeError`` from binary/text readers) are caught, logged, and
+surfaced as end-of-stream (``None``).  Callers can inspect
+:pyattr:`ChannelReader.read_error` after iteration to detect whether the
+stream ended due to an error.
 """
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 
@@ -25,13 +32,34 @@ from osi_utilities.tracefile.configure import configure_reader, create_reader
 from osi_utilities.tracefile.readers.base import TraceReader
 from osi_utilities.tracefile.readers.multi import MultiTraceReader
 
+logger = logging.getLogger(__name__)
+
 
 class ChannelReader(ABC):
-    """Read exactly one logical OSI channel from any supported trace format."""
+    """Read exactly one logical OSI channel from any supported trace format.
+
+    Iteration is safe across all formats: errors in the underlying reader
+    are caught and surfaced as end-of-stream (``read_message()`` returns
+    ``None``).  After iteration, :pyattr:`read_error` reports the last
+    error message, if any.
+    """
 
     @abstractmethod
     def read_message(self) -> Message | None:
-        """Read the next protobuf message from the selected channel."""
+        """Read the next protobuf message from the selected channel.
+
+        Returns ``None`` when no more messages are available **or** when
+        an unrecoverable read error occurs.  In the latter case,
+        :pyattr:`read_error` is set with a description of the failure.
+        """
+
+    @property
+    @abstractmethod
+    def read_error(self) -> str | None:
+        """Error description from the last failed ``read_message()`` call.
+
+        ``None`` when the last read succeeded or the reader has not been used yet.
+        """
 
     @abstractmethod
     def get_channel_specification(self) -> ChannelSpecification:
@@ -58,7 +86,13 @@ class ChannelReader(ABC):
 
 
 class _TraceFileChannelReader(ChannelReader):
-    """Adapter exposing a selected channel on top of TraceReader implementations."""
+    """Adapter exposing a selected channel on top of TraceReader implementations.
+
+    Normalizes error handling: ``RuntimeError`` raised by single-channel and
+    text-format readers is caught, logged at WARNING level, and converted to
+    ``None`` (end-of-stream).  The error description is stored in
+    :pyattr:`read_error` so callers can distinguish normal EOF from failure.
+    """
 
     def __init__(
         self,
@@ -67,12 +101,23 @@ class _TraceFileChannelReader(ChannelReader):
     ) -> None:
         self._reader = reader
         self._channel_spec = channel_spec
+        self._read_error: str | None = None
 
     def read_message(self) -> Message | None:
-        result = self._reader.read_message()
+        self._read_error = None
+        try:
+            result = self._reader.read_message()
+        except RuntimeError as exc:
+            self._read_error = str(exc)
+            logger.warning("Read error in '%s': %s", self._channel_spec.path, exc)
+            return None
         if result is None:
             return None
         return result.message
+
+    @property
+    def read_error(self) -> str | None:
+        return self._read_error
 
     def close(self) -> None:
         self._reader.close()
