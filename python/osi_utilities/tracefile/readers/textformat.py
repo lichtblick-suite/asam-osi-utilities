@@ -14,29 +14,47 @@ from pathlib import Path
 
 from google.protobuf import text_format
 
-from osi_utilities.tracefile._types import (
-    MessageType,
-    ReadResult,
-    _get_message_class,
-    infer_message_type_from_filename,
+from osi_utilities._types import MessageType, ReadResult, ReadStatus
+from osi_utilities.filename import infer_message_type_from_filename
+from osi_utilities.message_types import (
+    get_message_class,
 )
-from osi_utilities.tracefile.reader import TraceFileReader
+from osi_utilities.tracefile.readers.base import TraceReader
 
 logger = logging.getLogger(__name__)
 
 
-class TXTHTraceFileReader(TraceFileReader):
+class ProtobufTextFormatTraceReader(TraceReader):
     """Reader for text human-readable OSI trace files (.txth).
+
+    .. deprecated:: 0.3.0
+        The ``.txth`` text format is not reliably deserializable. The OSI
+        specification states that it is "not unambiguously deserializable" —
+        protobuf text format output is not guaranteed to be stable across
+        library versions, field ordering may change, and float/double precision
+        varies. Round-tripping (write then read) can silently lose data. Prefer
+        ``.osi`` (binary) for single-channel or ``.mcap`` for multi-channel trace
+        files.
 
     Messages are stored in Google protobuf TextFormat. Each message is
     delimited by reading until the text can be parsed as a complete message.
+
+    See the
+    `Protocol Buffers Text Format Language Specification <https://protobuf.dev/reference/protobuf/textformat-spec/>`_.
     """
 
-    def __init__(self, message_type: MessageType = MessageType.UNKNOWN) -> None:
-        self._message_type = message_type
+    def __init__(self) -> None:
+        self._message_type = MessageType.UNKNOWN
         self._message_class: type | None = None
         self._has_next = False
         self._buffer = ""
+
+    def set_message_type(self, message_type: MessageType) -> None:
+        """Set message type to be used on open().
+
+        Pass ``MessageType.UNKNOWN`` to enable filename-based inference.
+        """
+        self._message_type = message_type
 
     def open(self, path: Path) -> bool:
         """Open a .txth trace file.
@@ -47,6 +65,10 @@ class TXTHTraceFileReader(TraceFileReader):
         Returns:
             True on success, False on failure.
         """
+        if self._message_class is not None:
+            logger.error("Reader is already open. Call close() before re-opening.")
+            return False
+
         if self._message_type == MessageType.UNKNOWN:
             self._message_type = infer_message_type_from_filename(path.name)
 
@@ -55,7 +77,7 @@ class TXTHTraceFileReader(TraceFileReader):
             return False
 
         try:
-            self._message_class = _get_message_class(self._message_type)
+            self._message_class = get_message_class(self._message_type)
         except ValueError as e:
             logger.error("Failed to get message class: %s", e)
             return False
@@ -73,9 +95,6 @@ class TXTHTraceFileReader(TraceFileReader):
 
         Returns:
             ReadResult on success, None if no more messages.
-
-        Raises:
-            RuntimeError: If parsing fails.
         """
         if self._message_class is None or not self._buffer.strip():
             self._has_next = False
@@ -89,7 +108,7 @@ class TXTHTraceFileReader(TraceFileReader):
             text_format.Parse(self._buffer, message)
             self._buffer = ""
             self._has_next = False
-            return ReadResult(message=message, message_type=self._message_type)
+            return ReadResult(message=message, message_type=self._message_type, status=ReadStatus.OK)
         except text_format.ParseError:
             # If full buffer fails, the file may have multiple concatenated messages.
             # Try splitting on the first top-level field name appearing again.
@@ -120,16 +139,17 @@ class TXTHTraceFileReader(TraceFileReader):
 
         # Find the next occurrence of this field after the first message
         split_idx = None
-        in_first_message = True
         for i, line in enumerate(lines):
             if i == 0:
                 continue
             stripped = line.strip()
-            if stripped.startswith(first_field) and not line[0].isspace():
-                # This is a new top-level field with the same name = new message boundary
-                if in_first_message:
-                    split_idx = i
-                    break
+            if not line[0:1].isspace() and (
+                stripped.startswith(first_field + ":")
+                or stripped.startswith(first_field + " {")
+                or stripped == first_field + " {"
+            ):
+                split_idx = i
+                break
 
         if split_idx is not None:
             msg_text = "\n".join(lines[:split_idx])
@@ -142,10 +162,17 @@ class TXTHTraceFileReader(TraceFileReader):
         try:
             text_format.Parse(msg_text, message)
         except text_format.ParseError as e:
-            raise RuntimeError(f"Failed to parse text format message: {e}") from e
+            self._buffer = ""
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message=f"Failed to parse text format message: {e}",
+            )
 
         self._has_next = len(self._buffer.strip()) > 0
-        return ReadResult(message=message, message_type=self._message_type)
+        return ReadResult(message=message, message_type=self._message_type, status=ReadStatus.OK)
 
     def has_next(self) -> bool:
         return self._has_next
@@ -153,6 +180,8 @@ class TXTHTraceFileReader(TraceFileReader):
     def close(self) -> None:
         self._buffer = ""
         self._has_next = False
+        self._message_type = MessageType.UNKNOWN
+        self._message_class = None
 
     @property
     def message_type(self) -> MessageType:

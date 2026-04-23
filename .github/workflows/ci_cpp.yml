@@ -105,6 +105,11 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Disable vcpkg binary caching for fork PRs
+        if: github.event.pull_request.head.repo.full_name != '' && github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: echo "VCPKG_BINARY_SOURCES=clear" >> "$GITHUB_ENV"
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
@@ -166,6 +171,11 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Disable vcpkg binary caching for fork PRs
+        if: github.event.pull_request.head.repo.full_name != '' && github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: echo "VCPKG_BINARY_SOURCES=clear" >> "$GITHUB_ENV"
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
@@ -224,6 +234,11 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Disable vcpkg binary caching for fork PRs
+        if: github.event.pull_request.head.repo.full_name != '' && github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: echo "VCPKG_BINARY_SOURCES=clear" >> "$GITHUB_ENV"
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
@@ -279,6 +294,11 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Disable vcpkg binary caching for fork PRs
+        if: github.event.pull_request.head.repo.full_name != '' && github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: echo "VCPKG_BINARY_SOURCES=clear" >> "$GITHUB_ENV"
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
@@ -317,6 +337,11 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Disable vcpkg binary caching for fork PRs
+        if: github.event.pull_request.head.repo.full_name != '' && github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: echo "VCPKG_BINARY_SOURCES=clear" >> "$GITHUB_ENV"
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -389,6 +414,11 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Disable vcpkg binary caching for fork PRs
+        if: github.event.pull_request.head.repo.full_name != '' && github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: echo "VCPKG_BINARY_SOURCES=clear" >> "$GITHUB_ENV"
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11

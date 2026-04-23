@@ -3,38 +3,74 @@
 
 """Python utilities for reading and writing ASAM OSI trace files."""
 
-from osi_utilities.converters.gt2sv import convert_gt2sv
-from osi_utilities.tracefile._types import (
+from typing import Any
+
+from osi_utilities.api import (
+    ChannelReader,
     ChannelSpecification,
+    ChannelWriter,
     MessageType,
     ReadResult,
+    ReadStatus,
     TraceFileFormat,
+    open_channel,
+    open_channel_writer,
 )
-from osi_utilities.tracefile.binary_reader import BinaryTraceFileReader
-from osi_utilities.tracefile.binary_writer import BinaryTraceFileWriter
+from osi_utilities.filename import infer_message_type_from_filename, parse_osi_trace_filename
+from osi_utilities.timestamp import (
+    nanoseconds_to_seconds,
+    seconds_to_nanoseconds,
+    timestamp_to_nanoseconds,
+    timestamp_to_seconds,
+)
+from osi_utilities.tracefile.configure import create_reader
 from osi_utilities.tracefile.mcap_channel import MCAPChannel
-from osi_utilities.tracefile.mcap_reader import MCAPTraceFileReader
-from osi_utilities.tracefile.mcap_writer import MCAPTraceFileWriter
-from osi_utilities.tracefile.reader import TraceFileReader, TraceFileReaderFactory, open_trace_file
-from osi_utilities.tracefile.txth_reader import TXTHTraceFileReader
-from osi_utilities.tracefile.txth_writer import TXTHTraceFileWriter
-from osi_utilities.tracefile.writer import TraceFileWriter
+from osi_utilities.tracefile.readers import (
+    MultiTraceReader,
+    ProtobufTextFormatTraceReader,
+    SingleTraceReader,
+    TraceReader,
+)
+from osi_utilities.tracefile.writers import (
+    MultiTraceWriter,
+    ProtobufTextFormatTraceWriter,
+    SingleTraceWriter,
+    TraceWriter,
+)
+
+
+def convert_gt2sv(*args: Any, **kwargs: Any) -> Any:
+    """Lazily import and call the GT->SV converter."""
+    from osi_utilities.converters.gt2sv import convert_gt2sv as _convert_gt2sv
+
+    return _convert_gt2sv(*args, **kwargs)
+
 
 __all__ = [
-    "BinaryTraceFileReader",
-    "BinaryTraceFileWriter",
+    "SingleTraceReader",
+    "SingleTraceWriter",
+    "ChannelReader",
     "ChannelSpecification",
+    "ChannelWriter",
     "MCAPChannel",
-    "MCAPTraceFileReader",
-    "MCAPTraceFileWriter",
+    "MultiTraceReader",
+    "MultiTraceWriter",
     "MessageType",
     "ReadResult",
-    "TXTHTraceFileReader",
-    "TXTHTraceFileWriter",
+    "ReadStatus",
+    "ProtobufTextFormatTraceReader",
+    "ProtobufTextFormatTraceWriter",
     "TraceFileFormat",
-    "TraceFileReader",
-    "TraceFileReaderFactory",
-    "TraceFileWriter",
+    "TraceReader",
+    "create_reader",
+    "TraceWriter",
     "convert_gt2sv",
-    "open_trace_file",
+    "infer_message_type_from_filename",
+    "nanoseconds_to_seconds",
+    "open_channel",
+    "open_channel_writer",
+    "parse_osi_trace_filename",
+    "seconds_to_nanoseconds",
+    "timestamp_to_nanoseconds",
+    "timestamp_to_seconds",
 ]

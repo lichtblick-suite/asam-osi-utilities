@@ -12,11 +12,11 @@ import pytest
 from osi3.osi_groundtruth_pb2 import GroundTruth
 
 from osi_utilities import (
-    BinaryTraceFileReader,
-    BinaryTraceFileWriter,
-    MCAPTraceFileReader,
-    MCAPTraceFileWriter,
     MessageType,
+    MultiTraceReader,
+    MultiTraceWriter,
+    SingleTraceReader,
+    SingleTraceWriter,
     convert_gt2sv,
 )
 
@@ -30,7 +30,7 @@ def _make_ground_truth(index: int = 0, num_objects: int = 2) -> GroundTruth:
     gt = GroundTruth()
     gt.timestamp.seconds = index
     gt.timestamp.nanos = index * 100_000
-    gt.host_vehicle_id.value = 0
+    gt.host_vehicle_id.value = 42
     for obj_id in range(1, num_objects + 1):
         mo = gt.moving_object.add()
         mo.id.value = obj_id
@@ -49,7 +49,7 @@ def tmp_dir():
 def _write_gt_binary(path: Path, count: int = 5) -> list[GroundTruth]:
     """Write GroundTruth messages to a binary .osi file and return them."""
     messages = [_make_ground_truth(i) for i in range(count)]
-    with BinaryTraceFileWriter() as writer:
+    with SingleTraceWriter() as writer:
         assert writer.open(path)
         for msg in messages:
             writer.write_message(msg)
@@ -59,7 +59,7 @@ def _write_gt_binary(path: Path, count: int = 5) -> list[GroundTruth]:
 def _write_gt_mcap(path: Path, count: int = 5, topic: str = "GroundTruth") -> list[GroundTruth]:
     """Write GroundTruth messages to an MCAP file and return them."""
     messages = [_make_ground_truth(i) for i in range(count)]
-    with MCAPTraceFileWriter() as writer:
+    with MultiTraceWriter() as writer:
         assert writer.open(path)
         writer.add_channel(topic, GroundTruth)
         for msg in messages:
@@ -92,7 +92,8 @@ class TestConvertGt2svBinary:
 
         convert_gt2sv(gt_path, sv_path)
 
-        with BinaryTraceFileReader(MessageType.SENSOR_VIEW) as reader:
+        with SingleTraceReader() as reader:
+            reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             results = list(reader)
             assert len(results) == 3
@@ -106,7 +107,8 @@ class TestConvertGt2svBinary:
 
         convert_gt2sv(gt_path, sv_path)
 
-        with BinaryTraceFileReader(MessageType.SENSOR_VIEW) as reader:
+        with SingleTraceReader() as reader:
+            reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             for i, result in enumerate(reader):
                 sv = result.message
@@ -123,7 +125,8 @@ class TestConvertGt2svBinary:
 
         convert_gt2sv(gt_path, sv_path)
 
-        with BinaryTraceFileReader(MessageType.SENSOR_VIEW) as reader:
+        with SingleTraceReader() as reader:
+            reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             results = list(reader)
             assert results[0].message.timestamp.seconds == 0
@@ -136,11 +139,12 @@ class TestConvertGt2svBinary:
 
         convert_gt2sv(gt_path, sv_path)
 
-        with BinaryTraceFileReader(MessageType.SENSOR_VIEW) as reader:
+        with SingleTraceReader() as reader:
+            reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             result = next(iter(reader))
             assert result.message.HasField("host_vehicle_id")
-            assert result.message.host_vehicle_id.value == 0
+            assert result.message.host_vehicle_id.value == 42
 
 
 class TestConvertGt2svMCAP:
@@ -154,7 +158,7 @@ class TestConvertGt2svMCAP:
         count = convert_gt2sv(gt_path, sv_path)
 
         assert count == 4
-        with MCAPTraceFileReader() as reader:
+        with MultiTraceReader() as reader:
             assert reader.open(sv_path)
             results = list(reader)
             assert len(results) == 4
@@ -168,7 +172,7 @@ class TestConvertGt2svMCAP:
 
         convert_gt2sv(gt_path, sv_path)
 
-        with MCAPTraceFileReader() as reader:
+        with MultiTraceReader() as reader:
             assert reader.open(sv_path)
             for i, result in enumerate(reader):
                 sv = result.message
@@ -196,7 +200,7 @@ class TestConvertGt2svCrossFormat:
         count = convert_gt2sv(gt_path, sv_path)
 
         assert count == 3
-        with MCAPTraceFileReader() as reader:
+        with MultiTraceReader() as reader:
             assert reader.open(sv_path)
             results = list(reader)
             assert len(results) == 3
@@ -211,7 +215,8 @@ class TestConvertGt2svCrossFormat:
         count = convert_gt2sv(gt_path, sv_path)
 
         assert count == 3
-        with BinaryTraceFileReader(MessageType.SENSOR_VIEW) as reader:
+        with SingleTraceReader() as reader:
+            reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             results = list(reader)
             assert len(results) == 3
@@ -224,7 +229,7 @@ class TestConvertGt2svEdgeCases:
         gt_path = tmp_dir / "empty_gt.osi"
         sv_path = tmp_dir / "output_sv.osi"
         # Write empty file with valid binary format (no messages)
-        with BinaryTraceFileWriter() as writer:
+        with SingleTraceWriter() as writer:
             writer.open(gt_path)
 
         count = convert_gt2sv(gt_path, sv_path)
@@ -248,7 +253,8 @@ class TestConvertGt2svEdgeCases:
         count = convert_gt2sv(gt_path, sv_path)
 
         assert count == 1
-        with BinaryTraceFileReader(MessageType.SENSOR_VIEW) as reader:
+        with SingleTraceReader() as reader:
+            reader.set_message_type(MessageType.SENSOR_VIEW)
             assert reader.open(sv_path)
             results = list(reader)
             assert len(results) == 1

@@ -14,24 +14,25 @@ from google.protobuf.message import Message
 logger = logging.getLogger(__name__)
 
 
-class TraceFileWriter(ABC):
+class TraceWriter(ABC):
     """Abstract base class for writing OSI trace files.
 
     Supports context manager protocol.
 
     Usage::
 
-        with BinaryTraceFileWriter() as writer:
+        with SingleTraceWriter() as writer:
             writer.open(Path("output.osi"))
             writer.write_message(ground_truth_msg)
     """
 
     @abstractmethod
-    def open(self, path: Path) -> bool:
+    def open(self, path: Path, **kwargs: object) -> bool:
         """Open a trace file for writing.
 
         Args:
             path: Path to the output file.
+            **kwargs: Format-specific options (e.g. metadata, compression, chunk_size).
 
         Returns:
             True if the file was opened successfully, False otherwise.
@@ -53,7 +54,7 @@ class TraceFileWriter(ABC):
     def close(self) -> None:
         """Close the trace file and finalize writing."""
 
-    def __enter__(self) -> TraceFileWriter:
+    def __enter__(self) -> TraceWriter:
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
