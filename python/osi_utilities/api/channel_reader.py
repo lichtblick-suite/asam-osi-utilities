@@ -15,7 +15,7 @@ from collections.abc import Iterator
 
 from google.protobuf.message import Message
 
-from osi_utilities._types import MessageType, TraceFileFormat
+from osi_utilities._types import MessageType, ReadResult, ReadStatus, TraceFileFormat
 from osi_utilities.api.types import ChannelSpecification
 from osi_utilities.message_types import (
     message_type_to_class_name,
@@ -27,11 +27,34 @@ from osi_utilities.tracefile.readers.multi import MultiTraceReader
 
 
 class ChannelReader(ABC):
-    """Read exactly one logical OSI channel from any supported trace format."""
+    """Read exactly one logical OSI channel from any supported trace format.
+
+    Contract:
+    - ``read_result()`` preserves low-level statuses and returns ``None`` on EOF.
+    - ``read_message()`` is strict and raises for non-OK statuses:
+      - ``ReadStatus.INCOMPATIBLE`` -> ``ValueError``
+      - ``ReadStatus.ERROR`` -> ``RuntimeError``
+    """
+
+    @abstractmethod
+    def read_result(self) -> ReadResult | None:
+        """Read the next message result from the selected channel.
+
+        Returns:
+            ``ReadResult`` for data/error/incompatible outcomes, or ``None`` on EOF.
+        """
 
     @abstractmethod
     def read_message(self) -> Message | None:
-        """Read the next protobuf message from the selected channel."""
+        """Read the next protobuf message from the selected channel.
+
+        Returns:
+            The next protobuf message, or ``None`` on EOF.
+
+        Raises:
+            ValueError: If the underlying reader returns an incompatible status.
+            RuntimeError: If the underlying reader returns an error status.
+        """
 
     @abstractmethod
     def get_channel_specification(self) -> ChannelSpecification:
@@ -68,10 +91,17 @@ class _TraceFileChannelReader(ChannelReader):
         self._reader = reader
         self._channel_spec = channel_spec
 
+    def read_result(self) -> ReadResult | None:
+        return self._reader.read_message()
+
     def read_message(self) -> Message | None:
-        result = self._reader.read_message()
+        result = self.read_result()
         if result is None:
             return None
+        if result.status == ReadStatus.INCOMPATIBLE:
+            raise ValueError(result.error_message or "Trace reader returned an incompatible message.")
+        if result.status == ReadStatus.ERROR:
+            raise RuntimeError(result.error_message or "Trace reader encountered an error.")
         return result.message
 
     def close(self) -> None:

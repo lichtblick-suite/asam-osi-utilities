@@ -14,7 +14,7 @@ from pathlib import Path
 
 from google.protobuf import text_format
 
-from osi_utilities._types import MessageType, ReadResult
+from osi_utilities._types import MessageType, ReadResult, ReadStatus
 from osi_utilities.filename import infer_message_type_from_filename
 from osi_utilities.message_types import (
     get_message_class,
@@ -95,9 +95,6 @@ class ProtobufTextFormatTraceReader(TraceReader):
 
         Returns:
             ReadResult on success, None if no more messages.
-
-        Raises:
-            RuntimeError: If parsing fails.
         """
         if self._message_class is None or not self._buffer.strip():
             self._has_next = False
@@ -111,7 +108,7 @@ class ProtobufTextFormatTraceReader(TraceReader):
             text_format.Parse(self._buffer, message)
             self._buffer = ""
             self._has_next = False
-            return ReadResult(message=message, message_type=self._message_type)
+            return ReadResult(message=message, message_type=self._message_type, status=ReadStatus.OK)
         except text_format.ParseError:
             # If full buffer fails, the file may have multiple concatenated messages.
             # Try splitting on the first top-level field name appearing again.
@@ -165,10 +162,17 @@ class ProtobufTextFormatTraceReader(TraceReader):
         try:
             text_format.Parse(msg_text, message)
         except text_format.ParseError as e:
-            raise RuntimeError(f"Failed to parse text format message: {e}") from e
+            self._buffer = ""
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message=f"Failed to parse text format message: {e}",
+            )
 
         self._has_next = len(self._buffer.strip()) > 0
-        return ReadResult(message=message, message_type=self._message_type)
+        return ReadResult(message=message, message_type=self._message_type, status=ReadStatus.OK)
 
     def has_next(self) -> bool:
         return self._has_next

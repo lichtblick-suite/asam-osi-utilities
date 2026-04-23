@@ -16,10 +16,13 @@ from osi_utilities import (
     ChannelSpecification,
     MessageType,
     MultiTraceWriter,
+    ReadStatus,
     SingleTraceWriter,
     open_channel,
     open_channel_writer,
 )
+from osi_utilities._types import ReadResult
+from osi_utilities.tracefile.readers.base import TraceReader
 
 # ===========================================================================
 # Fixtures and helpers
@@ -186,6 +189,58 @@ class TestOpenChannelErrors:
         spec = ChannelSpecification(path=path)
         with pytest.raises(ValueError, match="Unsupported"):
             open_channel(spec)
+
+    def test_read_message_result_surfaces_read_error(self, tmp_dir: Path):
+        path = tmp_dir / "corrupt_gt.osi"
+        path.write_bytes(b"\x01\x00")  # truncated binary length header
+        spec = ChannelSpecification(path=path, message_type=MessageType.GROUND_TRUTH)
+
+        with open_channel(spec) as ch:
+            result = ch.read_result()
+            assert result is not None
+            assert result.status == ReadStatus.ERROR
+            assert "Truncated length header" in result.error_message
+
+    def test_read_message_raises_on_read_error(self, tmp_dir: Path):
+        path = tmp_dir / "corrupt_gt.osi"
+        path.write_bytes(b"\x01\x00")  # truncated binary length header
+        spec = ChannelSpecification(path=path, message_type=MessageType.GROUND_TRUTH)
+
+        with open_channel(spec) as ch:
+            with pytest.raises(RuntimeError, match="Truncated length header"):
+                ch.read_message()
+
+
+class _StubIncompatibleTraceReader(TraceReader):
+    def open(self, path: Path) -> bool:  # pragma: no cover - not used by this test
+        return True
+
+    def read_message(self) -> ReadResult | None:
+        return ReadResult(
+            message=None,
+            message_type=MessageType.UNKNOWN,
+            status=ReadStatus.INCOMPATIBLE,
+            error_message="Incompatible message type for selected channel.",
+        )
+
+    def has_next(self) -> bool:  # pragma: no cover - not used by this test
+        return True
+
+    def close(self) -> None:  # pragma: no cover - not used by this test
+        return
+
+
+class TestChannelReaderStatusExceptions:
+    def test_read_message_raises_value_error_on_incompatible_status(self, tmp_dir: Path):
+        from osi_utilities.api.channel_reader import _TraceFileChannelReader
+
+        ch = _TraceFileChannelReader(
+            reader=_StubIncompatibleTraceReader(),
+            channel_spec=ChannelSpecification(path=tmp_dir / "dummy.mcap"),
+        )
+
+        with pytest.raises(ValueError, match="Incompatible message type"):
+            ch.read_message()
 
 
 # ===========================================================================

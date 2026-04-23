@@ -31,6 +31,7 @@ from osi_utilities import (
     MultiTraceWriter,
     ProtobufTextFormatTraceReader,
     ProtobufTextFormatTraceWriter,
+    ReadStatus,
     SingleTraceReader,
     SingleTraceWriter,
 )
@@ -225,8 +226,10 @@ class TestSingleTraceReaderErrors:
 
         reader.set_message_type(MessageType.GROUND_TRUTH)
         reader.open(path)
-        with pytest.raises(RuntimeError, match="exceeds maximum"):
-            reader.read_message()
+        result = reader.read_message()
+        assert result is not None
+        assert result.status == ReadStatus.ERROR
+        assert "exceeds maximum" in result.error_message
         reader.close()
 
     def test_unknown_message_type_fails_open(self, tmp_dir: Path):
@@ -333,6 +336,45 @@ class TestMultiTraceReaderErrors:
             assert len(results) == 1
             assert any("Message type mismatch on channel 'sv'" in rec.message for rec in caplog.records)
 
+    def test_set_topic_message_types_can_surface_incompatible_result(self, tmp_dir: Path):
+        path = tmp_dir / "topic_type_mismatch_surface.mcap"
+        with MultiTraceWriter() as writer:
+            writer.open(path)
+            writer.add_channel("gt", GroundTruth)
+            writer.add_channel("sv", SensorView)
+            writer.write_message(_make_ground_truth(1), "gt")
+            writer.write_message(_make_sensor_view(2), "sv")
+
+        with MultiTraceReader() as reader:
+            assert reader.open(path)
+            reader.set_skip_incompatible_messages(False)
+            reader.set_topic_message_types({"sv": MessageType.GROUND_TRUTH})
+
+            result1 = reader.read_message()
+            assert result1 is not None
+            assert result1.status == ReadStatus.OK
+
+            result2 = reader.read_message()
+            assert result2 is not None
+            assert result2.status == ReadStatus.INCOMPATIBLE
+            assert "Message type mismatch on channel 'sv'" in result2.error_message
+
+    def test_iterator_raises_value_error_on_incompatible_when_not_skipped(self, tmp_dir: Path):
+        path = tmp_dir / "topic_type_mismatch_iter.mcap"
+        with MultiTraceWriter() as writer:
+            writer.open(path)
+            writer.add_channel("gt", GroundTruth)
+            writer.add_channel("sv", SensorView)
+            writer.write_message(_make_ground_truth(1), "gt")
+            writer.write_message(_make_sensor_view(2), "sv")
+
+        with MultiTraceReader() as reader:
+            assert reader.open(path)
+            reader.set_skip_incompatible_messages(False)
+            reader.set_topic_message_types({"sv": MessageType.GROUND_TRUTH})
+            with pytest.raises(ValueError, match="Message type mismatch on channel 'sv'"):
+                list(reader)
+
     def test_get_channel_metadata(self, tmp_dir: Path):
         path = tmp_dir / "ch_meta.mcap"
         custom_meta = {"my_key": "my_value"}
@@ -377,7 +419,7 @@ class TestMultiTraceReaderErrors:
         # Verify that the OSI message is read and no errors occur
         with MultiTraceReader() as reader:
             reader.open(path)
-            reader.set_silence_incompatible_topic_warnings(True)
+            reader.set_log_incompatible_messages(False)
             results = list(reader)
             assert len(results) == 1
             assert results[0].message_type == MessageType.GROUND_TRUTH
@@ -405,8 +447,10 @@ class TestProtobufTextFormatTraceReaderErrors:
         reader = ProtobufTextFormatTraceReader()
         reader.set_message_type(MessageType.GROUND_TRUTH)
         reader.open(path)
-        with pytest.raises(RuntimeError, match="Failed to parse"):
-            reader.read_message()
+        result = reader.read_message()
+        assert result is not None
+        assert result.status == ReadStatus.ERROR
+        assert "Failed to parse" in result.error_message
         reader.close()
 
     def test_read_after_close(self, tmp_dir: Path):

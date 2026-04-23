@@ -87,7 +87,7 @@ def read_back_and_print_summary(path: Path, skip_non_osi: bool) -> None:
         print(f"  ERROR: could not open {path}", file=sys.stderr)
         return
 
-    reader.set_silence_incompatible_topic_warnings(skip_non_osi)
+    reader.set_log_incompatible_messages(not skip_non_osi)
 
     channel_counts: dict[str, int] = {}
     with reader:
@@ -259,7 +259,7 @@ def part2_mixed_channel_writer() -> None:
     # Best practice: when reading a mixed file with MultiTraceReader, enable
     # set_skip_non_osi_msgs(True) to silently skip channels that are not recognized
     # OSI types.  Without this flag the reader would log warnings on unknown schemas.
-    print("  Reading back with set_silence_incompatible_topic_warnings(True):")
+    print("  Reading back with set_log_incompatible_messages(False):")
     read_back_and_print_summary(path, skip_non_osi=True)
 
 

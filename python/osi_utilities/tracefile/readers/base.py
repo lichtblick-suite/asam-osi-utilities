@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from pathlib import Path
 
-from osi_utilities._types import ReadResult
+from osi_utilities._types import ReadResult, ReadStatus
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,18 @@ class TraceReader(ABC):
     """Abstract base class for reading OSI trace files.
 
     Supports context manager protocol and iteration.
+
+    Read contract:
+    - ``read_message()`` returns ``None`` on EOF.
+    - ``read_message()`` returns ``ReadResult(status=ReadStatus.OK, ...)`` for valid messages.
+    - ``read_message()`` returns ``ReadResult(status=ReadStatus.INCOMPATIBLE, ...)`` for
+      incompatible schema/encoding/message-type cases.
+    - ``read_message()`` returns ``ReadResult(status=ReadStatus.ERROR, ...)`` for actual
+      runtime read/decode/parse failures.
+
+    Iterator contract (``for ... in reader``):
+    - raises ``ValueError`` for ``ReadStatus.INCOMPATIBLE``
+    - raises ``RuntimeError`` for ``ReadStatus.ERROR``
     """
 
     @abstractmethod
@@ -37,10 +49,7 @@ class TraceReader(ABC):
         """Read the next message from the trace file.
 
         Returns:
-            A ReadResult containing the deserialized message, or None if no more messages.
-
-        Raises:
-            RuntimeError: If deserialization fails.
+            A ``ReadResult`` for message/status outcomes, or ``None`` if no more messages.
         """
 
     @abstractmethod
@@ -64,4 +73,8 @@ class TraceReader(ABC):
         result = self.read_message()
         if result is None:
             raise StopIteration
+        if result.status == ReadStatus.INCOMPATIBLE:
+            raise ValueError(result.error_message or "Trace reader encountered an incompatible message.")
+        if result.status == ReadStatus.ERROR:
+            raise RuntimeError(result.error_message or "Trace reader encountered an error.")
         return result

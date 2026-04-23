@@ -17,7 +17,7 @@ from mcap.reader import make_reader
 from mcap.well_known import MessageEncoding
 from mcap_protobuf.decoder import DecoderFactory
 
-from osi_utilities._types import MessageType, ReadResult
+from osi_utilities._types import MessageType, ReadResult, ReadStatus
 from osi_utilities.api.types import ChannelSpecification
 from osi_utilities.message_types import (
     coerce_message_type,
@@ -34,18 +34,30 @@ class MultiTraceReader(TraceReader):
 
     Supports multi-channel reading with topic-based filtering,
     schema-based message type detection, and metadata access.
+
+    Incompatible message handling:
+    - Controlled by ``set_skip_incompatible_messages(...)``.
+    - If enabled (default), incompatible messages are skipped.
+    - If disabled, incompatible messages are surfaced as
+      ``ReadResult(status=ReadStatus.INCOMPATIBLE, ...)``.
+
+    Logging behavior for incompatible messages is controlled independently by
+    ``set_log_incompatible_messages(...)``.
     """
 
     def __init__(
         self,
         decoder_mode: str = "precompiled",
+        skip_incompatible_messages: bool = True,
+        log_incompatible_messages: bool = True,
     ) -> None:
         self._file: IO[bytes] | None = None
         self._path: Path | None = None
         self._reader = None
         self._message_iterator = None
         self._summary = None
-        self._silence_incompatible_topic_warnings = False
+        self._log_incompatible_messages = log_incompatible_messages
+        self._skip_incompatible_messages = skip_incompatible_messages
         self._topics: list[str] | None = None
         self._topic_message_types: dict[str, MessageType] = {}
         self._decoder_mode = "precompiled"
@@ -129,20 +141,33 @@ class MultiTraceReader(TraceReader):
                 normalized[topic] = coerced
         self._topic_message_types = normalized
 
-    def set_silence_incompatible_topic_warnings(self, silence: bool) -> None:
-        """Configure whether to skip incompatible messages with or without warning.
+    def set_log_incompatible_messages(self, log_messages: bool) -> None:
+        """Configure whether incompatible messages should be logged.
 
         Args:
-            silence: If True, silently skip messages with unrecognized schemas.
-                     If False (default), they are skipped with a warning.
+            log_messages: If True (default), incompatible messages are logged.
+                If False, incompatible messages are not logged.
         """
-        self._silence_incompatible_topic_warnings = silence
+        self._log_incompatible_messages = log_messages
+
+    def set_skip_incompatible_messages(self, skip: bool) -> None:
+        """Configure whether incompatible messages should be skipped.
+
+        Incompatible messages are non-matching encoding/schema/message-type cases.
+        Actual decode/read errors are always surfaced as ``ReadStatus.ERROR`` and are
+        never skipped by this setting.
+        """
+        self._skip_incompatible_messages = skip
 
     def read_message(self) -> ReadResult | None:
         """Read the next message from the MCAP file.
 
         Returns:
-            ReadResult on success, None if no more messages.
+            ``None`` on EOF; otherwise a ``ReadResult`` with status:
+            - ``ReadStatus.OK`` for a valid decoded message
+            - ``ReadStatus.INCOMPATIBLE`` for incompatible messages when
+              ``set_skip_incompatible_messages(False)`` is configured
+            - ``ReadStatus.ERROR`` for runtime read/decode failures
         """
         if self._peeked_result is not None:
             result = self._peeked_result
@@ -162,43 +187,59 @@ class MultiTraceReader(TraceReader):
             except StopIteration:
                 self._message_iterator = None
                 return None
+            except Exception as exc:  # noqa: BLE001 - upstream reader may raise broad exceptions
+                self._message_iterator = None
+                return ReadResult(
+                    message=None,
+                    message_type=MessageType.UNKNOWN,
+                    status=ReadStatus.ERROR,
+                    error_message=f"Failed while reading MCAP message stream: {exc}",
+                )
 
             # Skip non-protobuf messages (e.g. JSON channels in mixed files)
             if channel.message_encoding != MessageEncoding.Protobuf:
-                if not self._silence_incompatible_topic_warnings:
-                    logger.warning(
-                        "Skipping non-protobuf message on channel '%s' (encoding: %s)",
-                        channel.topic,
-                        channel.message_encoding,
-                    )
-                continue
+                result = self._handle_incompatible(
+                    channel_name=channel.topic,
+                    message_type=MessageType.UNKNOWN,
+                    error_message=f"Non-protobuf message on channel '{channel.topic}' (encoding: {channel.message_encoding})",
+                )
+                if result is None:
+                    continue
+                return result
 
             if schema is None:
-                if not self._silence_incompatible_topic_warnings:
-                    logger.warning(
-                        "Skipping protobuf message without schema on channel '%s'.",
-                        channel.topic,
-                    )
-                continue
+                result = self._handle_incompatible(
+                    channel_name=channel.topic,
+                    message_type=MessageType.UNKNOWN,
+                    error_message=f"Protobuf message without schema on channel '{channel.topic}'.",
+                )
+                if result is None:
+                    continue
+                return result
 
             msg_type = schema_name_to_message_type(schema.name)
             if msg_type == MessageType.UNKNOWN:
-                if not self._silence_incompatible_topic_warnings:
-                    logger.warning("Skipping non-OSI message with schema '%s'", schema.name)
-                continue
+                result = self._handle_incompatible(
+                    channel_name=channel.topic,
+                    message_type=MessageType.UNKNOWN,
+                    error_message=f"Non-OSI message with schema '{schema.name}' on channel '{channel.topic}'.",
+                )
+                if result is None:
+                    continue
+                return result
 
             expected_message_type = self._topic_message_types.get(channel.topic)
             if expected_message_type is not None and msg_type != expected_message_type:
-                if not self._silence_incompatible_topic_warnings:
-                    logger.warning(
-                        "Message type mismatch on channel '%s' (expected: '%s', actual: '%s').",
-                        channel.topic,
-                        expected_message_type,
-                        msg_type,
-                    )
-                continue
+                result = self._handle_incompatible(
+                    channel_name=channel.topic,
+                    message_type=msg_type,
+                    error_message=f"Message type mismatch on channel '{channel.topic}' (expected: '{expected_message_type}', actual: '{msg_type}').",
+                )
+                if result is None:
+                    continue
+                return result
 
-            proto_msg = self._decode_message(
+            decode_result = self._decode_message(
                 topic=channel.topic,
                 channel_id=raw_message.channel_id,
                 message_encoding=channel.message_encoding,
@@ -206,13 +247,31 @@ class MultiTraceReader(TraceReader):
                 payload=raw_message.data,
                 msg_type=msg_type,
             )
-            if proto_msg is None:
+            if decode_result is None:
                 continue
+            if decode_result.status == ReadStatus.INCOMPATIBLE:
+                result = self._handle_incompatible(
+                    channel_name=channel.topic,
+                    message_type=msg_type,
+                    error_message=decode_result.error_message,
+                )
+                if result is None:
+                    continue
+                return result
+            if decode_result.status == ReadStatus.ERROR:
+                return ReadResult(
+                    message=None,
+                    message_type=msg_type,
+                    channel_name=channel.topic,
+                    status=ReadStatus.ERROR,
+                    error_message=decode_result.error_message,
+                )
 
             return ReadResult(
-                message=proto_msg,
+                message=decode_result.message,
                 message_type=msg_type,
                 channel_name=channel.topic,
+                status=ReadStatus.OK,
             )
 
     def _decode_message(
@@ -231,52 +290,75 @@ class MultiTraceReader(TraceReader):
                 try:
                     message_class = get_message_class(msg_type)
                 except ValueError as exc:
-                    if not self._silence_incompatible_topic_warnings:
-                        logger.warning(
-                            "Failed to resolve precompiled class for schema '%s': %s",
-                            schema.name,
-                            exc,
-                        )
-                    return None
+                    return ReadResult(
+                        message=None,
+                        message_type=msg_type,
+                        status=ReadStatus.ERROR,
+                        error_message=f"Failed to resolve precompiled class for schema '{schema.name}': {exc}",
+                    )
                 else:
                     self._precompiled_message_classes[channel_id] = message_class
 
             try:
                 message = message_class()
                 message.ParseFromString(payload)
-                return message
+                return ReadResult(message=message, message_type=msg_type, status=ReadStatus.OK)
             except Exception as exc:  # noqa: BLE001 - protobuf parser raises broad exceptions
-                logger.warning(
-                    "Failed to decode precompiled protobuf message on channel '%s': %s",
-                    topic,
-                    exc,
+                return ReadResult(
+                    message=None,
+                    message_type=msg_type,
+                    status=ReadStatus.ERROR,
+                    error_message=f"Failed to decode precompiled protobuf message on channel '{topic}': {exc}",
                 )
-                return None
 
         if self._decoder_mode == "mcap-contained":
             decoder = self._mcap_contained_decoders.get(channel_id)
             if decoder is None:
                 decoder = self._decoder_factory.decoder_for(message_encoding, schema)
                 if decoder is None:
-                    if not self._silence_incompatible_topic_warnings:
-                        logger.warning(
-                            "Skipping message with no MCAP-contained decoder for schema '%s'",
-                            schema.name if schema else "None",
-                        )
-                    return None
+                    schema_name = schema.name if schema else "None"
+                    return ReadResult(
+                        message=None,
+                        message_type=msg_type,
+                        status=ReadStatus.INCOMPATIBLE,
+                        error_message=f"No MCAP-contained decoder for schema '{schema_name}'.",
+                    )
                 self._mcap_contained_decoders[channel_id] = decoder
 
             try:
-                return decoder(payload)
-            except Exception as exc:  # noqa: BLE001 - decoder raises broad exceptions
-                logger.warning(
-                    "Failed to decode MCAP-contained protobuf message on channel '%s': %s",
-                    topic,
-                    exc,
+                return ReadResult(
+                    message=decoder(payload),
+                    message_type=msg_type,
+                    status=ReadStatus.OK,
                 )
-                return None
+            except Exception as exc:  # noqa: BLE001 - decoder raises broad exceptions
+                return ReadResult(
+                    message=None,
+                    message_type=msg_type,
+                    status=ReadStatus.ERROR,
+                    error_message=f"Failed to decode MCAP-contained protobuf message on channel '{topic}': {exc}",
+                )
 
         return None
+
+    def _handle_incompatible(
+        self,
+        *,
+        channel_name: str,
+        message_type: MessageType,
+        error_message: str,
+    ) -> ReadResult | None:
+        if self._log_incompatible_messages:
+            logger.warning("%s", error_message)
+        if self._skip_incompatible_messages:
+            return None
+        return ReadResult(
+            message=None,
+            message_type=message_type,
+            channel_name=channel_name,
+            status=ReadStatus.INCOMPATIBLE,
+            error_message=error_message,
+        )
 
     def has_next(self) -> bool:
         """Check if there are more messages to read.

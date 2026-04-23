@@ -19,6 +19,7 @@ from osi_utilities import (
     MultiTraceWriter,
     ProtobufTextFormatTraceReader,
     ProtobufTextFormatTraceWriter,
+    ReadStatus,
     SingleTraceReader,
     SingleTraceWriter,
     TraceFileFormat,
@@ -128,8 +129,10 @@ class TestSingleTraceFile:
 
         reader.set_message_type(MessageType.GROUND_TRUTH)
         assert reader.open(path)
-        with pytest.raises(RuntimeError, match="Truncated length header"):
-            reader.read_message()
+        result = reader.read_message()
+        assert result is not None
+        assert result.status == ReadStatus.ERROR
+        assert "Truncated length header" in result.error_message
         reader.close()
 
     def test_read_truncated_body(self, tmp_dir: Path):
@@ -140,8 +143,10 @@ class TestSingleTraceFile:
 
         reader.set_message_type(MessageType.GROUND_TRUTH)
         assert reader.open(path)
-        with pytest.raises(RuntimeError, match="Truncated message body"):
-            reader.read_message()
+        result = reader.read_message()
+        assert result is not None
+        assert result.status == ReadStatus.ERROR
+        assert "Truncated message body" in result.error_message
         reader.close()
 
     def test_empty_file(self, tmp_dir: Path):

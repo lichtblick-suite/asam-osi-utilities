@@ -32,10 +32,20 @@ class TraceFileFormat(Enum):
     MULTI_CHANNEL = 2
 
 
+class ReadStatus(str, Enum):
+    """Status of a read operation."""
+
+    OK = "ok"
+    INCOMPATIBLE = "incompatible"
+    ERROR = "error"
+
+
 @dataclass
 class ReadResult:
     """Result of reading a single message from a trace file."""
 
-    message: Message
+    message: Message | None
     message_type: MessageType
     channel_name: str = ""
+    status: ReadStatus = ReadStatus.OK
+    error_message: str = ""

@@ -14,7 +14,7 @@ import struct
 from pathlib import Path
 from typing import IO
 
-from osi_utilities._types import MessageType, ReadResult
+from osi_utilities._types import MessageType, ReadResult, ReadStatus
 from osi_utilities.filename import infer_message_type_from_filename
 from osi_utilities.message_types import (
     get_message_class,
@@ -97,9 +97,6 @@ class SingleTraceReader(TraceReader):
 
         Returns:
             ReadResult on success, None if no more messages.
-
-        Raises:
-            RuntimeError: If the message is truncated or deserialization fails.
         """
         if self._file is None or self._message_class is None:
             return None
@@ -109,24 +106,52 @@ class SingleTraceReader(TraceReader):
             self._has_next = False
             return None
         if len(length_bytes) < BINARY_MESSAGE_LENGTH_PREFIX_SIZE:
-            raise RuntimeError("Truncated length header in binary trace file")
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message="Truncated length header in binary trace file",
+            )
 
         (msg_len,) = struct.unpack("<I", length_bytes)
         if msg_len > MAX_EXPECTED_MESSAGE_SIZE:
-            raise RuntimeError(f"Message size {msg_len} exceeds maximum expected size {MAX_EXPECTED_MESSAGE_SIZE}")
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message=f"Message size {msg_len} exceeds maximum expected size {MAX_EXPECTED_MESSAGE_SIZE}",
+            )
 
         data = self._file.read(msg_len)
         if len(data) < msg_len:
-            raise RuntimeError(f"Truncated message body: expected {msg_len} bytes, got {len(data)}")
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message=f"Truncated message body: expected {msg_len} bytes, got {len(data)}",
+            )
 
         message = self._message_class()
         try:
             message.ParseFromString(data)
         except Exception as e:
-            raise RuntimeError(f"Failed to deserialize protobuf message ({msg_len} bytes): {e}") from e
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message=f"Failed to deserialize protobuf message ({msg_len} bytes): {e}",
+            )
 
         self._has_next = self._peek_has_data()
-        return ReadResult(message=message, message_type=self._message_type)
+        return ReadResult(
+            message=message,
+            message_type=self._message_type,
+            status=ReadStatus.OK,
+        )
 
     def has_next(self) -> bool:
         """Check if there are more messages to read."""
