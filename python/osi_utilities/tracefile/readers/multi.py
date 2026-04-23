@@ -198,10 +198,11 @@ class MultiTraceReader(TraceReader):
 
             # Skip non-protobuf messages (e.g. JSON channels in mixed files)
             if channel.message_encoding != MessageEncoding.Protobuf:
+                msg = f"Non-protobuf message on channel '{channel.topic}' (encoding: {channel.message_encoding})"
                 result = self._handle_incompatible(
                     channel_name=channel.topic,
                     message_type=MessageType.UNKNOWN,
-                    error_message=f"Non-protobuf message on channel '{channel.topic}' (encoding: {channel.message_encoding})",
+                    error_message=msg,
                 )
                 if result is None:
                     continue
@@ -230,10 +231,14 @@ class MultiTraceReader(TraceReader):
 
             expected_message_type = self._topic_message_types.get(channel.topic)
             if expected_message_type is not None and msg_type != expected_message_type:
+                msg = (
+                    f"Message type mismatch on channel '{channel.topic}'"
+                    f" (expected: '{expected_message_type}', actual: '{msg_type}')."
+                )
                 result = self._handle_incompatible(
                     channel_name=channel.topic,
                     message_type=msg_type,
-                    error_message=f"Message type mismatch on channel '{channel.topic}' (expected: '{expected_message_type}', actual: '{msg_type}').",
+                    error_message=msg,
                 )
                 if result is None:
                     continue
