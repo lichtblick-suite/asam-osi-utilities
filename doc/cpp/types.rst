@@ -4,6 +4,12 @@
 Core Types
 ==========
 
+.. doxygenenum:: osi3::ReadStatus
+   :project: osi-utilities
+
+.. doxygenenum:: osi3::TraceFileFormat
+   :project: osi-utilities
+
 .. doxygenenum:: osi3::ReaderTopLevelMessage
    :project: osi-utilities
 

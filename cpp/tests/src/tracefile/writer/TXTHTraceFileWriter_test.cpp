@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <type_traits>
 
 #include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
@@ -115,4 +116,8 @@ TEST_F(TxthTraceFileWriterTest, CloseAndReopenFile) {
 TEST_F(TxthTraceFileWriterTest, WriteToReadOnlyLocation) {
     const std::string readonly_path = "/root/test.txth";
     EXPECT_FALSE(writer_.Open(readonly_path));
+}
+
+TEST(ProtobufTextFormatTraceFileWriterAliasTest, AliasResolvesToCorrectType) {
+    static_assert(std::is_same_v<osi3::ProtobufTextFormatTraceFileWriter, osi3::TXTHTraceFileWriter>, "ProtobufTextFormatTraceFileWriter must alias TXTHTraceFileWriter");
 }

@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <type_traits>
 
 #include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
@@ -183,4 +184,17 @@ TEST_F(TxthTraceFileReaderTest, ReadInvalidMessageFormat) {
     EXPECT_THROW(reader_.ReadMessage(), std::runtime_error);
     reader_.Close();
     std::filesystem::remove(invalid_format_file);
+}
+
+TEST_F(TxthTraceFileReaderTest, ReadStatusIsOkForValidMessages) {
+    ASSERT_TRUE(reader_.Open(test_file_gt_));
+    auto result = reader_.ReadMessage();
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->status, osi3::ReadStatus::kOk);
+    EXPECT_TRUE(result->error_message.empty());
+    EXPECT_NE(result->message, nullptr);
+}
+
+TEST(ProtobufTextFormatTraceFileReaderAliasTest, AliasResolvesToCorrectType) {
+    static_assert(std::is_same_v<osi3::ProtobufTextFormatTraceFileReader, osi3::TXTHTraceFileReader>, "ProtobufTextFormatTraceFileReader must alias TXTHTraceFileReader");
 }

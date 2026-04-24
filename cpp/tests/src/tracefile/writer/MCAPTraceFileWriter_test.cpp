@@ -12,6 +12,7 @@
 #include <mcap/reader.hpp>
 #include <regex>
 #include <string>
+#include <type_traits>
 
 #include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
@@ -336,4 +337,8 @@ TEST_F(MCAPTraceFileWriterTest, AddChannelAutoProtobufVersion) {
     }
     EXPECT_TRUE(found_protobuf_version);
     mcap_reader.close();
+}
+
+TEST(MultiTraceFileWriterAliasTest, AliasResolvesToCorrectType) {
+    static_assert(std::is_same_v<osi3::MultiTraceFileWriter, osi3::MCAPTraceFileWriter>, "MultiTraceFileWriter must alias MCAPTraceFileWriter");
 }

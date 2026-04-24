@@ -9,7 +9,10 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
+#include <mcap/writer.hpp>
 #include <string>
+#include <type_traits>
 
 #include "../../TestUtilities.h"
 #include "osi-utilities/tracefile/writer/MCAPTraceFileWriter.h"
@@ -473,4 +476,102 @@ TEST_F(McapTraceFileReaderTest, IncompatibleResultHasChannelName) {
     EXPECT_EQ(result->status, osi3::ReadStatus::kIncompatible);
     EXPECT_EQ(result->channel_name, "json_topic");
     EXPECT_FALSE(result->error_message.empty());
+}
+
+TEST_F(McapTraceFileReaderTest, DeserializationFailureReturnsKError) {
+    // Create MCAP file with a valid OSI schema but corrupt protobuf payload
+    const auto corrupt_file = osi3::testing::MakeTempPath("corrupt_proto", osi3::testing::FileExtensions::kMcap);
+    {
+        // Write a file with a valid OSI channel but corrupt protobuf data
+        mcap::McapWriter raw_writer;
+        mcap::McapWriterOptions opts("osi-utilities");
+        auto out = std::ofstream(corrupt_file, std::ios::binary);
+        raw_writer.open(out, opts);
+
+        mcap::Schema osi_schema("osi3.GroundTruth", "protobuf", "");
+        raw_writer.addSchema(osi_schema);
+
+        mcap::Channel ch("gt", "protobuf", osi_schema.id);
+        raw_writer.addChannel(ch);
+
+        // Write garbage bytes as protobuf payload — will fail to deserialize
+        std::string garbage = "THIS_IS_NOT_VALID_PROTOBUF";
+        mcap::Message msg;
+        msg.channelId = ch.id;
+        msg.data = reinterpret_cast<const std::byte*>(garbage.data());
+        msg.dataSize = garbage.size();
+        msg.logTime = 0;
+        msg.publishTime = 0;
+        auto write_status = raw_writer.write(msg);
+        ASSERT_EQ(write_status.code, mcap::StatusCode::Success);
+        raw_writer.close();
+    }
+
+    osi3::MCAPTraceFileReader corrupt_reader;
+    ASSERT_TRUE(corrupt_reader.Open(corrupt_file));
+    ASSERT_TRUE(corrupt_reader.HasNext());
+
+    auto result = corrupt_reader.ReadMessage();
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->status, osi3::ReadStatus::kError);
+    EXPECT_FALSE(result->error_message.empty());
+    EXPECT_EQ(result->channel_name, "gt");
+    EXPECT_EQ(result->message, nullptr);
+
+    corrupt_reader.Close();
+    std::filesystem::remove(corrupt_file);
+}
+
+// Verify the deprecated SetSkipNonOSIMsgs still works as an alias
+TEST_F(McapTraceFileReaderTest, DeprecatedSetSkipNonOSIMsgsStillWorks) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+    reader_.SetSkipNonOSIMsgs(true);
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
+    // Should behave like SetSkipIncompatibleMessages(true): skip JSON, get 2 OSI messages then EOF
+    auto result1 = reader_.ReadMessage();
+    ASSERT_TRUE(result1.has_value());
+    EXPECT_EQ(result1->status, osi3::ReadStatus::kOk);
+
+    auto result2 = reader_.ReadMessage();
+    ASSERT_TRUE(result2.has_value());
+    EXPECT_EQ(result2->status, osi3::ReadStatus::kOk);
+
+    auto result3 = reader_.ReadMessage();
+    EXPECT_FALSE(result3.has_value());
+}
+
+// Verify TraceFileFormat enum values are distinct and accessible
+TEST(ReadStatusAndFormatEnumTest, TraceFileFormatValues) {
+    EXPECT_NE(static_cast<uint8_t>(osi3::TraceFileFormat::kSingleChannel), static_cast<uint8_t>(osi3::TraceFileFormat::kMultiChannel));
+
+    // Verify round-trip through integer
+    auto single = osi3::TraceFileFormat::kSingleChannel;
+    auto multi = osi3::TraceFileFormat::kMultiChannel;
+    EXPECT_EQ(single, osi3::TraceFileFormat::kSingleChannel);
+    EXPECT_EQ(multi, osi3::TraceFileFormat::kMultiChannel);
+}
+
+// Verify ReadStatus enum values
+TEST(ReadStatusAndFormatEnumTest, ReadStatusValues) {
+    EXPECT_NE(static_cast<uint8_t>(osi3::ReadStatus::kOk), static_cast<uint8_t>(osi3::ReadStatus::kIncompatible));
+    EXPECT_NE(static_cast<uint8_t>(osi3::ReadStatus::kOk), static_cast<uint8_t>(osi3::ReadStatus::kError));
+    EXPECT_NE(static_cast<uint8_t>(osi3::ReadStatus::kIncompatible), static_cast<uint8_t>(osi3::ReadStatus::kError));
+}
+
+// Verify type aliases resolve to the correct types
+TEST(TypeAliasTest, MultiTraceFileReaderIsAlias) {
+    static_assert(std::is_same_v<osi3::MultiTraceFileReader, osi3::MCAPTraceFileReader>, "MultiTraceFileReader must alias MCAPTraceFileReader");
 }
