@@ -36,6 +36,7 @@ class MultiTraceReader(TraceReader):
     schema-based message type detection, and metadata access.
 
     Incompatible message handling:
+
     - Controlled by ``set_skip_incompatible_messages(...)``.
     - If enabled (default), incompatible messages are skipped.
     - If disabled, incompatible messages are surfaced as

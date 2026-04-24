@@ -21,14 +21,16 @@ class TraceReader(ABC):
     Supports context manager protocol and iteration.
 
     Read contract:
+
     - ``read_message()`` returns ``None`` on EOF.
     - ``read_message()`` returns ``ReadResult(status=ReadStatus.OK, ...)`` for valid messages.
-    - ``read_message()`` returns ``ReadResult(status=ReadStatus.INCOMPATIBLE, ...)`` for
-      incompatible schema/encoding/message-type cases.
-    - ``read_message()`` returns ``ReadResult(status=ReadStatus.ERROR, ...)`` for actual
-      runtime read/decode/parse failures.
+    - ``read_message()`` returns ``ReadResult(status=ReadStatus.INCOMPATIBLE, ...)``
+      for incompatible schema/encoding/message-type cases.
+    - ``read_message()`` returns ``ReadResult(status=ReadStatus.ERROR, ...)``
+      for actual runtime read/decode/parse failures.
 
     Iterator contract (``for ... in reader``):
+
     - raises ``ValueError`` for ``ReadStatus.INCOMPATIBLE``
     - raises ``RuntimeError`` for ``ReadStatus.ERROR``
     """
