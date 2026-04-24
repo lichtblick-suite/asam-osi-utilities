@@ -79,43 +79,69 @@ auto MCAPTraceFileReader::Open(const std::filesystem::path& file_path, const mca
     return this->Open(file_path);
 }
 
+auto MCAPTraceFileReader::ProcessMessageView(const mcap::MessageView& msg_view) -> std::optional<ReadResult> {
+    const auto& channel = msg_view.channel;
+    const auto& schema = msg_view.schema;
+
+    if (!channel || !schema) {
+        throw std::runtime_error("ERROR: MCAP message has null channel or schema pointer.");
+    }
+
+    // Check for incompatible messages (non-OSI protobuf encoding/schema)
+    if (schema->encoding != "protobuf" || schema->name.size() < 5 || schema->name.substr(0, 5) != "osi3.") {
+        return HandleIncompatibleMessage(
+            channel->topic, schema->encoding != "protobuf" ? "Incompatible message encoding: " + schema->encoding : "Incompatible schema: " + schema->name + " (expected osi3.*)");
+    }
+
+    // Look up the deserializer for this OSI schema
+    auto deserializer_it = deserializer_map_.find(schema->name);
+    if (deserializer_it == deserializer_map_.end()) {
+        return HandleIncompatibleMessage(channel->topic, "Unsupported OSI message type: " + schema->name);
+    }
+
+    // Deserialize the message
+    const auto& [deserialize_fn, message_type] = deserializer_it->second;
+    try {
+        ReadResult result;
+        result.message = deserialize_fn(msg_view.message);
+        result.message_type = message_type;
+        result.channel_name = channel->topic;
+        result.status = ReadStatus::kOk;
+        return result;
+    } catch (const std::exception& e) {
+        // Always log deserialization errors — these indicate data corruption, not schema mismatches
+        std::cerr << "ERROR: Failed to deserialize message on topic '" << channel->topic << "': " << e.what() << std::endl;
+        ReadResult result;
+        result.status = ReadStatus::kError;
+        result.error_message = std::string("Deserialization failed: ") + e.what();
+        result.channel_name = channel->topic;
+        result.message_type = message_type;
+        return result;
+    }
+}
+
+auto MCAPTraceFileReader::HandleIncompatibleMessage(const std::string& topic, const std::string& reason) const -> std::optional<ReadResult> {
+    if (log_incompatible_msgs_) {
+        std::cerr << "WARNING: " << reason << " on topic '" << topic << "'" << std::endl;
+    }
+    if (skip_incompatible_msgs_) {
+        return std::nullopt;  // signal caller to skip
+    }
+    ReadResult result;
+    result.status = ReadStatus::kIncompatible;
+    result.error_message = reason;
+    result.channel_name = topic;
+    return result;
+}
+
 auto MCAPTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
     while (this->HasNext()) {
-        const auto& msg_view = **message_iterator_;
-        const auto msg = msg_view.message;
-        const auto& channel = msg_view.channel;
-        const auto& schema = msg_view.schema;
-
-        if (!channel || !schema) {
-            ++*message_iterator_;
-            throw std::runtime_error("ERROR: MCAP message has null channel or schema pointer.");
-        }
-
-        // this function only supports osi3 protobuf messages
-        if (schema->encoding != "protobuf" || schema->name.size() < 5 || schema->name.substr(0, 5) != "osi3.") {
-            if (skip_non_osi_msgs_) {
-                ++*message_iterator_;
-                continue;
-            }
-            throw std::runtime_error("Unsupported message encoding: " + schema->encoding + ". Only OSI3 protobuf is supported.");
-        }
-
-        // deserialize message into pre-known osi top-level message
-        // use a map based on the schema->name (which is the full protobuf message name according to the osi spec)
-        // the map returns the right deserializer function which was instantiated from a template
-        // the map also directly returns the top-level message type for the result struct
-        ReadResult result;
-        auto deserializer_it = deserializer_map_.find(schema->name);
-        if (deserializer_it != deserializer_map_.end()) {
-            const auto& [deserialize_fn, message_type] = deserializer_it->second;
-            result.message = deserialize_fn(msg);
-            result.message_type = message_type;
-            result.channel_name = channel->topic;
-        } else {
-            throw std::runtime_error("Unsupported OSI message type: " + schema->name);
-        }
-
+        auto result = ProcessMessageView(**message_iterator_);
         ++*message_iterator_;
+
+        if (!result.has_value()) {
+            continue;  // message was skipped (incompatible + skip enabled)
+        }
         return result;
     }
 

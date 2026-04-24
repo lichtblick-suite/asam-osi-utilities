@@ -21,6 +21,7 @@ from mcap.well_known import MessageEncoding
 from mcap.writer import CompressionType
 from mcap.writer import Writer as McapRawWriter
 
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 from osi_utilities.tracefile._config import (
     DEFAULT_CHUNK_SIZE,
     MAX_CHUNK_SIZE,
@@ -32,8 +33,7 @@ from osi_utilities.tracefile._config import (
     OSI_TRACE_REQUIRED_METADATA_KEYS,
 )
 from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
-from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
-from osi_utilities.tracefile.writer import TraceFileWriter
+from osi_utilities.tracefile.writers.base import TraceWriter
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +89,8 @@ def _validate_channel_metadata(metadata: dict[str, str]) -> None:
         logger.info("Missing recommended channel metadata: %s", ", ".join(missing_recommended))
 
 
-class MCAPTraceFileWriter(TraceFileWriter):
-    """Writer for MCAP-format OSI trace files (.mcap).
+class MultiTraceWriter(TraceWriter):
+    """Writer for multi-channel OSI trace files (.mcap).
 
     Supports multi-channel writing with schema registration,
     OSI-compliant file/channel metadata, and FileDescriptorSet-based schemas.
@@ -105,7 +105,7 @@ class MCAPTraceFileWriter(TraceFileWriter):
         self._schema_cache: dict[str, int] = {}  # schema_name -> schema_id
         self._written_count = 0
 
-    def open(
+    def open(  # type: ignore[override]
         self,
         path: Path,
         metadata: dict[str, str] | None = None,
@@ -203,7 +203,7 @@ class MCAPTraceFileWriter(TraceFileWriter):
         if topic in self._active_channels:
             raise RuntimeError(f"Channel with topic '{topic}' already exists")
 
-        channel_meta = metadata if metadata is not None else {}
+        channel_meta = dict(metadata) if metadata is not None else {}
         _validate_channel_metadata(channel_meta)
 
         # Auto-fill protobuf version if not set
@@ -294,21 +294,26 @@ class MCAPTraceFileWriter(TraceFileWriter):
 
     def close(self) -> None:
         """Finalize and close the MCAP file."""
-        if self._mcap_writer is not None:
-            self._mcap_writer.finish()
-            logger.info(
-                "Wrote %d messages to channels [%s] in '%s'",
-                self._written_count,
-                ", ".join(self._active_channels.keys()),
-                self._path,
-            )
+        try:
+            if self._mcap_writer is not None:
+                self._mcap_writer.finish()
+                logger.info(
+                    "Wrote %d messages to channels [%s] in '%s'",
+                    self._written_count,
+                    ", ".join(self._active_channels.keys()),
+                    self._path,
+                )
+        finally:
             self._mcap_writer = None
-        if self._file is not None:
-            self._file.close()
-            self._file = None
-        self._active_channels.clear()
-        self._channel_metadata.clear()
-        self._schema_cache.clear()
+            if self._file is not None:
+                try:
+                    self._file.close()
+                except OSError:
+                    logger.debug("Error closing MCAP file handle", exc_info=True)
+                self._file = None
+            self._active_channels.clear()
+            self._channel_metadata.clear()
+            self._schema_cache.clear()
 
     @property
     def written_count(self) -> int:

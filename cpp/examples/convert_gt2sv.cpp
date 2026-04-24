@@ -111,7 +111,7 @@ auto CreateReader(const ProgramOptions& options) -> std::unique_ptr<osi3::TraceF
 
     if (input_ext == ".mcap") {
         auto mcap_reader = std::make_unique<osi3::MCAPTraceFileReader>();
-        mcap_reader->SetSkipNonOSIMsgs(true);
+        mcap_reader->SetSkipIncompatibleMessages(true);
         if (!options.topic_filter.empty()) {
             mcap_reader->SetTopics({options.topic_filter});
         }

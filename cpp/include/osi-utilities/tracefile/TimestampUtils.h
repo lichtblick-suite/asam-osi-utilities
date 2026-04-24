@@ -6,6 +6,9 @@
 #ifndef OSIUTILITIES_TRACEFILE_TIMESTAMPUTILS_H_
 #define OSIUTILITIES_TRACEFILE_TIMESTAMPUTILS_H_
 
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/message.h>
+
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -83,6 +86,51 @@ inline auto SecondsToNanoseconds(const double seconds) -> uint64_t {
     }
 
     return static_cast<uint64_t>(seconds * static_cast<double>(config::kNanosecondsPerSecond));
+}
+
+/**
+ * @brief Extract timestamp from a type-erased protobuf message as nanoseconds.
+ *
+ * Uses protobuf reflection to access the timestamp field. Works with any
+ * OSI top-level message type without requiring compile-time type information.
+ * This enables polymorphic writing via the TraceFileWriter base class.
+ *
+ * @param message The protobuf message to extract the timestamp from
+ * @return Timestamp in nanoseconds as uint64_t
+ * @throws std::out_of_range if the message has no 'timestamp' field, or
+ *         if the timestamp is negative or exceeds uint64 nanosecond range
+ */
+inline auto TimestampToNanoseconds(const google::protobuf::Message& message) -> uint64_t {
+    const auto* descriptor = message.GetDescriptor();
+    const auto* reflection = message.GetReflection();
+    const auto* timestamp_field = descriptor->FindFieldByName("timestamp");
+    if (!timestamp_field || timestamp_field->message_type() == nullptr) {
+        throw std::out_of_range("Message type '" + descriptor->full_name() + "' does not have a 'timestamp' message field");
+    }
+
+    const auto& timestamp = reflection->GetMessage(message, timestamp_field);
+    const auto* ts_descriptor = timestamp.GetDescriptor();
+    const auto* ts_reflection = timestamp.GetReflection();
+
+    const auto* seconds_field = ts_descriptor->FindFieldByName("seconds");
+    const auto* nanos_field = ts_descriptor->FindFieldByName("nanos");
+    if (!seconds_field || !nanos_field) {
+        throw std::out_of_range("Timestamp message does not have 'seconds' and 'nanos' fields");
+    }
+
+    const auto seconds = ts_reflection->GetInt64(timestamp, seconds_field);
+    const auto nanos = static_cast<uint64_t>(ts_reflection->GetUInt32(timestamp, nanos_field));
+
+    if (seconds < 0) {
+        throw std::out_of_range("Timestamp seconds must be non-negative.");
+    }
+
+    const auto seconds_as_uint = static_cast<uint64_t>(seconds);
+    if (seconds_as_uint > (std::numeric_limits<uint64_t>::max() - nanos) / config::kNanosecondsPerSecond) {
+        throw std::out_of_range("Timestamp exceeds uint64 nanosecond range.");
+    }
+
+    return seconds_as_uint * config::kNanosecondsPerSecond + nanos;
 }
 
 }  // namespace tracefile

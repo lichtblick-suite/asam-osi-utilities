@@ -26,6 +26,16 @@ python convert_osi2mcap.py <input_osi_file> <output_mcap_file>
 python convert_osi2mcap.py input.osi output.mcap --input-type SensorView
 ```
 
+### example_channel_reader
+
+Opens a single logical OSI channel via `ChannelSpecification` and `open_channel()`.
+Works with `.mcap`, `.osi`, and `.txth` files.
+
+```bash
+python example_channel_reader.py /path/to/file.mcap --topic GroundTruth
+python example_channel_reader.py /path/to/file.osi --type GroundTruth
+```
+
 ### example_mcap_reader
 
 Reads an MCAP file with metadata inspection, topic filtering, and message iteration.
@@ -37,7 +47,7 @@ python example_mcap_reader.py /path/to/file.mcap
 # Filter to a specific topic
 python example_mcap_reader.py /path/to/file.mcap --topic ground_truth
 
-# Use TraceFileReaderFactory for format auto-detection
+# Use create_reader() for format auto-detection
 python example_mcap_reader.py /path/to/file.mcap --factory
 ```
 
@@ -47,7 +57,7 @@ Writes 10 SensorView frames to an MCAP file in the system temp directory.
 
 ```bash
 python example_mcap_writer.py
-# Output: /tmp/<timestamp>_sv_<version>_<pid>_example_mcap_writer.mcap
+# Output: .playground/<timestamp>_sv_<version>_<pid>_example_mcap_writer.mcap
 ```
 
 ### example_mcap_multi_channel_writer
@@ -56,8 +66,8 @@ Writes multi-topic MCAP files (Part 1: pure OSI channels, Part 2: mixed OSI + no
 
 ```bash
 python example_mcap_multi_channel_writer.py
-# Output: /tmp/multi_channel_example_part1_<pid>.mcap
-#         /tmp/multi_channel_example_part2_<pid>.mcap
+# Output: .playground/multi_channel_example_part1_<pid>.mcap
+#         .playground/multi_channel_example_part2_<pid>.mcap
 ```
 
 ### example_reader_factory
@@ -84,7 +94,7 @@ Writes 10 SensorView frames to a binary .osi file in the system temp directory.
 
 ```bash
 python example_single_channel_binary_writer.py
-# Output: /tmp/<timestamp>_sv_<version>_<pid>_example_single_channel_binary_writer.osi
+# Output: .playground/<timestamp>_sv_<version>_<pid>_example_single_channel_binary_writer.osi
 ```
 
 ### example_txth_reader
@@ -101,7 +111,7 @@ Writes 10 SensorView frames to a text .txth file in the system temp directory.
 
 ```bash
 python example_txth_writer.py
-# Output: /tmp/<timestamp>_sv_<version>_<pid>_example_txth_writer.txth
+# Output: .playground/<timestamp>_sv_<version>_<pid>_example_txth_writer.txth
 ```
 
 ### benchmark
@@ -121,13 +131,13 @@ python benchmark.py file /path/to/file.osi
 ```bash
 # Write → Read roundtrip for each format
 python example_mcap_writer.py
-python example_mcap_reader.py /tmp/*_example_mcap_writer.mcap
+python example_mcap_reader.py ../../.playground/*_example_mcap_writer.mcap
 
 python example_single_channel_binary_writer.py
-python example_single_channel_binary_reader.py /tmp/*_sv_*_example_single_channel_binary_writer.osi
+python example_single_channel_binary_reader.py ../../.playground/*_sv_*_example_single_channel_binary_writer.osi
 
 python example_txth_writer.py
-python example_txth_reader.py /tmp/*_sv_*_example_txth_writer.txth
+python example_txth_reader.py ../../.playground/*_sv_*_example_txth_writer.txth
 
 # Format auto-detection with factory
 python example_reader_factory.py ../../test-data/5frames_gt_esmini.mcap

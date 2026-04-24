@@ -1,10 +1,10 @@
 .. SPDX-License-Identifier: MPL-2.0
 .. SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
-TXTHTraceFileWriter
-===================
+ProtobufTextFormatTraceWriter
+=============================
 
-.. autoclass:: osi_utilities.tracefile.txth_writer.TXTHTraceFileWriter
+.. autoclass:: osi_utilities.tracefile.writers.textformat.ProtobufTextFormatTraceWriter
    :members:
    :undoc-members:
    :show-inheritance:

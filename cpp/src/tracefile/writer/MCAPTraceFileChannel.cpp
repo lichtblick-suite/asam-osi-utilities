@@ -23,6 +23,42 @@ namespace osi3 {
 
 MCAPTraceFileChannel::MCAPTraceFileChannel(mcap::McapWriter& writer) : mcap_writer_(writer) {}
 
+auto MCAPTraceFileChannel::WriteMessage(const google::protobuf::Message& message, const std::string& topic) -> bool {
+    if (topic.empty()) {
+        std::cerr << "ERROR: cannot write message, topic is empty\n";
+        return false;
+    }
+
+    // Auto-register channel if topic is not yet known
+    if (topic_to_channel_id_.find(topic) == topic_to_channel_id_.end()) {
+        AddChannel(topic, message.GetDescriptor());
+    }
+
+    const auto topic_channel_id = topic_to_channel_id_.find(topic);
+
+    if (!message.SerializeToString(&serialize_buffer_)) {
+        std::cerr << "ERROR: Failed to serialize protobuf message\n";
+        return false;
+    }
+    mcap::Message msg;
+    msg.channelId = topic_channel_id->second;
+
+    try {
+        msg.logTime = tracefile::TimestampToNanoseconds(message);
+    } catch (const std::out_of_range& error) {
+        std::cerr << "ERROR: invalid message timestamp: " << error.what() << '\n';
+        return false;
+    }
+    msg.publishTime = msg.logTime;
+    msg.data = reinterpret_cast<const std::byte*>(serialize_buffer_.data());
+    msg.dataSize = serialize_buffer_.size();
+    if (const auto status = mcap_writer_.write(msg); status.code != mcap::StatusCode::Success) {
+        std::cerr << "ERROR: Failed to write message " << status.message;
+        return false;
+    }
+    return true;
+}
+
 template <typename T>
 auto MCAPTraceFileChannel::WriteMessage(const T& top_level_message, const std::string& topic) -> bool {
     if (topic.empty()) {

@@ -102,6 +102,7 @@ auto SingleChannelBinaryTraceFileReader::ReadMessage() -> std::optional<ReadResu
     ReadResult result;
     result.message = parser_(serialized_msg);
     result.message_type = message_type_;
+    result.status = ReadStatus::kOk;
 
     return result;
 }

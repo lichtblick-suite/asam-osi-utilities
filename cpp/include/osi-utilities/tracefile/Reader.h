@@ -14,6 +14,32 @@
 #include <string>
 
 namespace osi3 {
+
+/**
+ * @brief Status of a read operation
+ *
+ * Mirrors the Python ReadStatus enum for API parity.
+ * - kOk: message was read and deserialized successfully
+ * - kIncompatible: message has an incompatible encoding, schema, or message type
+ *   (e.g. a non-OSI channel in an MCAP file)
+ * - kError: a runtime read/decode/parse failure occurred
+ */
+enum class ReadStatus : uint8_t {
+    kOk = 0,           /**< Message read successfully */
+    kIncompatible = 1, /**< Incompatible encoding/schema/message type */
+    kError = 2,        /**< Runtime read/decode/parse failure */
+};
+
+/**
+ * @brief Trace file format categories
+ *
+ * Mirrors the Python TraceFileFormat enum for API parity.
+ */
+enum class TraceFileFormat : uint8_t {
+    kSingleChannel = 1, /**< Single-channel format (.osi, .txth) */
+    kMultiChannel = 2,  /**< Multi-channel format (.mcap) */
+};
+
 /**
  * @brief Enumeration of supported top-level message types in trace files
  */
@@ -47,11 +73,18 @@ inline const std::unordered_map<std::string, osi3::ReaderTopLevelMessage> kFileN
 
 /**
  * @brief Structure containing the result of a read operation
+ *
+ * For successful reads, status is kOk and message is populated.
+ * For incompatible messages (e.g. non-OSI in MCAP), status is kIncompatible
+ * and message is nullptr. For errors, status is kError and error_message
+ * describes the failure.
  */
 struct ReadResult {
-    std::unique_ptr<google::protobuf::Message> message;                   /**< The parsed protobuf message */
+    std::unique_ptr<google::protobuf::Message> message;                   /**< The parsed protobuf message (nullptr when status != kOk) */
     ReaderTopLevelMessage message_type = ReaderTopLevelMessage::kUnknown; /**< Type of the message */
     std::string channel_name;                                             /**< Channel name (only for MCAP format) */
+    ReadStatus status = ReadStatus::kOk;                                  /**< Status of the read operation */
+    std::string error_message;                                            /**< Error description (empty when status == kOk) */
 };
 
 /**
@@ -61,8 +94,11 @@ struct ReadResult {
  * Concurrent calls on the same reader must be externally synchronized.
  *
  * @note Error Strategy: `Open` returns `false` and logs to `std::cerr` on failure.
- * `ReadMessage` returns `std::nullopt` when no messages remain, and throws
- * `std::runtime_error` on deserialization or format errors.
+ * `ReadMessage` returns `std::nullopt` when no messages remain.
+ * For MCAP format, incompatible messages (non-OSI encoding/schema) are returned
+ * as `ReadResult` with `status == ReadStatus::kIncompatible` when skip is disabled.
+ * Deserialization failures are returned with `status == ReadStatus::kError`.
+ * Only truly corrupt state (null channel/schema) throws `std::runtime_error`.
  */
 class TraceFileReader {
    public:

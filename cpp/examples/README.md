@@ -55,7 +55,7 @@ This example demonstrates two approaches for writing multi-channel MCAP files:
 Uses the high-level `MCAPTraceFileWriter` API to register multiple OSI channels (including two channels sharing the same SensorView schema for automatic deduplication) and writes messages in a simulation loop.
 
 **Part 2 — MCAPTraceFileChannel (mixed OSI / non-OSI):**
-Uses an externally-managed `mcap::McapWriter` together with the `MCAPTraceFileChannel` helper to mix OSI and non-OSI channels (JSON) in a single MCAP file, then reads it back with non-OSI message filtering via `SetSkipNonOSIMsgs(true)`.
+Uses an externally-managed `mcap::McapWriter` together with the `MCAPTraceFileChannel` helper to mix OSI and non-OSI channels (JSON) in a single MCAP file, then reads it back with incompatible message filtering via `SetSkipIncompatibleMessages(true)`.
 
 The example also highlights best practices: zstd compression, chunk sizing, metadata-before-messages ordering, and descriptive channel naming.
 

@@ -46,7 +46,20 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
     bool Open(const std::filesystem::path& file_path, const mcap::McapWriterOptions& options);
 
     /**
-     * @brief Writes a protobuf message to the file
+     * @brief Writes a protobuf message to the file (type-erased, virtual)
+     *
+     * If the topic has not been registered via AddChannel(), it is auto-registered
+     * using the message's protobuf descriptor. Required file metadata is also
+     * auto-added on first write if not previously set via AddFileMetadata().
+     *
+     * @param message The protobuf message to write
+     * @param topic Topic/channel name for the message
+     * @return true if successful, false otherwise
+     */
+    bool WriteMessage(const google::protobuf::Message& message, const std::string& topic = "") override;
+
+    /**
+     * @brief Writes a protobuf message to the file (compile-time typed)
      * @tparam T Type of the protobuf message
      * @param top_level_message The message to write
      * @param topic Optional topic name for the message
@@ -125,5 +138,9 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
     MCAPTraceFileChannel channel_{mcap_writer_};       /**< Delegated channel/schema management */
     bool required_metadata_added_ = false;             /**< Flag to track if required metadata has been added */
 };
+
+/** @brief Alias for MCAPTraceFileWriter matching Python naming convention */
+using MultiTraceFileWriter = MCAPTraceFileWriter;
+
 }  // namespace osi3
 #endif  // OSIUTILITIES_TRACEFILE_WRITER_MCAPTRACEFILEWRITER_H_

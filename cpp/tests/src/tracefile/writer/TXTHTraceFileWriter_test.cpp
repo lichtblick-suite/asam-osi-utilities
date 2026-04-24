@@ -3,6 +3,15 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+// Suppress deprecation warning — these tests exercise the deprecated TXTH writer
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+
 #include "osi-utilities/tracefile/writer/TXTHTraceFileWriter.h"
 
 #include <gtest/gtest.h>
@@ -10,6 +19,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <type_traits>
 
 #include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
@@ -106,4 +116,8 @@ TEST_F(TxthTraceFileWriterTest, CloseAndReopenFile) {
 TEST_F(TxthTraceFileWriterTest, WriteToReadOnlyLocation) {
     const std::string readonly_path = "/root/test.txth";
     EXPECT_FALSE(writer_.Open(readonly_path));
+}
+
+TEST(ProtobufTextFormatTraceFileWriterAliasTest, AliasResolvesToCorrectType) {
+    static_assert(std::is_same_v<osi3::ProtobufTextFormatTraceFileWriter, osi3::TXTHTraceFileWriter>, "ProtobufTextFormatTraceFileWriter must alias TXTHTraceFileWriter");
 }

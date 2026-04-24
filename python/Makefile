@@ -180,7 +180,7 @@ package: vendor-osi3
 package-verify: package
 	@echo "[INFO] Verifying package installation..."
 	$(PIP) install dist/*.whl
-	$(PYTHON) -c "from osi_utilities import MessageType, TraceFileReaderFactory; print('[OK] Package import OK')"
+	$(PYTHON) -c "from osi_utilities import MessageType, create_reader; print('[OK] Package import OK')"
 	$(PYTHON) -c "import osi3; print('[OK] Bundled osi3 version:', osi3.__version__)"
 
 # ---------------------------------------------------------------------------

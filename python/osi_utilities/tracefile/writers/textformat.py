@@ -1,42 +1,42 @@
 # SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
-"""Binary (.osi) trace file writer.
+"""Text human-readable (.txth) trace file writer.
 
-Writes OSI trace files in the single-channel binary format where each message
-is prefixed with a 4-byte little-endian uint32 length.
+Writes OSI trace files in Google protobuf TextFormat.
 """
 
 from __future__ import annotations
 
 import logging
-import struct
 from pathlib import Path
 from typing import IO
 
+from google.protobuf import text_format
 from google.protobuf.message import EncodeError, Message
 
-from osi_utilities.tracefile.writer import TraceFileWriter
+from osi_utilities.tracefile.writers.base import TraceWriter
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryTraceFileWriter(TraceFileWriter):
-    """Writer for single-channel binary OSI trace files (.osi).
+class ProtobufTextFormatTraceWriter(TraceWriter):
+    """Writer for text human-readable OSI trace files (.txth).
 
-    Each message is stored as: [4-byte LE length][serialized protobuf bytes]
+    Messages are stored in Google protobuf TextFormat, one after another.
     """
 
     def __init__(self) -> None:
-        self._file: IO[bytes] | None = None
+        self._file: IO[str] | None = None
         self._path: Path | None = None
         self._written_count = 0
 
-    def open(self, path: Path) -> bool:
-        """Open a binary .osi trace file for writing.
+    def open(self, path: Path, **kwargs: object) -> bool:
+        """Open a .txth trace file for writing.
 
         Args:
-            path: Path to the output file. Must have .osi extension.
+            path: Path to the output file. Must have .txth extension.
+            **kwargs: Unused. Accepted for base-class compatibility.
 
         Returns:
             True on success, False on failure.
@@ -45,12 +45,12 @@ class BinaryTraceFileWriter(TraceFileWriter):
             logger.error("Opening file '%s', writer has already a file opened", path)
             return False
 
-        if path.suffix.lower() != ".osi":
-            logger.error("Binary trace files must have .osi extension, got '%s'", path.suffix)
+        if path.suffix.lower() != ".txth":
+            logger.error("Text trace files must have .txth extension, got '%s'", path.suffix)
             return False
 
         try:
-            self._file = open(path, "wb")  # noqa: SIM115
+            self._file = open(path, "w", encoding="utf-8")  # noqa: SIM115
             self._path = path
             self._written_count = 0
             return True
@@ -59,11 +59,11 @@ class BinaryTraceFileWriter(TraceFileWriter):
             return False
 
     def write_message(self, message: Message, topic: str = "") -> bool:
-        """Write a protobuf message to the binary trace file.
+        """Write a protobuf message in TextFormat.
 
         Args:
-            message: The protobuf message to serialize and write.
-            topic: Ignored for single-channel binary files.
+            message: The protobuf message to write.
+            topic: Ignored for single-channel text files.
 
         Returns:
             True on success, False on failure.
@@ -73,9 +73,8 @@ class BinaryTraceFileWriter(TraceFileWriter):
             return False
 
         try:
-            data = message.SerializeToString()
-            self._file.write(struct.pack("<I", len(data)))
-            self._file.write(data)
+            text = text_format.MessageToString(message)
+            self._file.write(text)
             self._written_count += 1
             return True
         except (OSError, EncodeError) as e:

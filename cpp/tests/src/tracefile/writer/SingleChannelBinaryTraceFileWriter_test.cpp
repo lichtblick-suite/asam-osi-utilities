@@ -9,6 +9,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <type_traits>
 
 #include "../../TestUtilities.h"
 #include "osi_groundtruth.pb.h"
@@ -110,4 +111,8 @@ TEST_F(SingleChannelBinaryTraceFileWriterTest, WriteEmptyMessage) {
     ASSERT_TRUE(writer_.Open(test_file_gt_));
     const osi3::GroundTruth empty_gt;
     EXPECT_TRUE(writer_.WriteMessage(empty_gt));
+}
+
+TEST(SingleTraceFileWriterAliasTest, AliasResolvesToCorrectType) {
+    static_assert(std::is_same_v<osi3::SingleTraceFileWriter, osi3::SingleChannelBinaryTraceFileWriter>, "SingleTraceFileWriter must alias SingleChannelBinaryTraceFileWriter");
 }

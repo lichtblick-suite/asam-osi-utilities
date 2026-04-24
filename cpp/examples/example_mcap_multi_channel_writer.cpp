@@ -126,7 +126,7 @@ void AdvanceTimestamp(osi3::SensorView& sensor_view, const uint64_t step_ns) {
 void ReadBackAndPrintSummary(const std::filesystem::path& path, const bool skip_non_osi) {
     osi3::MCAPTraceFileReader reader;
     reader.Open(path);
-    reader.SetSkipNonOSIMsgs(skip_non_osi);
+    reader.SetSkipIncompatibleMessages(skip_non_osi);
 
     std::map<std::string, int> channel_counts;
     while (reader.HasNext()) {
@@ -330,9 +330,9 @@ void Part2_MixedChannelWriter() {
 
     // --- read back with non-OSI filtering -----------------------------------
     // Best practice: when reading a mixed file with MCAPTraceFileReader, enable
-    // SetSkipNonOSIMsgs(true) to silently skip channels that are not recognized
+    // SetSkipIncompatibleMessages(true) to silently skip channels that are not recognized
     // OSI types.  Without this flag the reader would throw on unknown schemas.
-    std::cout << "  Reading back with SetSkipNonOSIMsgs(true):\n";
+    std::cout << "  Reading back with SetSkipIncompatibleMessages(true):\n";
     ReadBackAndPrintSummary(path, /*skip_non_osi=*/true);
 }
 

@@ -18,13 +18,13 @@ from pathlib import Path
 from osi3.osi_sensorview_pb2 import SensorView
 
 from osi_utilities import (
-    BinaryTraceFileReader,
-    BinaryTraceFileWriter,
-    MCAPTraceFileReader,
-    MCAPTraceFileWriter,
     MessageType,
-    TXTHTraceFileReader,
-    TXTHTraceFileWriter,
+    MultiTraceReader,
+    MultiTraceWriter,
+    ProtobufTextFormatTraceReader,
+    ProtobufTextFormatTraceWriter,
+    SingleTraceReader,
+    SingleTraceWriter,
 )
 
 # ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ def _run_synthetic(num_messages: int) -> int:
     print("-" * 46)
 
     # ====================== MCAP ======================
-    writer = MCAPTraceFileWriter()
+    writer = MultiTraceWriter()
     writer.open(mcap_path)
     topic = "SensorView"
     writer.add_channel(topic, SensorView)
@@ -131,7 +131,7 @@ def _run_synthetic(num_messages: int) -> int:
             writer.write_message(msg, topic)
     _print_row("MCAP", "write", time.perf_counter() - t0, total_mb)
 
-    reader = MCAPTraceFileReader()
+    reader = MultiTraceReader()
     reader.open(mcap_path)
 
     t0 = time.perf_counter()
@@ -142,7 +142,7 @@ def _run_synthetic(num_messages: int) -> int:
     _print_row("MCAP", "read", time.perf_counter() - t0, total_mb)
 
     # ====================== Binary .osi ======================
-    writer = BinaryTraceFileWriter()
+    writer = SingleTraceWriter()
     writer.open(osi_path)
 
     t0 = time.perf_counter()
@@ -151,7 +151,8 @@ def _run_synthetic(num_messages: int) -> int:
             writer.write_message(msg)
     _print_row(".osi", "write", time.perf_counter() - t0, total_mb)
 
-    reader = BinaryTraceFileReader(message_type=MessageType.SENSOR_VIEW)
+    reader = SingleTraceReader()
+    reader.set_message_type(MessageType.SENSOR_VIEW)
     reader.open(osi_path)
 
     t0 = time.perf_counter()
@@ -162,7 +163,7 @@ def _run_synthetic(num_messages: int) -> int:
     _print_row(".osi", "read", time.perf_counter() - t0, total_mb)
 
     # ====================== TXTH ======================
-    writer = TXTHTraceFileWriter()
+    writer = ProtobufTextFormatTraceWriter()
     writer.open(txth_path)
 
     t0 = time.perf_counter()
@@ -171,7 +172,8 @@ def _run_synthetic(num_messages: int) -> int:
             writer.write_message(msg)
     _print_row(".txth", "write", time.perf_counter() - t0, total_mb)
 
-    reader = TXTHTraceFileReader(message_type=MessageType.SENSOR_VIEW)
+    reader = ProtobufTextFormatTraceReader()
+    reader.set_message_type(MessageType.SENSOR_VIEW)
     reader.open(txth_path)
 
     t0 = time.perf_counter()
@@ -220,7 +222,8 @@ def _run_file(input_path: Path, message_type: MessageType) -> int:
     print(f"Size:    {file_size} bytes ({file_size / (1024.0 * 1024.0):.1f} MiB)")
 
     # Read benchmark
-    reader = BinaryTraceFileReader(message_type=message_type)
+    reader = SingleTraceReader()
+    reader.set_message_type(message_type)
     if not reader.open(input_path):
         print(f"ERROR: Could not open: {input_path}", file=sys.stderr)
         return 1
@@ -238,7 +241,7 @@ def _run_file(input_path: Path, message_type: MessageType) -> int:
     tmp_dir = Path(__file__).resolve().parent.parent.parent / ".playground"
     tmp_dir.mkdir(exist_ok=True)
     tmp_path = tmp_dir / "benchmark_write_output.osi"
-    writer = BinaryTraceFileWriter()
+    writer = SingleTraceWriter()
     if not writer.open(tmp_path):
         print(f"ERROR: Could not open temp file for write benchmark: {tmp_path}", file=sys.stderr)
         return 1

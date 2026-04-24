@@ -14,19 +14,21 @@ import struct
 from pathlib import Path
 from typing import IO
 
-from osi_utilities.tracefile._config import BINARY_MESSAGE_LENGTH_PREFIX_SIZE, MAX_EXPECTED_MESSAGE_SIZE
-from osi_utilities.tracefile._types import (
-    MessageType,
-    ReadResult,
-    _get_message_class,
-    infer_message_type_from_filename,
+from osi_utilities._types import MessageType, ReadResult, ReadStatus
+from osi_utilities.filename import infer_message_type_from_filename
+from osi_utilities.message_types import (
+    get_message_class,
 )
-from osi_utilities.tracefile.reader import TraceFileReader
+from osi_utilities.tracefile._config import (
+    BINARY_MESSAGE_LENGTH_PREFIX_SIZE,
+    MAX_EXPECTED_MESSAGE_SIZE,
+)
+from osi_utilities.tracefile.readers.base import TraceReader
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryTraceFileReader(TraceFileReader):
+class SingleTraceReader(TraceReader):
     """Reader for single-channel binary OSI trace files (.osi).
 
     Each message is stored as: [4-byte LE length][serialized protobuf bytes]
@@ -34,16 +36,17 @@ class BinaryTraceFileReader(TraceFileReader):
     The message type can be specified explicitly or inferred from the filename.
     """
 
-    def __init__(self, message_type: MessageType = MessageType.UNKNOWN) -> None:
-        """Initialize the binary trace file reader.
-
-        Args:
-            message_type: The expected message type. If UNKNOWN, will be inferred from filename.
-        """
-        self._message_type = message_type
+    def __init__(self, enable_message_type_inference: bool = True) -> None:
+        """Initialize the single-channel trace file reader."""
+        self._enable_message_type_inference = enable_message_type_inference
+        self._message_type: MessageType | None = MessageType.UNKNOWN if self._enable_message_type_inference else None
         self._file: IO[bytes] | None = None
         self._message_class: type | None = None
         self._has_next = False
+
+    def set_message_type(self, message_type: MessageType) -> None:
+        """Set message type to be used on open()."""
+        self._message_type = message_type
 
     def open(self, path: Path) -> bool:
         """Open a binary .osi trace file.
@@ -54,6 +57,14 @@ class BinaryTraceFileReader(TraceFileReader):
         Returns:
             True on success, False on failure.
         """
+        if self._file is not None:
+            logger.error("Reader is already open. Call close() before re-opening.")
+            return False
+
+        if self._message_type is None:
+            logger.error("No message type configured for '%s'. Call set_message_type() first.", path)
+            return False
+
         if self._message_type == MessageType.UNKNOWN:
             self._message_type = infer_message_type_from_filename(path.name)
 
@@ -62,7 +73,7 @@ class BinaryTraceFileReader(TraceFileReader):
             return False
 
         try:
-            self._message_class = _get_message_class(self._message_type)
+            self._message_class = get_message_class(self._message_type)
         except ValueError as e:
             logger.error("Failed to get message class: %s", e)
             return False
@@ -73,30 +84,19 @@ class BinaryTraceFileReader(TraceFileReader):
             logger.error("Failed to open file '%s': %s", path, e)
             return False
 
-        self._has_next = self._peek_has_data()
+        try:
+            self._has_next = self._peek_has_data()
+        except Exception:
+            self._file.close()
+            self._file = None
+            raise
         return True
-
-    def open_with_type(self, path: Path, message_type: MessageType) -> bool:
-        """Open a binary .osi trace file with an explicit message type.
-
-        Args:
-            path: Path to the .osi file.
-            message_type: The message type to use.
-
-        Returns:
-            True on success, False on failure.
-        """
-        self._message_type = message_type
-        return self.open(path)
 
     def read_message(self) -> ReadResult | None:
         """Read the next message from the binary trace file.
 
         Returns:
             ReadResult on success, None if no more messages.
-
-        Raises:
-            RuntimeError: If the message is truncated or deserialization fails.
         """
         if self._file is None or self._message_class is None:
             return None
@@ -106,24 +106,52 @@ class BinaryTraceFileReader(TraceFileReader):
             self._has_next = False
             return None
         if len(length_bytes) < BINARY_MESSAGE_LENGTH_PREFIX_SIZE:
-            raise RuntimeError("Truncated length header in binary trace file")
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message="Truncated length header in binary trace file",
+            )
 
         (msg_len,) = struct.unpack("<I", length_bytes)
         if msg_len > MAX_EXPECTED_MESSAGE_SIZE:
-            raise RuntimeError(f"Message size {msg_len} exceeds maximum expected size {MAX_EXPECTED_MESSAGE_SIZE}")
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message=f"Message size {msg_len} exceeds maximum expected size {MAX_EXPECTED_MESSAGE_SIZE}",
+            )
 
         data = self._file.read(msg_len)
         if len(data) < msg_len:
-            raise RuntimeError(f"Truncated message body: expected {msg_len} bytes, got {len(data)}")
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message=f"Truncated message body: expected {msg_len} bytes, got {len(data)}",
+            )
 
         message = self._message_class()
         try:
             message.ParseFromString(data)
         except Exception as e:
-            raise RuntimeError(f"Failed to deserialize protobuf message ({msg_len} bytes): {e}") from e
+            self._has_next = False
+            return ReadResult(
+                message=None,
+                message_type=self._message_type,
+                status=ReadStatus.ERROR,
+                error_message=f"Failed to deserialize protobuf message ({msg_len} bytes): {e}",
+            )
 
         self._has_next = self._peek_has_data()
-        return ReadResult(message=message, message_type=self._message_type)
+        return ReadResult(
+            message=message,
+            message_type=self._message_type,
+            status=ReadStatus.OK,
+        )
 
     def has_next(self) -> bool:
         """Check if there are more messages to read."""
@@ -134,10 +162,12 @@ class BinaryTraceFileReader(TraceFileReader):
         if self._file is not None:
             self._file.close()
             self._file = None
+        self._message_class = None
+        self._message_type = MessageType.UNKNOWN if self._enable_message_type_inference else None
         self._has_next = False
 
     @property
-    def message_type(self) -> MessageType:
+    def message_type(self) -> MessageType | None:
         """The message type being read."""
         return self._message_type
 

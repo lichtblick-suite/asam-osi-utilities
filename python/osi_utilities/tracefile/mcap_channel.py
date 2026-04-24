@@ -1,10 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: Copyright (c) 2026, Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
 
-"""MCAP channel helper for writing OSI messages to an external MCAP writer.
-
-Mirrors the C++ MCAPTraceFileChannel class for users who manage their own mcap.McapWriter.
-"""
+"""MCAP channel helper for writing OSI messages to an external MCAP writer."""
 
 from __future__ import annotations
 
@@ -15,8 +12,8 @@ from google.protobuf.message import EncodeError, Message
 from mcap.well_known import MessageEncoding
 from mcap.writer import Writer as McapRawWriter
 
+from osi_utilities.timestamp import timestamp_to_nanoseconds
 from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
-from osi_utilities.tracefile.timestamp import timestamp_to_nanoseconds
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +70,7 @@ class MCAPChannel:
             )
             self._schema_cache[schema_name] = schema_id
 
-        channel_meta = metadata or {}
+        channel_meta = dict(metadata) if metadata else {}
         if "net.asam.osi.trace.channel.protobuf_version" not in channel_meta:
             channel_meta["net.asam.osi.trace.channel.protobuf_version"] = google.protobuf.__version__
 
@@ -117,6 +114,6 @@ class MCAPChannel:
     @staticmethod
     def prepare_required_file_metadata() -> dict[str, str]:
         """Prepare required net.asam.osi.trace metadata."""
-        from osi_utilities.tracefile.mcap_writer import prepare_required_file_metadata
+        from osi_utilities.tracefile.writers.multi import prepare_required_file_metadata
 
         return prepare_required_file_metadata()

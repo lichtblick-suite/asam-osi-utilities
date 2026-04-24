@@ -44,6 +44,21 @@ auto MCAPTraceFileWriter::Open(const std::filesystem::path& file_path, const mca
     return this->Open(file_path);
 }
 
+auto MCAPTraceFileWriter::WriteMessage(const google::protobuf::Message& message, const std::string& topic) -> bool {
+    if (!(trace_file_ && trace_file_.is_open())) {
+        std::cerr << "ERROR: cannot write message, file is not open\n";
+        return false;
+    }
+    // Auto-add required metadata on first write if not set
+    if (!required_metadata_added_) {
+        if (!AddFileMetadata(PrepareRequiredFileMetadata())) {
+            std::cerr << "ERROR: failed to auto-add required metadata\n";
+            return false;
+        }
+    }
+    return channel_.WriteMessage(message, topic);
+}
+
 template <typename T>
 auto MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::string& topic) -> bool {
     if (!(trace_file_ && trace_file_.is_open())) {

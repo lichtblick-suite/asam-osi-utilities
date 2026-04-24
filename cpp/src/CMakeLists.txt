@@ -9,6 +9,7 @@ include(CMakePackageConfigHelpers)
 set(OSIUtilities_SRCS
         tracefile/FilenameUtils.cpp
         tracefile/reader/Reader.cpp
+        tracefile/writer/Writer.cpp
         tracefile/MCAPImplementation.cpp
         tracefile/reader/SingleChannelBinaryTraceFileReader.cpp
         tracefile/writer/SingleChannelBinaryTraceFileWriter.cpp

@@ -4,8 +4,8 @@
 """Demonstrate format auto-detection and timestamp conversion utilities.
 
 Demonstrates:
-- open_trace_file() — one-liner to open any .osi, .mcap, or .txth file
-- TraceFileReaderFactory.create_reader() — explicit factory pattern
+- open_channel() — high-level one-liner to open any .osi, .mcap, or .txth file
+- create_reader() — explicit factory function
 - timestamp_to_seconds(), timestamp_to_nanoseconds() — timestamp conversion
 - nanoseconds_to_seconds(), seconds_to_nanoseconds() — unit conversion
 - MessageType enum — OSI message type identification
@@ -19,10 +19,14 @@ import argparse
 import sys
 from pathlib import Path
 
-from osi_utilities import MessageType, TraceFileReaderFactory, open_trace_file
-from osi_utilities.tracefile._types import infer_message_type_from_filename, parse_osi_trace_filename
-from osi_utilities.tracefile.timestamp import (
+from osi_utilities import (
+    ChannelSpecification,
+    MessageType,
+    create_reader,
+    infer_message_type_from_filename,
     nanoseconds_to_seconds,
+    open_channel,
+    parse_osi_trace_filename,
     seconds_to_nanoseconds,
     timestamp_to_nanoseconds,
     timestamp_to_seconds,
@@ -56,37 +60,36 @@ def main() -> int:
         print(f"Error: File '{input_path}' not found", file=sys.stderr)
         return 1
 
-    # --- Method 1: open_trace_file() — simplest one-liner ---
-    print("=== Method 1: open_trace_file() ===")
+    # --- Method 1: open_channel() — high-level one-liner ---
+    print("=== Method 1: open_channel() ===")
     print(f"Input: {input_path} (format auto-detected from extension)")
     msg_type = MessageType[args.message_type] if args.message_type else None
-    reader = open_trace_file(input_path, message_type=msg_type)
-    reader.open(input_path)
+    spec = ChannelSpecification(path=input_path, message_type=msg_type)
 
     count = 0
-    with reader:
-        for result in reader:
-            ts_sec = timestamp_to_seconds(result.message)
-            ts_ns = timestamp_to_nanoseconds(result.message)
+    with open_channel(spec) as channel_reader:
+        for message in channel_reader:
+            ts_sec = timestamp_to_seconds(message)
+            ts_ns = timestamp_to_nanoseconds(message)
 
             # Demonstrate round-trip conversion
             ns_back = seconds_to_nanoseconds(ts_sec)
             sec_back = nanoseconds_to_seconds(ts_ns)
 
             print(
-                f"  [{count}] {result.message_type.name:20s}"
+                f"  [{count}] osi3.{type(message).__name__:20s}"
                 f"  {ts_sec:.3f}s"
                 f"  ({ts_ns} ns)"
                 f"  roundtrip: {sec_back:.3f}s / {ns_back} ns"
             )
             count += 1
 
-    print(f"Read {count} messages via open_trace_file()\n")
+    print(f"Read {count} messages via open_channel()\n")
 
-    # --- Method 2: TraceFileReaderFactory.create_reader() — explicit factory ---
-    print("=== Method 2: TraceFileReaderFactory.create_reader() ===")
+    # --- Method 2: create_reader() — explicit factory ---
+    print("=== Method 2: create_reader() ===")
     print(f"Input: {input_path}")
-    reader2 = TraceFileReaderFactory.create_reader(input_path, message_type=msg_type)
+    reader2 = create_reader(input_path)
     reader2.open(input_path)
 
     count2 = 0
@@ -94,9 +97,10 @@ def main() -> int:
         for result in reader2:
             count2 += 1
 
-    print(f"Read {count2} messages via TraceFileReaderFactory (same result, explicit API)")
+    print(f"Read {count2} messages via create_reader (same result, explicit API)")
     print(
-        "\nBoth methods auto-detect format from extension: .osi → BinaryReader, .mcap → MCAPReader, .txth → TXTHReader"
+        "\nBoth methods auto-detect format from extension:"
+        " .osi → SingleTraceReader, .mcap → MultiTraceReader, .txth → ProtobufTextFormatTraceReader"
     )
 
     # --- Method 3: FilenameUtils — infer message type and parse naming convention ---
