@@ -119,7 +119,7 @@ TEST_F(MCAPTraceFileChannelTest, MixedOSIAndNonOSIChannels) {
     // Verify OSI messages can be read
     osi3::MCAPTraceFileReader reader;
     ASSERT_TRUE(reader.Open(test_file_));
-    reader.SetSkipNonOSIMsgs(true);
+    reader.SetSkipIncompatibleMessages(true);
 
     std::vector<std::string> osi_channels_read;
     while (reader.HasNext()) {

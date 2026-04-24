@@ -132,6 +132,10 @@ class [[deprecated("txth format is not reliably deserializable; use .osi or .mca
                                                                                       {ReaderTopLevelMessage::kMotionRequest, CreateParser<MotionRequest>()},
                                                                                       {ReaderTopLevelMessage::kStreamingUpdate, CreateParser<StreamingUpdate>()}};
 };
+
+/** @brief Alias for TXTHTraceFileReader matching Python naming convention */
+using ProtobufTextFormatTraceFileReader [[deprecated("txth format is not reliably deserializable; use .osi or .mcap instead")]] = TXTHTraceFileReader;
+
 }  // namespace osi3
 
 #endif  // OSIUTILITIES_TRACEFILE_READER_TXTHTRACEFILEREADER_H_

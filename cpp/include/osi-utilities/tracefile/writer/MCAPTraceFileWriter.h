@@ -138,5 +138,9 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
     MCAPTraceFileChannel channel_{mcap_writer_};       /**< Delegated channel/schema management */
     bool required_metadata_added_ = false;             /**< Flag to track if required metadata has been added */
 };
+
+/** @brief Alias for MCAPTraceFileWriter matching Python naming convention */
+using MultiTraceFileWriter = MCAPTraceFileWriter;
+
 }  // namespace osi3
 #endif  // OSIUTILITIES_TRACEFILE_WRITER_MCAPTRACEFILEWRITER_H_

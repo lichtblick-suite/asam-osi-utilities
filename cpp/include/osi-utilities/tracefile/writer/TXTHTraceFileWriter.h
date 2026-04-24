@@ -66,5 +66,8 @@ class [[deprecated("txth format is not reliably deserializable; use .osi or .mca
     std::ofstream trace_file_; /**< Output file stream. */
 };
 
+/** @brief Alias for TXTHTraceFileWriter matching Python naming convention */
+using ProtobufTextFormatTraceFileWriter [[deprecated("txth format is not reliably deserializable; use .osi or .mcap instead")]] = TXTHTraceFileWriter;
+
 }  // namespace osi3
 #endif  // OSIUTILITIES_TRACEFILE_WRITER_TXTHTRACEFILEWRITER_H_

@@ -75,12 +75,34 @@ class MCAPTraceFileReader final : public TraceFileReader {
     bool HasNext() override;
 
     /**
+     * @brief Sets whether to skip incompatible messages during reading
+     * @param skip If true, incompatible messages (non-OSI encoding/schema) will be silently skipped.
+     *             If false, they are returned as ReadResult with status == ReadStatus::kIncompatible.
+     *
+     * Incompatible messages include non-protobuf encodings and non-OSI schemas.
+     * Actual deserialization errors are always surfaced as ReadResult with
+     * status == ReadStatus::kError and are never skipped by this setting.
+     */
+    void SetSkipIncompatibleMessages(const bool skip) { skip_incompatible_msgs_ = skip; }
+
+    /**
+     * @brief Sets whether to log incompatible messages during reading
+     * @param log If true (default), incompatible messages are logged to stderr.
+     *            If false, they are silently skipped or returned without logging.
+     *
+     * This setting is independent of SetSkipIncompatibleMessages: logging and skipping
+     * can be combined arbitrarily.
+     */
+    void SetLogIncompatibleMessages(const bool log) { log_incompatible_msgs_ = log; }
+
+    /**
      * @brief Sets whether to skip non-OSI messages during reading
      * @param skip If true, non-OSI messages will be skipped during reading. If false, all messages will be processed
      *
      * If the file contains non-OSI messages and this option is not set to true, an exception will be thrown.
+     * @deprecated Use SetSkipIncompatibleMessages() instead
      */
-    void SetSkipNonOSIMsgs(const bool skip) { skip_non_osi_msgs_ = skip; }
+    [[deprecated("Use SetSkipIncompatibleMessages() instead")]] void SetSkipNonOSIMsgs(const bool skip) { SetSkipIncompatibleMessages(skip); }
 
     /**
      * @brief Set topic filter for message iteration.
@@ -132,7 +154,8 @@ class MCAPTraceFileReader final : public TraceFileReader {
     std::unique_ptr<mcap::LinearMessageView> message_view_;               /**< Message view over MCAP records. */
     std::unique_ptr<mcap::LinearMessageView::Iterator> message_iterator_; /**< Iterator over the message view. */
 
-    bool skip_non_osi_msgs_ = false;        /**< Flag to skip non-OSI messages during reading */
+    bool skip_incompatible_msgs_ = false;   /**< Flag to skip incompatible messages during reading */
+    bool log_incompatible_msgs_ = true;     /**< Flag to log incompatible messages to stderr */
     mcap::ReadMessageOptions mcap_options_; /**< Options for the mcap reader */
 
     /** @brief Cached file-level metadata records, populated during Open() */
@@ -190,9 +213,24 @@ class MCAPTraceFileReader final : public TraceFileReader {
     /** @brief Check whether a topic matches the configured filter. */
     auto TopicMatches(std::string_view topic) const noexcept -> bool;
 
+    /**
+     * @brief Process a single MCAP message view and return a ReadResult.
+     * @return ReadResult on success/error/incompatible, or std::nullopt if the message should be skipped
+     */
+    auto ProcessMessageView(const mcap::MessageView& msg_view) -> std::optional<ReadResult>;
+
+    /**
+     * @brief Handle an incompatible message (log, skip, or return kIncompatible).
+     * @return ReadResult with kIncompatible status, or std::nullopt if skip is enabled
+     */
+    auto HandleIncompatibleMessage(const std::string& topic, const std::string& reason) const -> std::optional<ReadResult>;
+
     /** @brief Stable topic filter storage used by the MCAP callback. */
     std::vector<std::string> filtered_topics_;
 };
+
+/** @brief Alias for MCAPTraceFileReader matching Python naming convention */
+using MultiTraceFileReader = MCAPTraceFileReader;
 
 }  // namespace osi3
 #endif

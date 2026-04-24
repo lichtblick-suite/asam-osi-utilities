@@ -96,6 +96,7 @@ auto TXTHTraceFileReader::ReadMessage() -> std::optional<ReadResult> {
     ReadResult result;
     result.message = parser_(text_message);
     result.message_type = message_type_;
+    result.status = ReadStatus::kOk;
     return result;
 }
 

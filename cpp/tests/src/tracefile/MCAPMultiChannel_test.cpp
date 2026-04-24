@@ -50,7 +50,7 @@ TEST_F(MCAPMultiChannelTest, WriteAndReadTwoChannelsSameType) {
     writer_.Close();
 
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
 
     const auto result1 = reader_.ReadMessage();
     ASSERT_TRUE(result1.has_value());
@@ -163,7 +163,7 @@ TEST_F(MCAPMultiChannelTest, SkipNonOSIInMultiChannel) {
     writer_.Close();
 
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
 
     const auto result1 = reader_.ReadMessage();
     ASSERT_TRUE(result1.has_value());

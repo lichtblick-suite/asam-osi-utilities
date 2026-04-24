@@ -99,7 +99,7 @@ TEST_F(McapTraceFileReaderTest, OpenWithReaderOptions) {
 
 TEST_F(McapTraceFileReaderTest, ReadGroundTruthMessage) {
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
     EXPECT_TRUE(reader_.HasNext());
 
     const auto result = reader_.ReadMessage();
@@ -117,7 +117,7 @@ TEST_F(McapTraceFileReaderTest, ReadGroundTruthMessage) {
 
 TEST_F(McapTraceFileReaderTest, ReadSensorViewMessage) {
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
     ASSERT_TRUE(reader_.HasNext());
 
     // Skip first message
@@ -150,7 +150,7 @@ TEST_F(McapTraceFileReaderTest, PreventMultipleFileOpens) {
 
 TEST_F(McapTraceFileReaderTest, HasNextReturnsFalseWhenEmpty) {
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
     ASSERT_TRUE(reader_.HasNext());
 
     reader_.ReadMessage();  // Read first message
@@ -162,7 +162,7 @@ TEST_F(McapTraceFileReaderTest, HasNextReturnsFalseWhenEmpty) {
 
 TEST_F(McapTraceFileReaderTest, ReadMessageReturnsNulloptWhenEmpty) {
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
 
     reader_.ReadMessage();  // Read first message
     reader_.ReadMessage();  // Read second message
@@ -195,7 +195,7 @@ TEST_F(McapTraceFileReaderTest, CloseAndReopenFile) {
 
 TEST_F(McapTraceFileReaderTest, SkipNonOSIMessagesWhenEnabled) {
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
 
     // Read first OSI message (GroundTruth)
     auto result1 = reader_.ReadMessage();
@@ -220,7 +220,7 @@ TEST_F(McapTraceFileReaderTest, SkipNonOSIMessagesWhenEnabled) {
 
 TEST_F(McapTraceFileReaderTest, ThrowExceptionForNonOSIMessagesWhenSkipDisabled) {
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(false);
+    reader_.SetSkipIncompatibleMessages(false);
 
     // Read first OSI message (GroundTruth)
     auto result1 = reader_.ReadMessage();
@@ -230,8 +230,13 @@ TEST_F(McapTraceFileReaderTest, ThrowExceptionForNonOSIMessagesWhenSkipDisabled)
     auto result2 = reader_.ReadMessage();
     ASSERT_TRUE(result2.has_value());
 
-    // Third message (JSON) should throw an exception
-    EXPECT_THROW({ reader_.ReadMessage(); }, std::runtime_error);
+    // Third message (JSON) should return kIncompatible status
+    auto result3 = reader_.ReadMessage();
+    ASSERT_TRUE(result3.has_value());
+    EXPECT_EQ(result3->status, osi3::ReadStatus::kIncompatible);
+    EXPECT_EQ(result3->message, nullptr);
+    EXPECT_FALSE(result3->error_message.empty());
+    EXPECT_EQ(result3->channel_name, "json_topic");
 }
 
 TEST_F(McapTraceFileReaderTest, ReadEmptyMcapFile) {
@@ -264,7 +269,7 @@ TEST_F(McapTraceFileReaderTest, CloseAndReopenWithDifferentOptions) {
 
 TEST_F(McapTraceFileReaderTest, SetTopicsFiltersMessages) {
     reader_.SetTopics({"gt"});
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
     ASSERT_TRUE(reader_.Open(test_file_));
 
     // Should only get GroundTruth messages
@@ -280,7 +285,7 @@ TEST_F(McapTraceFileReaderTest, SetTopicsFiltersMessages) {
 
 TEST_F(McapTraceFileReaderTest, SetTopicsFiltersMessagesAfterOpen) {
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
     reader_.SetTopics({"gt"});
 
     auto result1 = reader_.ReadMessage();
@@ -294,7 +299,7 @@ TEST_F(McapTraceFileReaderTest, SetTopicsFiltersMessagesAfterOpen) {
 
 TEST_F(McapTraceFileReaderTest, SetTopicsWithEmptySetClearsFilterAndRestartsIteration) {
     ASSERT_TRUE(reader_.Open(test_file_));
-    reader_.SetSkipNonOSIMsgs(true);
+    reader_.SetSkipIncompatibleMessages(true);
     reader_.SetTopics({"gt"});
 
     auto filtered_result = reader_.ReadMessage();
@@ -405,4 +410,67 @@ TEST_F(McapTraceFileReaderTest, GetMessageTypeForTopicNotFound) {
 TEST_F(McapTraceFileReaderTest, GetMessageTypeForTopicBeforeOpen) {
     auto type = reader_.GetMessageTypeForTopic("gt");
     EXPECT_FALSE(type.has_value());
+}
+
+TEST_F(McapTraceFileReaderTest, ReadStatusIsOkForValidMessages) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+    reader_.SetSkipIncompatibleMessages(true);
+
+    auto result = reader_.ReadMessage();
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->status, osi3::ReadStatus::kOk);
+    EXPECT_TRUE(result->error_message.empty());
+    EXPECT_NE(result->message, nullptr);
+}
+
+TEST_F(McapTraceFileReaderTest, SetLogIncompatibleMessagesSuppressesLogging) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+    reader_.SetSkipIncompatibleMessages(false);
+    reader_.SetLogIncompatibleMessages(false);
+
+    // Read two OSI messages
+    reader_.ReadMessage();
+    reader_.ReadMessage();
+
+    // Third message (JSON) should return kIncompatible without logging
+    auto result = reader_.ReadMessage();
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->status, osi3::ReadStatus::kIncompatible);
+    EXPECT_EQ(result->message, nullptr);
+}
+
+TEST_F(McapTraceFileReaderTest, SkipAndLogAreIndependent) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+
+    // Skip enabled, log disabled — incompatible messages should be silently skipped
+    reader_.SetSkipIncompatibleMessages(true);
+    reader_.SetLogIncompatibleMessages(false);
+
+    auto result1 = reader_.ReadMessage();
+    ASSERT_TRUE(result1.has_value());
+    EXPECT_EQ(result1->status, osi3::ReadStatus::kOk);
+
+    auto result2 = reader_.ReadMessage();
+    ASSERT_TRUE(result2.has_value());
+    EXPECT_EQ(result2->status, osi3::ReadStatus::kOk);
+
+    // JSON message skipped, should be EOF
+    auto result3 = reader_.ReadMessage();
+    EXPECT_FALSE(result3.has_value());
+}
+
+TEST_F(McapTraceFileReaderTest, IncompatibleResultHasChannelName) {
+    ASSERT_TRUE(reader_.Open(test_file_));
+    reader_.SetSkipIncompatibleMessages(false);
+    reader_.SetLogIncompatibleMessages(false);
+
+    // Skip two OSI messages
+    reader_.ReadMessage();
+    reader_.ReadMessage();
+
+    auto result = reader_.ReadMessage();
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->status, osi3::ReadStatus::kIncompatible);
+    EXPECT_EQ(result->channel_name, "json_topic");
+    EXPECT_FALSE(result->error_message.empty());
 }

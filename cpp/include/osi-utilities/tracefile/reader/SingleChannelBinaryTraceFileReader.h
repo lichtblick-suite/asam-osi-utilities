@@ -127,6 +127,10 @@ class SingleChannelBinaryTraceFileReader final : public osi3::TraceFileReader {
                                                                                       {ReaderTopLevelMessage::kMotionRequest, CreateParser<MotionRequest>()},
                                                                                       {ReaderTopLevelMessage::kStreamingUpdate, CreateParser<StreamingUpdate>()}};
 };
+
+/** @brief Alias for SingleChannelBinaryTraceFileReader matching Python naming convention */
+using SingleTraceFileReader = SingleChannelBinaryTraceFileReader;
+
 }  // namespace osi3
 
 #endif  // OSIUTILITIES_TRACEFILE_READER_SINGLECHANNELBINARYTRACEFILEREADER_H_

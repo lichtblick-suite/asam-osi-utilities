@@ -62,5 +62,8 @@ class SingleChannelBinaryTraceFileWriter final : public TraceFileWriter {
     std::ofstream trace_file_; /**< Output file stream. */
 };
 
+/** @brief Alias for SingleChannelBinaryTraceFileWriter matching Python naming convention */
+using SingleTraceFileWriter = SingleChannelBinaryTraceFileWriter;
+
 }  // namespace osi3
 #endif  // OSIUTILITIES_TRACEFILE_WRITER_SINGLECHANNELBINARYTRACEFILEWRITER_H_
