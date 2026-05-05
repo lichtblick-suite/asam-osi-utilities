@@ -14,7 +14,7 @@ MAX_CHUNK_SIZE: int = 32 * 1024 * 1024  # 32 MiB
 # (repeated protobuf fields, similar timestamps, stable object structures), higher
 # levels yield significant space savings at the cost of write speed.
 DEFAULT_ZSTD_COMPRESSION_LEVEL: int = 3  # mcap library default — fast, reasonable ratio
-HIGH_ZSTD_COMPRESSION_LEVEL: int = 19  # best practical ratio before "insane" RAM usage
+HIGH_ZSTD_COMPRESSION_LEVEL: int = 19  # best practical ratio before ultra RAM usage
 
 # Binary format constants
 BINARY_MESSAGE_LENGTH_PREFIX_SIZE: int = 4  # uint32 little-endian

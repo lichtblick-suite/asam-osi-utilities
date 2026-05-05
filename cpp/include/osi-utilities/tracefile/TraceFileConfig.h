@@ -74,7 +74,7 @@ constexpr int kDefaultZstdCompressionLevel = 3;
  * timestamps across frames, stable object structures) that benefits greatly
  * from higher compression levels. Level 19 is the highest practical level
  * before disproportionate RAM usage and diminishing returns (levels 20-22
- * are considered "insane" by the zstd documentation).
+ * are ultra levels requiring --ultra flag with exponentially higher memory costs).
  * See: https://facebook.github.io/zstd/
  */
 constexpr int kHighZstdCompressionLevel = 19;

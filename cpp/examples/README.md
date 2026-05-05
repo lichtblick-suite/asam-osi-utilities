@@ -102,3 +102,23 @@ It creates the example file `<timestamp>_<osi-version>_<protobuf-version>_<numbe
 ```bash
 ./example_txth_writer
 ```
+
+### optimize_mcap_compression
+
+Re-encodes an MCAP file with optimized compression settings for OSI data.
+Uses maximum chunk size (32 MiB) and `CompressionLevel::Slowest` (zstd level 19)
+by default to exploit the high structural redundancy in OSI protobuf messages.
+
+```bash
+# Optimize with defaults (32 MiB chunks, zstd slowest/level 19)
+./optimize_mcap_compression recording.mcap
+
+# Custom output path
+./optimize_mcap_compression recording.mcap optimized.mcap
+
+# Analyze without writing (dry run)
+./optimize_mcap_compression recording.mcap --dry-run
+
+# Custom settings
+./optimize_mcap_compression recording.mcap --chunk-size 16 --compression-level slow
+```

@@ -47,7 +47,7 @@ Zstd supports levels 1-22 (https://facebook.github.io/zstd/):
   Level 4-9:   Better ratio, still practical for interactive workloads
   Level 10-18: High compression, suitable for batch/offline processing
   Level 19:    Best *practical* level — highest ratio before extreme RAM usage
-  Level 20-22: "Insane" — diminishing returns, exponential memory cost
+  Level 20-22: Ultra — requires --ultra flag, exponential memory cost with diminishing returns
 
 For OSI data, level 19 typically achieves 5-15% better compression than the
 default level 3, with the write penalty being acceptable for archival or
@@ -79,7 +79,7 @@ REFERENCES
 - MCAP format specification: https://mcap.dev/spec
 - MCAP chunk record: https://mcap.dev/spec#chunk-op0x06
 - Zstandard manual: https://facebook.github.io/zstd/zstd_manual.html
-- ASAM OSI MCAP trace file spec: https://opensimulationinterface.github.io/osi-antora-generator/asfinal/osi-specification/latest/interface/trace_file_formats.html
+- ASAM OSI MCAP trace file spec: https://opensimulationinterface.github.io/osi-antora-generator/asamosi/latest/interface/architecture/trace_file_formats.html
 - asam-osi-utilities config: see osi_utilities/tracefile/_config.py
 
 =============================================================================
@@ -190,11 +190,20 @@ def _recompress(
     # --- Monkey-patch compression to inject custom level ---
     # The mcap library calls zstandard.compress(data) without a level parameter,
     # defaulting to level 3. We intercept this call to use a higher level.
+    # THREAD SAFETY: This modifies global module state. Do NOT run multiple
+    # instances concurrently in the same Python process (e.g., via threading).
+    # The patch is scoped to this function and restored in the finally block.
     original_zstd_compress = None
     original_lz4_compress = None
 
     if compression == "zstd":
-        import zstandard
+        try:
+            import zstandard
+        except ImportError:
+            raise SystemExit(
+                "Error: The 'zstandard' package is required for zstd compression.\n"
+                "Install it with: pip install zstandard"
+            ) from None
 
         original_zstd_compress = mcap_writer_module.zstandard.compress  # type: ignore[attr-defined]
         compressor = zstandard.ZstdCompressor(level=level)
@@ -205,7 +214,12 @@ def _recompress(
         mcap_writer_module.zstandard.compress = _zstd_compress_high  # type: ignore[attr-defined]
         mcap_compression = CompressionType.ZSTD
     elif compression == "lz4":
-        import lz4.frame
+        try:
+            import lz4.frame
+        except ImportError:
+            raise SystemExit(
+                "Error: The 'lz4' package is required for lz4 compression.\nInstall it with: pip install lz4"
+            ) from None
 
         original_lz4_compress = mcap_writer_module.lz4.frame.compress  # type: ignore[attr-defined]
 
@@ -219,13 +233,15 @@ def _recompress(
 
     output_complete = False
     message_count = 0
+    t_start = t_read = t_write = 0.0
 
     try:
         t_start = time.perf_counter()
 
         with open(input_path, "rb") as f_in:
-            # --- Phase 1: Read summary for schemas and channels ---
+            # --- Phase 1: Read summary and header for schemas, channels, and profile ---
             reader = make_reader(f_in)
+            header = reader.get_header()
             summary = reader.get_summary()
 
             schemas = summary.schemas if summary and summary.schemas else {}
@@ -236,7 +252,9 @@ def _recompress(
             # --- Phase 2: Write output (streaming messages from input) ---
             with open(output_path, "wb") as f_out:
                 writer = Writer(f_out, chunk_size=chunk_size, compression=mcap_compression)
-                writer.start(library="osi-utilities-python/optimize_mcap_compression")
+                # Preserve the MCAP header profile (e.g., "osi2mcap") from input
+                profile = header.profile if header else ""
+                writer.start(profile=profile, library="osi-utilities-python/optimize_mcap_compression")
 
                 # Re-register schemas (build old->new ID mapping)
                 schema_id_map: dict[int, int] = {}
@@ -344,7 +362,7 @@ def _print_stats(input_stats: dict, output_stats: dict | None, args: argparse.Na
     print(f"  Messages:           {input_stats['message_count']:,}")
     print(f"  Chunks:             {input_stats['chunk_count']:,}")
     print(f"  Channels:           {input_stats['channel_count']}")
-    print(f"  Current compression:{input_stats['current_compression']}")
+    print(f"  Current compression: {input_stats['current_compression']}")
     print(f"  Avg chunk size:     {_format_size(input_stats['avg_chunk_size'])}")
     if input_stats["total_uncompressed"] > 0:
         current_ratio = input_stats["total_compressed"] / input_stats["total_uncompressed"]
@@ -405,7 +423,7 @@ def main() -> int:
     parser.add_argument(
         "--level",
         type=int,
-        default=19,
+        default=None,
         help="Compression level (zstd: 1-22, default: 19; lz4: 1-16, default: 16)",
     )
     parser.add_argument(
@@ -434,6 +452,13 @@ def main() -> int:
         print(f"Error: Input must be an MCAP file (got {input_path.suffix})", file=sys.stderr)
         return 1
 
+    # Apply compression-specific default level if not specified
+    if args.level is None:
+        if args.compression == "lz4":
+            args.level = 16
+        else:
+            args.level = 19
+
     # Validate compression level
     if args.compression == "zstd" and not (1 <= args.level <= 22):
         print("Error: zstd level must be 1-22", file=sys.stderr)
@@ -459,6 +484,11 @@ def main() -> int:
         output_path = Path(args.output)
     else:
         output_path = _build_output_path(input_path, args.chunk_size, args.compression, args.level)
+
+    # Guard against input/output collision (would truncate input)
+    if output_path.resolve() == input_path.resolve():
+        print("Error: Output path cannot be the same as input path", file=sys.stderr)
+        return 1
 
     # Guard against accidental overwrite
     if not args.dry_run and output_path.exists() and not args.force:
