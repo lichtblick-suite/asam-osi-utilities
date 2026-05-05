@@ -105,6 +105,13 @@
 #include <unordered_map>
 #include <vector>
 
+#include "mcap_cli_utils.h"
+
+using osi3::examples::kCompressionNameMap;
+using osi3::examples::kCompressionStringMap;
+using osi3::examples::kLevelNameMap;
+using osi3::examples::kLevelStringMap;
+
 namespace {
 
 // ============================================================================
@@ -112,36 +119,6 @@ namespace {
 // ============================================================================
 
 constexpr uint64_t kMiBBytes = 1024ULL * 1024;
-
-const std::map<std::string, mcap::Compression> kCompressionStringMap = {
-    {"none", mcap::Compression::None},
-    {"lz4", mcap::Compression::Lz4},
-    {"zstd", mcap::Compression::Zstd},
-};
-
-const std::map<mcap::Compression, std::string> kCompressionNameMap = {
-    {mcap::Compression::None, "none"},
-    {mcap::Compression::Lz4, "lz4"},
-    {mcap::Compression::Zstd, "zstd"},
-};
-
-// clang-format off
-const std::map<std::string, mcap::CompressionLevel> kLevelStringMap = {
-    {"fastest", mcap::CompressionLevel::Fastest},
-    {"fast", mcap::CompressionLevel::Fast},
-    {"default", mcap::CompressionLevel::Default},
-    {"slow", mcap::CompressionLevel::Slow},
-    {"slowest", mcap::CompressionLevel::Slowest},
-};
-
-const std::map<mcap::CompressionLevel, std::string> kLevelNameMap = {
-    {mcap::CompressionLevel::Fastest, "fastest"},
-    {mcap::CompressionLevel::Fast, "fast"},
-    {mcap::CompressionLevel::Default, "default"},
-    {mcap::CompressionLevel::Slow, "slow"},
-    {mcap::CompressionLevel::Slowest, "slowest"},
-};
-// clang-format on
 
 // Map CompressionLevel to actual zstd integer levels (derived from mcap writer.inl).
 // Note: these values are coupled to the mcap library internals and may need updating

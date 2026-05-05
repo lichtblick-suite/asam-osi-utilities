@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <filesystem>
 
+#include "mcap_cli_utils.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_hostvehicledata.pb.h"
 #include "osi_motionrequest.pb.h"
@@ -26,16 +27,10 @@
 
 namespace {
 
-/** \brief Map compression enum values to string names. */
-const std::map<mcap::Compression, std::string> kCompressionEnumStringMap = {{mcap::Compression::None, "none"}, {mcap::Compression::Lz4, "lz4"}, {mcap::Compression::Zstd, "zstd"}};
-/** \brief Map compression string names to enum values. */
-const std::map<std::string, mcap::Compression> kCompressionStringEnumMap = {{"none", mcap::Compression::None}, {"lz4", mcap::Compression::Lz4}, {"zstd", mcap::Compression::Zstd}};
-/** \brief Map compression level enum values to string names. */
-const std::map<mcap::CompressionLevel, std::string> kCompressionLevelEnumStringMap = {
-    {mcap::CompressionLevel::Fastest, "fastest"}, {mcap::CompressionLevel::Fast, "fast"}, {mcap::CompressionLevel::Default, "default"}};
-/** \brief Map compression level string names to enum values. */
-const std::map<std::string, mcap::CompressionLevel> kCompressionLevelStringEnumMap = {
-    {"fastest", mcap::CompressionLevel::Fastest}, {"fast", mcap::CompressionLevel::Fast}, {"default", mcap::CompressionLevel::Default}};
+using osi3::examples::kCompressionNameMap;
+using osi3::examples::kCompressionStringMap;
+using osi3::examples::kLevelNameMap;
+using osi3::examples::kLevelStringMap;
 
 /**
  * \brief Extract an OSI timestamp from the input file name if present.
@@ -191,7 +186,7 @@ void printHelp() {
 auto parseCompressionType(const std::string& compression_str) -> mcap::Compression {
     std::string lower_compression_str = compression_str;
     std::transform(lower_compression_str.begin(), lower_compression_str.end(), lower_compression_str.begin(), ::tolower);
-    return kCompressionStringEnumMap.at(lower_compression_str);
+    return kCompressionStringMap.at(lower_compression_str);
 }
 
 /**
@@ -202,7 +197,7 @@ auto parseCompressionType(const std::string& compression_str) -> mcap::Compressi
 auto parseCompressionLevel(const std::string& level_str) -> mcap::CompressionLevel {
     std::string lower_level = level_str;
     std::transform(lower_level.begin(), lower_level.end(), lower_level.begin(), ::tolower);
-    return kCompressionLevelStringEnumMap.at(lower_level);
+    return kLevelStringMap.at(lower_level);
 }
 
 /**
@@ -284,8 +279,8 @@ auto main(const int argc, const char** argv) -> int {
     std::cout << "MCAP options:" << "\n";
     std::cout << "\tchunk size: " << mcap_options.chunkSize << " bytes (" << (static_cast<double>(mcap_options.chunkSize) / (1024.0 * 1024.0)) << " MiB)" << "\n";
 
-    std::cout << "\tcompression: " << kCompressionEnumStringMap.at(mcap_options.compression) << "\n";
-    std::cout << "\tcompression level: " << kCompressionLevelEnumStringMap.at(mcap_options.compressionLevel) << "\n";
+    std::cout << "\tcompression: " << kCompressionNameMap.at(mcap_options.compression) << "\n";
+    std::cout << "\tcompression level: " << kLevelNameMap.at(mcap_options.compressionLevel) << "\n";
 
     // open output file with options
     if (!trace_file_writer.Open(options->output_file_path, mcap_options)) {
