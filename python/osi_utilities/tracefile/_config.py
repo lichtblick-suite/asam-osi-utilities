@@ -8,6 +8,14 @@ DEFAULT_CHUNK_SIZE: int = 16 * 1024 * 1024  # 16 MiB
 MIN_CHUNK_SIZE: int = 1 * 1024 * 1024  # 1 MiB
 MAX_CHUNK_SIZE: int = 32 * 1024 * 1024  # 32 MiB
 
+# MCAP compression configuration
+# Zstandard levels: 1 (fastest) to 22 (max). See https://facebook.github.io/zstd/
+# The MCAP Python library defaults to zstd level 3. For OSI data with high redundancy
+# (repeated protobuf fields, similar timestamps, stable object structures), higher
+# levels yield significant space savings at the cost of write speed.
+DEFAULT_ZSTD_COMPRESSION_LEVEL: int = 3  # mcap library default — fast, reasonable ratio
+HIGH_ZSTD_COMPRESSION_LEVEL: int = 19  # best practical ratio before "insane" RAM usage
+
 # Binary format constants
 BINARY_MESSAGE_LENGTH_PREFIX_SIZE: int = 4  # uint32 little-endian
 MAX_EXPECTED_MESSAGE_SIZE: int = 512 * 1024 * 1024  # 512 MiB sanity check

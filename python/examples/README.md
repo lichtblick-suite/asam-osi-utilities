@@ -126,6 +126,26 @@ python benchmark.py synthetic 100
 python benchmark.py file /path/to/file.osi
 ```
 
+### optimize_mcap_compression
+
+Re-encodes an MCAP file with optimized compression settings for OSI data.
+OSI protobuf traces have high redundancy and benefit greatly from larger chunk
+sizes (more compression context) and higher zstd levels.
+
+```bash
+# Optimize with defaults (32 MiB chunks, zstd level 19)
+python optimize_mcap_compression.py recording.mcap
+
+# Custom output path
+python optimize_mcap_compression.py recording.mcap optimized.mcap
+
+# Analyze without writing (dry run)
+python optimize_mcap_compression.py recording.mcap --dry-run
+
+# Custom settings
+python optimize_mcap_compression.py recording.mcap --chunk-size 16 --level 12
+```
+
 ## Quick Start
 
 ```bash

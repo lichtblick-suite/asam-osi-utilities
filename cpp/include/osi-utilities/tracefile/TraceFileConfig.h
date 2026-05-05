@@ -55,6 +55,31 @@ constexpr uint64_t kMinChunkSize = 1024 * 1024;  // 1,048,576 bytes = 1 MiB
 constexpr uint64_t kMaxChunkSize = 32 * 1024 * 1024;  // 33,554,432 bytes = 32 MiB
 
 // ============================================================================
+// MCAP Compression Configuration
+// ============================================================================
+
+/**
+ * @brief Default Zstandard compression level used by the MCAP library.
+ *
+ * The mcap-python library internally calls `zstandard.compress(data)` which
+ * defaults to level 3. This provides fast compression with reasonable ratios.
+ * See: https://facebook.github.io/zstd/
+ */
+constexpr int kDefaultZstdCompressionLevel = 3;
+
+/**
+ * @brief High Zstandard compression level for OSI trace file optimization.
+ *
+ * OSI protobuf data exhibits high redundancy (repeated fields, similar
+ * timestamps across frames, stable object structures) that benefits greatly
+ * from higher compression levels. Level 19 is the highest practical level
+ * before disproportionate RAM usage and diminishing returns (levels 20-22
+ * are considered "insane" by the zstd documentation).
+ * See: https://facebook.github.io/zstd/
+ */
+constexpr int kHighZstdCompressionLevel = 19;
+
+// ============================================================================
 // Time Constants
 // ============================================================================
 

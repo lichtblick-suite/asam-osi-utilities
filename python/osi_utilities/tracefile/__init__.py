@@ -11,6 +11,8 @@ from osi_utilities.timestamp import (
 )
 from osi_utilities.tracefile._config import (
     DEFAULT_CHUNK_SIZE,
+    DEFAULT_ZSTD_COMPRESSION_LEVEL,
+    HIGH_ZSTD_COMPRESSION_LEVEL,
     MAX_CHUNK_SIZE,
     MIN_CHUNK_SIZE,
 )
@@ -32,6 +34,8 @@ from osi_utilities.tracefile.writers import (
 
 __all__ = [
     "DEFAULT_CHUNK_SIZE",
+    "DEFAULT_ZSTD_COMPRESSION_LEVEL",
+    "HIGH_ZSTD_COMPRESSION_LEVEL",
     "MAX_CHUNK_SIZE",
     "MIN_CHUNK_SIZE",
     "SingleTraceReader",
