@@ -303,3 +303,95 @@ TEST_F(MCAPTraceFileChannelTest, ChannelMetadataContainsOSIVersion) {
 
     mcap_reader.close();
 }
+
+TEST_F(MCAPTraceFileChannelTest, AddRawChannel) {
+    OpenWriter();
+
+    osi3::MCAPTraceFileChannel osi_channel(mcap_writer_);
+    const auto channel_id = osi_channel.AddRawChannel(
+        "raw/data", "CustomType", "raw", "", "raw");
+    EXPECT_GT(channel_id, 0);
+
+    CloseWriter();
+}
+
+TEST_F(MCAPTraceFileChannelTest, AddRawChannelDuplicateThrows) {
+    OpenWriter();
+
+    osi3::MCAPTraceFileChannel osi_channel(mcap_writer_);
+    osi_channel.AddRawChannel("raw", "T", "raw", "", "raw");
+    EXPECT_THROW(osi_channel.AddRawChannel("raw", "T2", "raw", "", "raw"), std::runtime_error);
+
+    CloseWriter();
+}
+
+TEST_F(MCAPTraceFileChannelTest, WriteRawMessage) {
+    OpenWriter();
+
+    osi3::MCAPTraceFileChannel osi_channel(mcap_writer_);
+    osi_channel.AddRawChannel("raw/data", "RawType", "raw", "", "raw");
+
+    const std::string payload = "hello_raw";
+    const auto* data = reinterpret_cast<const std::byte*>(payload.data());
+    EXPECT_TRUE(osi_channel.WriteRawMessage("raw/data", data, payload.size(), 5'000'000'000));
+
+    CloseWriter();
+
+    // Verify file has one message
+    std::ifstream file(test_file_, std::ios::binary);
+    mcap::McapReader mcap_reader;
+    ASSERT_TRUE(mcap_reader.open(file).ok());
+    ASSERT_TRUE(mcap_reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan).ok());
+    EXPECT_EQ(mcap_reader.statistics()->value().messageCount, 1);
+    mcap_reader.close();
+}
+
+TEST_F(MCAPTraceFileChannelTest, WriteRawUnregisteredTopicFails) {
+    OpenWriter();
+
+    osi3::MCAPTraceFileChannel osi_channel(mcap_writer_);
+    const std::string payload = "data";
+    const auto* data = reinterpret_cast<const std::byte*>(payload.data());
+    EXPECT_FALSE(osi_channel.WriteRawMessage("nonexistent", data, payload.size(), 1));
+
+    CloseWriter();
+}
+
+TEST_F(MCAPTraceFileChannelTest, WriteRawEmptyTopicFails) {
+    OpenWriter();
+
+    osi3::MCAPTraceFileChannel osi_channel(mcap_writer_);
+    const std::string payload = "data";
+    const auto* data = reinterpret_cast<const std::byte*>(payload.data());
+    EXPECT_FALSE(osi_channel.WriteRawMessage("", data, payload.size(), 1));
+
+    CloseWriter();
+}
+
+TEST_F(MCAPTraceFileChannelTest, MixedOSIAndRawChannels) {
+    OpenWriter();
+
+    osi3::MCAPTraceFileChannel osi_channel(mcap_writer_);
+    ASSERT_EQ(mcap_writer_.write(osi3::MCAPTraceFileChannel::PrepareRequiredFileMetadata()).code, mcap::StatusCode::Success);
+
+    osi_channel.AddChannel("osi/gt", osi3::GroundTruth::descriptor());
+    osi_channel.AddRawChannel("raw/data", "CustomType", "raw", "", "raw");
+
+    osi3::GroundTruth gt;
+    gt.mutable_timestamp()->set_seconds(1);
+    ASSERT_TRUE(osi_channel.WriteMessage(gt, "osi/gt"));
+
+    const std::string payload = "raw_payload";
+    const auto* data = reinterpret_cast<const std::byte*>(payload.data());
+    ASSERT_TRUE(osi_channel.WriteRawMessage("raw/data", data, payload.size(), 1'000'000'000));
+
+    CloseWriter();
+
+    // Verify both channels exist
+    std::ifstream file(test_file_, std::ios::binary);
+    mcap::McapReader mcap_reader;
+    ASSERT_TRUE(mcap_reader.open(file).ok());
+    ASSERT_TRUE(mcap_reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan).ok());
+    EXPECT_EQ(mcap_reader.channels().size(), 2);
+    mcap_reader.close();
+}

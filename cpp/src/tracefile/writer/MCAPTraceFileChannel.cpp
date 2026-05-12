@@ -142,6 +142,53 @@ auto MCAPTraceFileChannel::PrepareRequiredFileMetadata() -> mcap::Metadata { ret
 
 auto MCAPTraceFileChannel::GetCurrentTimeAsString() -> std::string { return mcap_utils::GetCurrentTimeAsString(); }
 
+auto MCAPTraceFileChannel::AddRawChannel(const std::string& topic, const std::string& schema_name,
+                                         const std::string& schema_encoding, const std::string& schema_data,
+                                         const std::string& message_encoding,
+                                         std::unordered_map<std::string, std::string> channel_metadata) -> uint16_t {
+    if (auto it = topic_to_channel_id_.find(topic); it != topic_to_channel_id_.end()) {
+        throw std::runtime_error("Topic '" + topic + "' already exists");
+    }
+
+    mcap::Schema raw_schema(schema_name, schema_encoding, schema_data);
+    mcap_writer_.addSchema(raw_schema);
+
+    mcap::Channel channel(topic, message_encoding, raw_schema.id, channel_metadata);
+    mcap_writer_.addChannel(channel);
+
+    topic_to_channel_id_[topic] = channel.id;
+    topic_to_schema_name_[topic] = schema_name;
+
+    return channel.id;
+}
+
+auto MCAPTraceFileChannel::WriteRawMessage(const std::string& topic, const std::byte* data, size_t data_size,
+                                           mcap::Timestamp log_time, mcap::Timestamp publish_time) -> bool {
+    if (topic.empty()) {
+        std::cerr << "ERROR: cannot write raw message, topic is empty\n";
+        return false;
+    }
+
+    const auto it = topic_to_channel_id_.find(topic);
+    if (it == topic_to_channel_id_.end()) {
+        std::cerr << "ERROR: cannot write raw message, topic " << topic << " not found\n";
+        return false;
+    }
+
+    mcap::Message msg;
+    msg.channelId = it->second;
+    msg.logTime = log_time;
+    msg.publishTime = publish_time != 0 ? publish_time : log_time;
+    msg.data = data;
+    msg.dataSize = data_size;
+
+    if (const auto status = mcap_writer_.write(msg); status.code != mcap::StatusCode::Success) {
+        std::cerr << "ERROR: Failed to write raw message " << status.message;
+        return false;
+    }
+    return true;
+}
+
 // template instantiations of allowed OSI top-level messages
 template bool MCAPTraceFileChannel::WriteMessage<osi3::GroundTruth>(const osi3::GroundTruth&, const std::string&);
 template bool MCAPTraceFileChannel::WriteMessage<osi3::SensorData>(const osi3::SensorData&, const std::string&);

@@ -176,6 +176,82 @@ class TestMCAPChannel:
         names = [f.name for f in fds.file]
         assert any("groundtruth" in n.lower() for n in names)
 
+    def test_add_raw_channel(self, tmp_dir: Path):
+        """Test registering a non-OSI raw channel via MCAPChannel."""
+        path = tmp_dir / "raw.mcap"
+        with open(path, "wb") as f:
+            writer = McapRawWriter(f)
+            writer.start(library="test")
+            channel = MCAPChannel(writer)
+            channel_id = channel.add_raw_channel(
+                "vehicle/status", "vehicle.Status", "jsonschema",
+                b'{"type": "object"}', "json",
+            )
+            assert isinstance(channel_id, int)
+            assert channel_id >= 0
+            writer.finish()
+
+    def test_add_raw_channel_duplicate_raises(self, tmp_dir: Path):
+        path = tmp_dir / "raw_dup.mcap"
+        with open(path, "wb") as f:
+            writer = McapRawWriter(f)
+            writer.start(library="test")
+            channel = MCAPChannel(writer)
+            channel.add_raw_channel("raw_topic", "T", "proto", b"", "proto")
+            with pytest.raises(RuntimeError, match="already registered"):
+                channel.add_raw_channel("raw_topic", "T", "proto", b"", "proto")
+            writer.finish()
+
+    def test_write_raw_message(self, tmp_dir: Path):
+        """Test writing raw bytes to a registered raw channel."""
+        path = tmp_dir / "raw_write.mcap"
+        with open(path, "wb") as f:
+            writer = McapRawWriter(f)
+            writer.start(library="test")
+            channel = MCAPChannel(writer)
+            channel.add_raw_channel("raw", "RawType", "raw", b"", "raw")
+            ok = channel.write_raw_message("raw", b"hello", log_time=5_000_000_000)
+            assert ok is True
+            writer.finish()
+
+        # Verify the message is in the file
+        from mcap.reader import make_reader
+        with open(path, "rb") as f:
+            reader = make_reader(f)
+            summary = reader.get_summary()
+            assert summary.statistics.message_count == 1
+
+    def test_write_raw_unregistered_topic(self, tmp_dir: Path):
+        path = tmp_dir / "raw_unreg.mcap"
+        with open(path, "wb") as f:
+            writer = McapRawWriter(f)
+            writer.start(library="test")
+            channel = MCAPChannel(writer)
+            assert not channel.write_raw_message("nope", b"data", log_time=1)
+            writer.finish()
+
+    def test_mixed_osi_and_raw_channels(self, tmp_dir: Path):
+        """Test mixing OSI and raw channels in the same MCAPChannel."""
+        path = tmp_dir / "mixed.mcap"
+        with open(path, "wb") as f:
+            writer = McapRawWriter(f)
+            writer.start(library="test")
+            channel = MCAPChannel(writer)
+            channel.add_channel("osi/gt", GroundTruth)
+            channel.add_raw_channel("raw/data", "CustomType", "raw", b"", "raw")
+
+            gt = _make_ground_truth(1)
+            assert channel.write_message(gt, "osi/gt")
+            assert channel.write_raw_message("raw/data", b"payload", log_time=1_000_000_000)
+            writer.finish()
+
+        from mcap.reader import make_reader
+        with open(path, "rb") as f:
+            reader = make_reader(f)
+            summary = reader.get_summary()
+            assert summary.statistics.message_count == 2
+            assert len(summary.channels) == 2
+
 
 # ===========================================================================
 # Reader error-path tests
