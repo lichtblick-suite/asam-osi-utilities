@@ -117,3 +117,77 @@ class MCAPChannel:
         from osi_utilities.tracefile.writers.multi import prepare_required_file_metadata
 
         return prepare_required_file_metadata()
+
+    def add_raw_channel(
+        self,
+        topic: str,
+        schema_name: str,
+        schema_encoding: str,
+        schema_data: bytes,
+        message_encoding: str,
+        metadata: dict[str, str] | None = None,
+    ) -> int:
+        """Register a non-OSI channel with a custom schema on the external writer.
+
+        Args:
+            topic: Channel topic name.
+            schema_name: Name for the schema.
+            schema_encoding: Schema encoding (e.g. ``"ros1msg"``, ``"jsonschema"``).
+            schema_data: Serialized schema definition bytes (may be empty).
+            message_encoding: Message encoding (e.g. ``"ros1"``, ``"json"``).
+            metadata: Optional channel metadata dict.
+
+        Returns:
+            The channel ID.
+        """
+        if topic in self._channels:
+            raise RuntimeError(f"Channel '{topic}' already registered")
+
+        schema_id = self._mcap_writer.register_schema(
+            name=schema_name,
+            encoding=schema_encoding,
+            data=schema_data,
+        )
+        channel_meta = dict(metadata) if metadata else {}
+        channel_id = self._mcap_writer.register_channel(
+            topic=topic,
+            message_encoding=message_encoding,
+            schema_id=schema_id,
+            metadata=channel_meta,
+        )
+        self._channels[topic] = channel_id
+        return channel_id
+
+    def write_raw_message(
+        self,
+        topic: str,
+        data: bytes,
+        log_time: int,
+        publish_time: int | None = None,
+    ) -> bool:
+        """Write raw bytes to a registered channel (OSI or non-OSI).
+
+        Args:
+            topic: The channel topic.
+            data: Serialized message bytes.
+            log_time: Message timestamp in nanoseconds.
+            publish_time: Optional publish timestamp. Defaults to *log_time*.
+
+        Returns:
+            True on success.
+        """
+        if topic not in self._channels:
+            logger.error("Topic '%s' not registered", topic)
+            return False
+
+        try:
+            self._mcap_writer.add_message(
+                channel_id=self._channels[topic],
+                log_time=log_time,
+                data=data,
+                publish_time=publish_time if publish_time is not None else log_time,
+            )
+            return True
+        except (OSError,) as e:
+            logger.error("Failed to write raw message: %s", e)
+            return False

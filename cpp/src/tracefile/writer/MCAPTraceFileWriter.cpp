@@ -118,6 +118,28 @@ auto MCAPTraceFileWriter::AddChannel(const std::string& topic, const google::pro
     return channel_.AddChannel(topic, descriptor, std::move(channel_metadata));
 }
 
+auto MCAPTraceFileWriter::AddRawChannel(const std::string& topic, const std::string& schema_name,
+                                        const std::string& schema_encoding, const std::string& schema_data,
+                                        const std::string& message_encoding,
+                                        std::unordered_map<std::string, std::string> channel_metadata) -> uint16_t {
+    return channel_.AddRawChannel(topic, schema_name, schema_encoding, schema_data, message_encoding, std::move(channel_metadata));
+}
+
+auto MCAPTraceFileWriter::WriteRawMessage(const std::string& topic, const std::byte* data, size_t data_size,
+                                          mcap::Timestamp log_time, mcap::Timestamp publish_time) -> bool {
+    if (!(trace_file_ && trace_file_.is_open())) {
+        std::cerr << "ERROR: cannot write raw message, file is not open\n";
+        return false;
+    }
+    if (!required_metadata_added_) {
+        if (!AddFileMetadata(PrepareRequiredFileMetadata())) {
+            std::cerr << "ERROR: failed to auto-add required metadata\n";
+            return false;
+        }
+    }
+    return channel_.WriteRawMessage(topic, data, data_size, log_time, publish_time);
+}
+
 auto MCAPTraceFileWriter::GetCurrentTimeAsString() -> std::string { return MCAPTraceFileChannel::GetCurrentTimeAsString(); }
 
 // template instantiations of allowed OSI top-level messages

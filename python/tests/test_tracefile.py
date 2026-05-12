@@ -253,6 +253,65 @@ class TestMultiTraceFile:
             assert "ch1" in topics
             assert "ch2" in topics
 
+    def test_add_raw_channel(self, tmp_dir: Path):
+        """Test registering a non-OSI raw channel via MultiTraceWriter."""
+        path = tmp_dir / "raw.mcap"
+        with MultiTraceWriter() as writer:
+            assert writer.open(path)
+            channel_id = writer.add_raw_channel(
+                "vehicle/status", "vehicle.Status", "jsonschema",
+                b'{"type": "object"}', "json",
+            )
+            assert isinstance(channel_id, int)
+            ok = writer.write_raw_message("vehicle/status", b'{"speed": 50}', log_time=1_000_000_000)
+            assert ok
+            assert writer.written_count == 1
+
+        from mcap.reader import make_reader
+        with open(path, "rb") as f:
+            reader = make_reader(f)
+            summary = reader.get_summary()
+            assert summary.statistics.message_count == 1
+            topics = {c.topic for c in summary.channels.values()}
+            assert "vehicle/status" in topics
+
+    def test_add_raw_channel_duplicate_raises(self, tmp_dir: Path):
+        path = tmp_dir / "raw_dup.mcap"
+        with MultiTraceWriter() as writer:
+            assert writer.open(path)
+            writer.add_raw_channel("raw", "T", "raw", b"", "raw")
+            with pytest.raises(RuntimeError, match="already exists"):
+                writer.add_raw_channel("raw", "T", "raw", b"", "raw")
+
+    def test_write_raw_unregistered_topic(self, tmp_dir: Path):
+        path = tmp_dir / "raw_unreg.mcap"
+        with MultiTraceWriter() as writer:
+            assert writer.open(path)
+            assert not writer.write_raw_message("nope", b"data", log_time=1)
+
+    def test_mixed_osi_and_raw_channels(self, tmp_dir: Path):
+        """Test mixing OSI and raw channels in the same MultiTraceWriter."""
+        path = tmp_dir / "mixed.mcap"
+        with MultiTraceWriter() as writer:
+            assert writer.open(path)
+            writer.add_channel("osi/gt", GroundTruth)
+            writer.add_raw_channel("raw/data", "CustomType", "raw", b"", "raw")
+
+            gt = _make_ground_truth(1)
+            assert writer.write_message(gt, "osi/gt")
+            assert writer.write_raw_message("raw/data", b"payload", log_time=1_000_000_000)
+            assert writer.written_count == 2
+
+        from mcap.reader import make_reader
+        with open(path, "rb") as f:
+            reader = make_reader(f)
+            summary = reader.get_summary()
+            assert summary.statistics.message_count == 2
+            assert len(summary.channels) == 2
+            topics = {c.topic for c in summary.channels.values()}
+            assert "osi/gt" in topics
+            assert "raw/data" in topics
+
 
 # ===========================================================================
 # TXTH reader/writer

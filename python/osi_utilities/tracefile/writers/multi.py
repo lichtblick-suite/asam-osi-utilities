@@ -318,3 +318,93 @@ class MultiTraceWriter(TraceWriter):
     @property
     def written_count(self) -> int:
         return self._written_count
+
+    def add_raw_channel(
+        self,
+        topic: str,
+        schema_name: str,
+        schema_encoding: str,
+        schema_data: bytes,
+        message_encoding: str,
+        metadata: dict[str, str] | None = None,
+    ) -> int:
+        """Register a non-OSI channel with a custom schema.
+
+        Use this to add channels that carry non-OSI data (e.g. raw ROS messages,
+        JSON telemetry) alongside OSI channels in the same MCAP file.
+
+        Args:
+            topic: Channel topic name.
+            schema_name: Name for the schema (e.g. ``"sensor_msgs/PointCloud2"``).
+            schema_encoding: Schema encoding (e.g. ``"ros1msg"``, ``"jsonschema"``).
+            schema_data: Serialized schema definition bytes (may be empty).
+            message_encoding: Message encoding (e.g. ``"ros1"``, ``"json"``).
+            metadata: Optional channel metadata dict.
+
+        Returns:
+            The channel ID.
+
+        Raises:
+            RuntimeError: If writer is not open or topic already exists.
+        """
+        if self._mcap_writer is None:
+            raise RuntimeError("Writer is not open")
+        if topic in self._active_channels:
+            raise RuntimeError(f"Channel with topic '{topic}' already exists")
+
+        schema_id = self._mcap_writer.register_schema(
+            name=schema_name,
+            encoding=schema_encoding,
+            data=schema_data,
+        )
+        channel_meta = dict(metadata) if metadata is not None else {}
+        channel_id = self._mcap_writer.register_channel(
+            topic=topic,
+            message_encoding=message_encoding,
+            schema_id=schema_id,
+            metadata=channel_meta,
+        )
+        self._active_channels[topic] = channel_id
+        self._channel_metadata[topic] = channel_meta
+        return channel_id
+
+    def write_raw_message(
+        self,
+        topic: str,
+        data: bytes,
+        log_time: int,
+        publish_time: int | None = None,
+    ) -> bool:
+        """Write raw bytes to a registered channel (OSI or non-OSI).
+
+        Args:
+            topic: The channel topic (must have been registered via
+                :meth:`add_channel` or :meth:`add_raw_channel`).
+            data: Serialized message bytes.
+            log_time: Message timestamp in nanoseconds.
+            publish_time: Optional publish timestamp in nanoseconds.
+                Defaults to *log_time*.
+
+        Returns:
+            True on success, False on failure.
+        """
+        if self._mcap_writer is None:
+            logger.error("Writer is not open")
+            return False
+
+        if topic not in self._active_channels:
+            logger.error("Topic '%s' not found. Available: %s", topic, list(self._active_channels.keys()))
+            return False
+
+        try:
+            self._mcap_writer.add_message(
+                channel_id=self._active_channels[topic],
+                log_time=log_time,
+                data=data,
+                publish_time=publish_time if publish_time is not None else log_time,
+            )
+            self._written_count += 1
+            return True
+        except (OSError, McapError) as e:
+            logger.error("Failed to write raw message to topic '%s': %s", topic, e)
+            return False
