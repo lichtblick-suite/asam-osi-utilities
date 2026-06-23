@@ -44,14 +44,12 @@ _COMPRESSION_MAP: dict[str, CompressionType] = {
 }
 
 
-def _get_package_version() -> str:
-    """Get the package version from importlib.metadata, falling back to vcpkg.json."""
-    try:
-        from importlib.metadata import version
+def _get_osi_version() -> str:
+    """Get the current OSI interface version as 'major.minor.patch'."""
+    from osi3 import osi_version_pb2
 
-        return version("asam-osi-utilities")
-    except (ImportError, ModuleNotFoundError):
-        return "0.0.0"
+    version = osi_version_pb2.DESCRIPTOR.GetOptions().Extensions[osi_version_pb2.current_interface_version]
+    return f"{version.version_major}.{version.version_minor}.{version.version_patch}"
 
 
 def prepare_required_file_metadata() -> dict[str, str]:
@@ -60,7 +58,7 @@ def prepare_required_file_metadata() -> dict[str, str]:
     Returns a dict with required keys populated with placeholder/current values.
     """
     return {
-        "version": _get_package_version(),
+        "version": _get_osi_version(),
         "min_osi_version": "",
         "max_osi_version": "",
         "min_protobuf_version": google.protobuf.__version__,
