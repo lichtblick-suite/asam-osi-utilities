@@ -31,6 +31,19 @@ The canonical version is stored in:
 
 - `vcpkg.json` → `version-string` field
 
+### OSI trace-file format version
+
+The OSI trace-file *format* version written into `net.asam.osi.trace`'s `version` field is a
+separate constant from the library/package version. It must be kept in sync across both
+language bindings:
+
+- C++: `OSI_TRACE_FILE_SPEC_VERSION` (CMake cache variable in the top-level `CMakeLists.txt`)
+- Python: `OSI_TRACE_FILE_SPEC_VERSION` in `python/osi_utilities/tracefile/_config.py`
+
+Both default to the released OSI version pinned by the submodule (currently `3.8.0`). Any
+pre-release/build suffix (e.g. `3.9.0-rc1`) is normalized to `major.minor.patch` when emitted
+into metadata, so update the constant when bumping the implemented trace-file format version.
+
 ## Release Workflow
 
 ### 1. Prepare the Release
