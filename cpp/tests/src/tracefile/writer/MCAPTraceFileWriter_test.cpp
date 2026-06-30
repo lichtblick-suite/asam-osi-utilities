@@ -465,6 +465,46 @@ TEST_F(MCAPTraceFileWriterTest, NormalizeOsiVersionStripsPreReleaseSuffix) {
     EXPECT_EQ(NormalizeOsiVersionString("not-a-version"), "not-a-version");
 }
 
+TEST_F(MCAPTraceFileWriterTest, ExplicitMetadataVersionIsNormalized) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+    auto metadata = osi3::MCAPTraceFileWriter::PrepareRequiredFileMetadata();
+    // A caller-supplied pre-release version must be normalized to major.minor.patch.
+    metadata.metadata["version"] = "3.8.0-rc1";
+    ASSERT_TRUE(writer_.AddFileMetadata(metadata));
+
+    writer_.AddChannel("gt", osi3::GroundTruth::descriptor());
+    osi3::GroundTruth ground_truth;
+    ground_truth.mutable_timestamp()->set_seconds(1);
+    SetOsiVersion(ground_truth, 3, 6, 1);
+    ASSERT_TRUE(writer_.WriteMessage(ground_truth, "gt"));
+    writer_.Close();
+
+    const auto written = ReadOsiTraceMetadata(test_file_);
+    ASSERT_FALSE(written.empty());
+    EXPECT_EQ(written.at("version"), "3.8.0");
+}
+
+TEST_F(MCAPTraceFileWriterTest, FailedWriteDoesNotReserveOsiTraceMetadata) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+
+    osi3::GroundTruth ground_truth;
+    ground_truth.mutable_timestamp()->set_seconds(1);
+    // Writing to an unregistered topic fails; this must not reserve the net.asam.osi.trace
+    // record, so an explicit AddFileMetadata() afterwards still succeeds and is honored.
+    EXPECT_FALSE(writer_.WriteMessage(ground_truth, "/unregistered"));
+
+    auto metadata = osi3::MCAPTraceFileWriter::PrepareRequiredFileMetadata();
+    metadata.metadata["min_osi_version"] = "3.1.0";
+    metadata.metadata["max_osi_version"] = "3.1.0";
+    EXPECT_TRUE(writer_.AddFileMetadata(metadata));
+    writer_.Close();
+
+    const auto written = ReadOsiTraceMetadata(test_file_);
+    ASSERT_FALSE(written.empty());
+    EXPECT_EQ(written.at("min_osi_version"), "3.1.0");
+    EXPECT_EQ(written.at("max_osi_version"), "3.1.0");
+}
+
 TEST(MultiTraceFileWriterAliasTest, AliasResolvesToCorrectType) {
     static_assert(std::is_same_v<osi3::MultiTraceFileWriter, osi3::MCAPTraceFileWriter>, "MultiTraceFileWriter must alias MCAPTraceFileWriter");
 }

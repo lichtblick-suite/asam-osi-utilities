@@ -941,3 +941,14 @@ class TestOsiTraceMetadataVersions:
         data = _read_osi_trace_metadata(path)
         assert data["min_osi_version"] == "3.0.0"
         assert data["max_osi_version"] == "3.0.0"
+
+    def test_user_supplied_version_is_normalized(self, tmp_dir: Path):
+        path = tmp_dir / "user_version.mcap"
+        meta = prepare_required_file_metadata()
+        # A caller-supplied pre-release version must be normalized to major.minor.patch.
+        meta["version"] = "3.8.0-rc1"
+        with MultiTraceWriter() as w:
+            w.open(path, meta)
+            w.write_message(_sv_with_version(3, 6, 1, index=1))
+        data = _read_osi_trace_metadata(path)
+        assert data["version"] == "3.8.0"

@@ -50,12 +50,12 @@ auto MCAPTraceFileWriter::WriteMessage(const google::protobuf::Message& message,
         std::cerr << "ERROR: cannot write message, file is not open\n";
         return false;
     }
-    // The net.asam.osi.trace record is buffered now and written at Close() with
-    // data-accurate min/max_osi_version derived from the messages actually written.
-    EnsurePendingMetadata();
     if (!channel_.WriteMessage(message, topic)) {
         return false;
     }
+    // Buffer the net.asam.osi.trace record only after a message was actually written; it is
+    // emitted at Close() with data-accurate min/max_osi_version from the messages written.
+    EnsurePendingMetadata();
     TrackOsiVersion(message);
     return true;
 }
@@ -66,10 +66,12 @@ auto MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::st
         std::cerr << "ERROR: cannot write message, file is not open\n";
         return false;
     }
-    EnsurePendingMetadata();
     if (!channel_.WriteMessage(top_level_message, topic)) {
         return false;
     }
+    // Buffer the net.asam.osi.trace record only after a message was actually written; it is
+    // emitted at Close() with data-accurate min/max_osi_version from the messages written.
+    EnsurePendingMetadata();
     TrackOsiVersion(top_level_message);
     return true;
 }
@@ -91,6 +93,9 @@ auto MCAPTraceFileWriter::AddFileMetadata(const mcap::Metadata& metadata) -> boo
             }
         }
         pending_osi_metadata_ = metadata;
+        // "version" is the OSI trace-file format version and must be major.minor.patch; normalize
+        // any caller-supplied pre-release/build suffix (e.g. "3.8.0-rc1" -> "3.8.0") for conformance.
+        pending_osi_metadata_->metadata["version"] = mcap_utils::NormalizeOsiVersionString(pending_osi_metadata_->metadata["version"]);
         required_metadata_added_ = true;
         return true;
     }
