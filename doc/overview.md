@@ -43,11 +43,17 @@ OSI defines a specialization of the MCAP format with additional constraints. See
 
 The `net.asam.osi.trace` metadata record must include:
 
-- `version` - OSI release version (e.g., `3.8.0`)
-- `min_osi_version` - Minimum OSI schema version used
-- `max_osi_version` - Maximum OSI schema version used
+- `version` - OSI **trace-file format** version the file conforms to (e.g. `3.8.0`). This is
+  *not* the OSI schema version of the data; it is normalized to `major.minor.patch`.
+- `min_osi_version` - Minimum OSI schema version used in the channels' messages
+- `max_osi_version` - Maximum OSI schema version used in the channels' messages
 - `min_protobuf_version` - Minimum protobuf version used
 - `max_protobuf_version` - Maximum protobuf version used
+
+The writers fill `min_osi_version` / `max_osi_version` automatically from the embedded
+`InterfaceVersion` of the messages actually written (the record is finalized when the file is
+closed), falling back to the linked OSI library version when no message carries one. Any
+value you supply explicitly is preserved.
 
 ### Single-Channel Binary
 
