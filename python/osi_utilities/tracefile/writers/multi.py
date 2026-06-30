@@ -80,18 +80,30 @@ def _get_osi_library_version() -> str | None:
 def _get_message_osi_version(message: Message) -> tuple[int, int, int] | None:
     """Extract the embedded OSI ``InterfaceVersion`` from a top-level OSI message.
 
-    Returns ``(major, minor, patch)`` if the message has a populated ``version`` field,
-    otherwise ``None`` (the message type has no ``version`` field, it is unset, or it is
-    the meaningless all-zero default).
+    Returns ``(major, minor, patch)`` if the message carries a populated, OSI-shaped
+    ``version`` field, otherwise ``None`` (no ``version`` field, it is not a singular
+    ``InterfaceVersion`` submessage, it is unset, or it is the meaningless all-zero
+    default). Mirrors the C++ ``GetMessageOsiVersion`` guards so that writing a non-OSI
+    message that merely happens to carry a differently-shaped ``version`` field cannot
+    crash the writer.
     """
+    field = message.DESCRIPTOR.fields_by_name.get("version")
+    if field is None or field.is_repeated or field.message_type is None:
+        return None
     try:
         if not message.HasField("version"):
             return None
     except ValueError:
         return None
     version = message.version
-    triple = (version.version_major, version.version_minor, version.version_patch)
-    return None if triple == (0, 0, 0) else triple
+    components = (
+        getattr(version, "version_major", 0),
+        getattr(version, "version_minor", 0),
+        getattr(version, "version_patch", 0),
+    )
+    if not all(isinstance(component, int) for component in components):
+        return None
+    return None if components == (0, 0, 0) else components
 
 
 def prepare_required_file_metadata() -> dict[str, str]:

@@ -875,6 +875,32 @@ class TestOsiTraceMetadataVersions:
         assert _get_message_osi_version(zero) is None
         assert _get_message_osi_version(_make_ground_truth()) is None
 
+    def test_get_message_osi_version_non_osi_scalar_field_does_not_raise(self):
+        # A non-OSI message whose ``version`` field is a plain scalar (not an
+        # InterfaceVersion submessage) must be ignored gracefully, mirroring the C++
+        # GetMessageOsiVersion guard, rather than crashing with AttributeError.
+        from google.protobuf import descriptor_pb2, descriptor_pool, message_factory
+
+        file_proto = descriptor_pb2.FileDescriptorProto()
+        file_proto.name = "scalar_version_regression.proto"
+        file_proto.syntax = "proto2"
+        file_proto.package = "osiutilstest"
+        msg_proto = file_proto.message_type.add()
+        msg_proto.name = "ScalarVersionMsg"
+        field_proto = msg_proto.field.add()
+        field_proto.name = "version"
+        field_proto.number = 1
+        field_proto.label = descriptor_pb2.FieldDescriptorProto.LABEL_OPTIONAL
+        field_proto.type = descriptor_pb2.FieldDescriptorProto.TYPE_UINT32
+
+        pool = descriptor_pool.DescriptorPool()
+        file_descriptor = pool.Add(file_proto)
+        message_class = message_factory.GetMessageClass(file_descriptor.message_types_by_name["ScalarVersionMsg"])
+        scalar_message = message_class()
+        scalar_message.version = 5
+
+        assert _get_message_osi_version(scalar_message) is None
+
     def test_min_max_from_written_messages(self, tmp_dir: Path):
         path = tmp_dir / "versions.mcap"
         with MultiTraceWriter() as w:
