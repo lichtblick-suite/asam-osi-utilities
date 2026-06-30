@@ -10,6 +10,7 @@ schema registration via FileDescriptorSet, and OSI metadata validation.
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import IO
@@ -28,6 +29,7 @@ from osi_utilities.tracefile._config import (
     MIN_CHUNK_SIZE,
     OSI_CHANNEL_RECOMMENDED_METADATA_KEYS,
     OSI_CHANNEL_REQUIRED_METADATA_KEYS,
+    OSI_TRACE_FILE_SPEC_VERSION,
     OSI_TRACE_METADATA_NAME,
     OSI_TRACE_RECOMMENDED_METADATA_KEYS,
     OSI_TRACE_REQUIRED_METADATA_KEYS,
@@ -44,23 +46,66 @@ _COMPRESSION_MAP: dict[str, CompressionType] = {
 }
 
 
-def _get_package_version() -> str:
-    """Get the package version from importlib.metadata, falling back to vcpkg.json."""
-    try:
-        from importlib.metadata import version
+_SEMVER_CORE_RE = re.compile(r"^\s*(\d+)\.(\d+)\.(\d+)")
 
-        return version("asam-osi-utilities")
+
+def _normalize_osi_version_string(version: str) -> str:
+    """Return the strict ``major.minor.patch`` core of a version string.
+
+    The OSI trace metadata version fields must be ``major.minor.patch``; any
+    pre-release/build suffix (e.g. ``"3.8.0-rc1"`` -> ``"3.8.0"``) is stripped so the
+    emitted value stays spec-conformant across release-candidate cycles. The input is
+    returned unchanged if it does not start with a numeric ``major.minor.patch``.
+    """
+    match = _SEMVER_CORE_RE.match(version)
+    return f"{match.group(1)}.{match.group(2)}.{match.group(3)}" if match else version
+
+
+def _get_osi_library_version() -> str | None:
+    """Best-effort OSI interface (schema) version from the linked ``osi3`` library.
+
+    Used only as a fallback for ``min_osi_version`` / ``max_osi_version`` when no written
+    message carries an embedded ``InterfaceVersion``. Returns ``None`` if ``osi3`` is not
+    importable (the import is intentionally lazy so the writer does not hard-depend on it).
+    """
+    try:
+        from osi3 import osi_version_pb2
     except (ImportError, ModuleNotFoundError):
-        return "0.0.0"
+        logger.warning("osi3 is not importable; cannot determine a fallback OSI version for trace metadata")
+        return None
+    interface_version = osi_version_pb2.DESCRIPTOR.GetOptions().Extensions[osi_version_pb2.current_interface_version]
+    return f"{interface_version.version_major}.{interface_version.version_minor}.{interface_version.version_patch}"
+
+
+def _get_message_osi_version(message: Message) -> tuple[int, int, int] | None:
+    """Extract the embedded OSI ``InterfaceVersion`` from a top-level OSI message.
+
+    Returns ``(major, minor, patch)`` if the message has a populated ``version`` field,
+    otherwise ``None`` (the message type has no ``version`` field, it is unset, or it is
+    the meaningless all-zero default).
+    """
+    try:
+        if not message.HasField("version"):
+            return None
+    except ValueError:
+        return None
+    version = message.version
+    triple = (version.version_major, version.version_minor, version.version_patch)
+    return None if triple == (0, 0, 0) else triple
 
 
 def prepare_required_file_metadata() -> dict[str, str]:
     """Prepare the required 'net.asam.osi.trace' metadata with default values.
 
-    Returns a dict with required keys populated with placeholder/current values.
+    ``version`` is the OSI trace-file *format* version implemented by this library
+    (:data:`OSI_TRACE_FILE_SPEC_VERSION`, normalized to ``major.minor.patch``).
+    ``min_osi_version`` / ``max_osi_version`` are intentionally left empty here: when the
+    metadata is written by :class:`MultiTraceWriter`, they are filled from the embedded
+    ``InterfaceVersion`` of the messages actually written (falling back to the linked OSI
+    library version). Callers using an external writer may fill them in themselves.
     """
     return {
-        "version": _get_package_version(),
+        "version": _normalize_osi_version_string(OSI_TRACE_FILE_SPEC_VERSION),
         "min_osi_version": "",
         "max_osi_version": "",
         "min_protobuf_version": google.protobuf.__version__,
@@ -104,6 +149,11 @@ class MultiTraceWriter(TraceWriter):
         self._channel_metadata: dict[str, dict[str, str]] = {}
         self._schema_cache: dict[str, int] = {}  # schema_name -> schema_id
         self._written_count = 0
+        # The net.asam.osi.trace record is buffered at open() and written at close(),
+        # once the OSI schema version(s) of the written messages are known.
+        self._pending_file_metadata: dict[str, str] | None = None
+        self._osi_version_min: tuple[int, int, int] | None = None
+        self._osi_version_max: tuple[int, int, int] | None = None
 
     def open(  # type: ignore[override]
         self,
@@ -168,7 +218,11 @@ class MultiTraceWriter(TraceWriter):
 
             file_metadata = metadata if metadata is not None else prepare_required_file_metadata()
             _validate_file_metadata(file_metadata)
-            self._mcap_writer.add_metadata(name=OSI_TRACE_METADATA_NAME, data=file_metadata)
+            # Defer writing the net.asam.osi.trace record until close(): min/max_osi_version
+            # are filled from the embedded InterfaceVersion of the messages actually written.
+            self._pending_file_metadata = dict(file_metadata)
+            self._osi_version_min = None
+            self._osi_version_max = None
 
             self._written_count = 0
             return True
@@ -271,11 +325,48 @@ class MultiTraceWriter(TraceWriter):
                 data=data,
                 publish_time=log_time,
             )
+            self._track_osi_version(message)
             self._written_count += 1
             return True
         except (OSError, EncodeError, McapError) as e:
             logger.error("Failed to write message to topic '%s': %s", topic, e)
             return False
+
+    def _track_osi_version(self, message: Message) -> None:
+        """Update the running min/max embedded OSI ``InterfaceVersion`` from a message."""
+        version = _get_message_osi_version(message)
+        if version is None:
+            return
+        if self._osi_version_min is None or version < self._osi_version_min:
+            self._osi_version_min = version
+        if self._osi_version_max is None or version > self._osi_version_max:
+            self._osi_version_max = version
+
+    def _finalize_file_metadata(self) -> None:
+        """Write the buffered net.asam.osi.trace record, filling min/max_osi_version.
+
+        ``min_osi_version`` / ``max_osi_version`` are derived from the embedded
+        ``InterfaceVersion`` of the written messages, falling back to the linked OSI
+        library version when no message carried one. Non-empty user-provided values are
+        respected and never overwritten.
+        """
+        if self._mcap_writer is None or self._pending_file_metadata is None:
+            return
+        metadata = self._pending_file_metadata
+        min_str = "{}.{}.{}".format(*self._osi_version_min) if self._osi_version_min is not None else None
+        max_str = "{}.{}.{}".format(*self._osi_version_max) if self._osi_version_max is not None else None
+        if min_str is None or max_str is None:
+            fallback = _get_osi_library_version()
+            if fallback is not None:
+                min_str = min_str or fallback
+                max_str = max_str or fallback
+        # Only fill fields the caller left empty; respect explicit user values.
+        if not metadata.get("min_osi_version") and min_str:
+            metadata["min_osi_version"] = min_str
+        if not metadata.get("max_osi_version") and max_str:
+            metadata["max_osi_version"] = max_str
+        self._mcap_writer.add_metadata(name=OSI_TRACE_METADATA_NAME, data=metadata)
+        self._pending_file_metadata = None
 
     def add_file_metadata(self, name: str, data: dict[str, str]) -> bool:
         """Add additional file-level metadata.
@@ -296,6 +387,7 @@ class MultiTraceWriter(TraceWriter):
         """Finalize and close the MCAP file."""
         try:
             if self._mcap_writer is not None:
+                self._finalize_file_metadata()
                 self._mcap_writer.finish()
                 logger.info(
                     "Wrote %d messages to channels [%s] in '%s'",
@@ -314,6 +406,9 @@ class MultiTraceWriter(TraceWriter):
             self._active_channels.clear()
             self._channel_metadata.clear()
             self._schema_cache.clear()
+            self._pending_file_metadata = None
+            self._osi_version_min = None
+            self._osi_version_max = None
 
     @property
     def written_count(self) -> int:
