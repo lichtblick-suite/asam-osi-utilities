@@ -26,6 +26,15 @@ NANOSECONDS_PER_SECOND: int = 1_000_000_000
 # Text format constants
 TXTH_READ_BUFFER_RESERVE_SIZE: int = 4096
 
+# OSI trace-file *format* specification version implemented by this library.
+# This is the value of the net.asam.osi.trace ``version`` metadata field: per the OSI
+# spec it is the version of the OSI trace-file format the file conforms to, NOT the OSI
+# schema version of the data (that goes in min/max_osi_version) nor the Python package
+# version. Keep in sync with the C++ ``OSI_TRACE_FILE_SPEC_VERSION`` (CMakeLists.txt).
+# See doc/releasing.md. Any pre-release/build suffix is normalized to major.minor.patch
+# when emitted into metadata.
+OSI_TRACE_FILE_SPEC_VERSION: str = "3.8.0"
+
 # OSI MCAP metadata keys
 OSI_TRACE_METADATA_NAME: str = "net.asam.osi.trace"
 OSI_CHANNEL_OSI_VERSION_KEY: str = "net.asam.osi.trace.channel.osi_version"

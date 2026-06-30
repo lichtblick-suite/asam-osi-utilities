@@ -8,6 +8,7 @@ Covers error paths, edge cases, and MCAPChannel — complementing test_tracefile
 
 from __future__ import annotations
 
+import re
 import struct
 import tempfile
 from pathlib import Path
@@ -36,9 +37,14 @@ from osi_utilities import (
     SingleTraceWriter,
 )
 from osi_utilities.timestamp import timestamp_to_nanoseconds
-from osi_utilities.tracefile._config import MAX_EXPECTED_MESSAGE_SIZE
+from osi_utilities.tracefile._config import MAX_EXPECTED_MESSAGE_SIZE, OSI_TRACE_FILE_SPEC_VERSION
 from osi_utilities.tracefile._mcap_utils import build_file_descriptor_set
-from osi_utilities.tracefile.writers.multi import prepare_required_file_metadata
+from osi_utilities.tracefile.writers.multi import (
+    _get_message_osi_version,
+    _get_osi_library_version,
+    _normalize_osi_version_string,
+    prepare_required_file_metadata,
+)
 
 # ===========================================================================
 # Fixtures
@@ -812,3 +818,137 @@ class TestMultiTypeRoundtrip:
             assert len(results) == 1
             assert results[0].message_type == msg_type
             assert results[0].message.timestamp.seconds == 77
+
+
+# ===========================================================================
+# net.asam.osi.trace metadata versioning (version / min_osi_version / max_osi_version)
+# ===========================================================================
+
+
+def _sv_with_version(major: int, minor: int, patch: int, index: int = 0) -> SensorView:
+    sv = SensorView()
+    sv.timestamp.seconds = index
+    sv.version.version_major = major
+    sv.version.version_minor = minor
+    sv.version.version_patch = patch
+    return sv
+
+
+def _read_osi_trace_metadata(path: Path) -> dict[str, str]:
+    with MultiTraceReader() as reader:
+        reader.open(path)
+        records = [m for m in reader.get_file_metadata() if m["name"] == "net.asam.osi.trace"]
+    assert len(records) == 1
+    return records[0]["data"]
+
+
+class TestOsiTraceMetadataVersions:
+    """`version` is the trace-file FORMAT version; min/max_osi_version come from the data."""
+
+    def test_prepare_metadata_version_is_spec_constant(self):
+        meta = prepare_required_file_metadata()
+        assert meta["version"] == _normalize_osi_version_string(OSI_TRACE_FILE_SPEC_VERSION)
+        assert re.fullmatch(r"\d+\.\d+\.\d+", meta["version"])
+        # min/max are placeholders until finalized at close()
+        assert meta["min_osi_version"] == ""
+        assert meta["max_osi_version"] == ""
+
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            ("3.8.0", "3.8.0"),
+            ("3.8.0-rc1", "3.8.0"),
+            ("3.9.0-alpha.2+build.7", "3.9.0"),
+            ("  3.8.0-rc1 ", "3.8.0"),
+            ("10.20.30", "10.20.30"),
+            ("not-a-version", "not-a-version"),
+        ],
+    )
+    def test_normalize_version_string(self, raw: str, expected: str):
+        assert _normalize_osi_version_string(raw) == expected
+
+    def test_get_message_osi_version(self):
+        assert _get_message_osi_version(_sv_with_version(3, 6, 1)) == (3, 6, 1)
+        # all-zero (set but meaningless) and unset both yield None
+        zero = SensorView()
+        zero.version.version_major = 0  # marks the submessage present but 0.0.0
+        assert _get_message_osi_version(zero) is None
+        assert _get_message_osi_version(_make_ground_truth()) is None
+
+    def test_get_message_osi_version_non_osi_scalar_field_does_not_raise(self):
+        # A non-OSI message whose ``version`` field is a plain scalar (not an
+        # InterfaceVersion submessage) must be ignored gracefully, mirroring the C++
+        # GetMessageOsiVersion guard, rather than crashing with AttributeError.
+        from google.protobuf import descriptor_pb2, descriptor_pool, message_factory
+
+        file_proto = descriptor_pb2.FileDescriptorProto()
+        file_proto.name = "scalar_version_regression.proto"
+        file_proto.syntax = "proto2"
+        file_proto.package = "osiutilstest"
+        msg_proto = file_proto.message_type.add()
+        msg_proto.name = "ScalarVersionMsg"
+        field_proto = msg_proto.field.add()
+        field_proto.name = "version"
+        field_proto.number = 1
+        field_proto.label = descriptor_pb2.FieldDescriptorProto.LABEL_OPTIONAL
+        field_proto.type = descriptor_pb2.FieldDescriptorProto.TYPE_UINT32
+
+        pool = descriptor_pool.DescriptorPool()
+        file_descriptor = pool.Add(file_proto)
+        message_class = message_factory.GetMessageClass(file_descriptor.message_types_by_name["ScalarVersionMsg"])
+        scalar_message = message_class()
+        scalar_message.version = 5
+
+        assert _get_message_osi_version(scalar_message) is None
+
+    def test_min_max_from_written_messages(self, tmp_dir: Path):
+        path = tmp_dir / "versions.mcap"
+        with MultiTraceWriter() as w:
+            w.open(path)
+            w.add_channel("/sv", SensorView)
+            w.add_channel("/gt", GroundTruth)
+            w.write_message(_sv_with_version(3, 5, 2, index=1), "/sv")
+            gt = GroundTruth()
+            gt.timestamp.seconds = 2
+            gt.version.version_major, gt.version.version_minor, gt.version.version_patch = 3, 7, 0
+            w.write_message(gt, "/gt")
+            # message without a version must not influence min/max
+            w.write_message(_make_ground_truth(3), "/gt")
+        data = _read_osi_trace_metadata(path)
+        assert data["version"] == _normalize_osi_version_string(OSI_TRACE_FILE_SPEC_VERSION)
+        assert data["min_osi_version"] == "3.5.2"
+        assert data["max_osi_version"] == "3.7.0"
+
+    def test_unset_version_falls_back_to_library(self, tmp_dir: Path):
+        path = tmp_dir / "fallback.mcap"
+        with MultiTraceWriter() as w:
+            w.open(path)
+            w.write_message(_make_ground_truth(1))  # no embedded version
+        data = _read_osi_trace_metadata(path)
+        library_version = _get_osi_library_version()
+        assert library_version is not None
+        assert data["min_osi_version"] == library_version
+        assert data["max_osi_version"] == library_version
+
+    def test_user_supplied_min_max_preserved(self, tmp_dir: Path):
+        path = tmp_dir / "user_meta.mcap"
+        meta = prepare_required_file_metadata()
+        meta["min_osi_version"] = "3.0.0"
+        meta["max_osi_version"] = "3.0.0"
+        with MultiTraceWriter() as w:
+            w.open(path, meta)
+            w.write_message(_sv_with_version(3, 6, 1, index=1))
+        data = _read_osi_trace_metadata(path)
+        assert data["min_osi_version"] == "3.0.0"
+        assert data["max_osi_version"] == "3.0.0"
+
+    def test_user_supplied_version_is_normalized(self, tmp_dir: Path):
+        path = tmp_dir / "user_version.mcap"
+        meta = prepare_required_file_metadata()
+        # A caller-supplied pre-release version must be normalized to major.minor.patch.
+        meta["version"] = "3.8.0-rc1"
+        with MultiTraceWriter() as w:
+            w.open(path, meta)
+            w.write_message(_sv_with_version(3, 6, 1, index=1))
+        data = _read_osi_trace_metadata(path)
+        assert data["version"] == "3.8.0"
