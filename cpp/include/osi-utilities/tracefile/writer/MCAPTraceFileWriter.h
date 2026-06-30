@@ -8,7 +8,10 @@
 
 #include <google/protobuf/message.h>
 
+#include <array>
+#include <cstdint>
 #include <mcap/mcap.hpp>
+#include <optional>
 
 #include "osi-utilities/tracefile/Writer.h"
 #include "osi-utilities/tracefile/writer/MCAPTraceFileChannel.h"
@@ -132,11 +135,22 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
     mcap::McapWriter* GetMcapWriter() { return &mcap_writer_; }
 
    private:
+    /** @brief Buffers the auto-generated net.asam.osi.trace metadata if none is pending yet */
+    void EnsurePendingMetadata();
+    /** @brief Updates the running min/max embedded OSI InterfaceVersion from a written message */
+    void TrackOsiVersion(const google::protobuf::Message& message);
+    /** @brief Writes the buffered net.asam.osi.trace record, filling min/max_osi_version */
+    void FinalizeFileMetadata();
+
     std::ofstream trace_file_;                         /**< Trace file stream */
     mcap::McapWriter mcap_writer_;                     /**< MCAP writer instance */
     mcap::McapWriterOptions mcap_options_{"protobuf"}; /**< MCAP writer configuration */
     MCAPTraceFileChannel channel_{mcap_writer_};       /**< Delegated channel/schema management */
     bool required_metadata_added_ = false;             /**< Flag to track if required metadata has been added */
+    /** @brief Buffered net.asam.osi.trace record, written at Close() once OSI versions are known */
+    std::optional<mcap::Metadata> pending_osi_metadata_;
+    std::optional<std::array<uint32_t, 3>> osi_version_min_; /**< Min embedded OSI version seen */
+    std::optional<std::array<uint32_t, 3>> osi_version_max_; /**< Max embedded OSI version seen */
 };
 
 /** @brief Alias for MCAPTraceFileWriter matching Python naming convention */

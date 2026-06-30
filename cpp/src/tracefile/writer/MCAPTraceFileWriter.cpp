@@ -5,6 +5,7 @@
 
 #include "osi-utilities/tracefile/writer/MCAPTraceFileWriter.h"
 
+#include "MCAPWriterUtils.h"
 #include "osi_groundtruth.pb.h"
 #include "osi_hostvehicledata.pb.h"
 #include "osi_motionrequest.pb.h"
@@ -49,14 +50,14 @@ auto MCAPTraceFileWriter::WriteMessage(const google::protobuf::Message& message,
         std::cerr << "ERROR: cannot write message, file is not open\n";
         return false;
     }
-    // Auto-add required metadata on first write if not set
-    if (!required_metadata_added_) {
-        if (!AddFileMetadata(PrepareRequiredFileMetadata())) {
-            std::cerr << "ERROR: failed to auto-add required metadata\n";
-            return false;
-        }
+    // The net.asam.osi.trace record is buffered now and written at Close() with
+    // data-accurate min/max_osi_version derived from the messages actually written.
+    EnsurePendingMetadata();
+    if (!channel_.WriteMessage(message, topic)) {
+        return false;
     }
-    return channel_.WriteMessage(message, topic);
+    TrackOsiVersion(message);
+    return true;
 }
 
 template <typename T>
@@ -65,16 +66,17 @@ auto MCAPTraceFileWriter::WriteMessage(const T& top_level_message, const std::st
         std::cerr << "ERROR: cannot write message, file is not open\n";
         return false;
     }
-    if (!required_metadata_added_) {
-        std::cerr << "ERROR: cannot write message, required metadata (according to the OSI specification) was not set in advance\n";
+    EnsurePendingMetadata();
+    if (!channel_.WriteMessage(top_level_message, topic)) {
         return false;
     }
-    return channel_.WriteMessage(top_level_message, topic);
+    TrackOsiVersion(top_level_message);
+    return true;
 }
 
 auto MCAPTraceFileWriter::AddFileMetadata(const mcap::Metadata& metadata) -> bool {
-    // check if the provided metadata contains the required metadata by the OSI specification
-    // to allow writing messages to the trace file
+    // The net.asam.osi.trace record is buffered and written at Close(), so that
+    // min/max_osi_version can be filled from the OSI version of the messages written.
     if (metadata.name == "net.asam.osi.trace") {
         if (required_metadata_added_) {
             std::cerr << "ERROR: cannot add net.asam.osi.trace metadata record, it was already added.\n";
@@ -88,10 +90,12 @@ auto MCAPTraceFileWriter::AddFileMetadata(const mcap::Metadata& metadata) -> boo
                 return false;
             }
         }
+        pending_osi_metadata_ = metadata;
         required_metadata_added_ = true;
+        return true;
     }
 
-    // add metadata to file
+    // All other metadata records are written immediately.
     if (const auto status = mcap_writer_.write(metadata); status.code != mcap::StatusCode::Success) {
         std::cerr << "ERROR: Failed to write metadata with name " << metadata.name << "\n" << status.message;
         return false;
@@ -107,8 +111,64 @@ auto MCAPTraceFileWriter::AddFileMetadata(const std::string& name, const std::un
 }
 
 void MCAPTraceFileWriter::Close() {
+    FinalizeFileMetadata();
     mcap_writer_.close();
     trace_file_.close();
+}
+
+void MCAPTraceFileWriter::EnsurePendingMetadata() {
+    if (!pending_osi_metadata_.has_value()) {
+        pending_osi_metadata_ = PrepareRequiredFileMetadata();
+        required_metadata_added_ = true;
+    }
+}
+
+void MCAPTraceFileWriter::TrackOsiVersion(const google::protobuf::Message& message) {
+    const auto version = mcap_utils::GetMessageOsiVersion(message);
+    if (!version.has_value()) {
+        return;
+    }
+    if (!osi_version_min_.has_value() || *version < *osi_version_min_) {
+        osi_version_min_ = version;
+    }
+    if (!osi_version_max_.has_value() || *version > *osi_version_max_) {
+        osi_version_max_ = version;
+    }
+}
+
+void MCAPTraceFileWriter::FinalizeFileMetadata() {
+    if (!pending_osi_metadata_.has_value()) {
+        return;  // nothing written and no metadata added: no record to finalize
+    }
+    auto& metadata = *pending_osi_metadata_;
+
+    std::string min_version = osi_version_min_.has_value() ? mcap_utils::OsiVersionToString(*osi_version_min_) : std::string{};
+    std::string max_version = osi_version_max_.has_value() ? mcap_utils::OsiVersionToString(*osi_version_max_) : std::string{};
+    // Fall back to the linked OSI library version when no written message carried one.
+    if (min_version.empty() || max_version.empty()) {
+        const auto fallback_version = mcap_utils::GetOsiVersionString();
+        if (min_version.empty()) {
+            min_version = fallback_version;
+        }
+        if (max_version.empty()) {
+            max_version = fallback_version;
+        }
+    }
+    // Only fill fields the caller left empty; respect explicit user-provided values.
+    if (const auto it = metadata.metadata.find("min_osi_version"); it == metadata.metadata.end() || it->second.empty()) {
+        metadata.metadata["min_osi_version"] = min_version;
+    }
+    if (const auto it = metadata.metadata.find("max_osi_version"); it == metadata.metadata.end() || it->second.empty()) {
+        metadata.metadata["max_osi_version"] = max_version;
+    }
+
+    if (const auto status = mcap_writer_.write(metadata); status.code != mcap::StatusCode::Success) {
+        std::cerr << "ERROR: Failed to write net.asam.osi.trace metadata\n" << status.message;
+    }
+    pending_osi_metadata_.reset();
+    osi_version_min_.reset();
+    osi_version_max_.reset();
+    required_metadata_added_ = false;
 }
 
 auto MCAPTraceFileWriter::PrepareRequiredFileMetadata() -> mcap::Metadata { return MCAPTraceFileChannel::PrepareRequiredFileMetadata(); }
