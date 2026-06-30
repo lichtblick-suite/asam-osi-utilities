@@ -233,6 +233,12 @@ class MultiTraceWriter(TraceWriter):
             # Defer writing the net.asam.osi.trace record until close(): min/max_osi_version
             # are filled from the embedded InterfaceVersion of the messages actually written.
             self._pending_file_metadata = dict(file_metadata)
+            # "version" is the OSI trace-file format version and must be major.minor.patch;
+            # normalize any caller-supplied pre-release/build suffix (e.g. "3.8.0-rc1" -> "3.8.0").
+            if self._pending_file_metadata.get("version"):
+                self._pending_file_metadata["version"] = _normalize_osi_version_string(
+                    self._pending_file_metadata["version"]
+                )
             self._osi_version_min = None
             self._osi_version_max = None
 
