@@ -90,8 +90,8 @@ Builds the project on multiple platforms and configurations:
 | Windows Latest   | MSVC        | vcpkg (default preset)            |
 | Windows Latest   | MSVC        | vcpkg-windows-static-md (packaging-oriented coverage) |
 | macOS 15 (x64)   | Apple Clang | vcpkg                             |
-| macOS 14 (arm64) | Apple Clang | vcpkg                             |
-| macOS 14 (arm64) | Apple Clang | vcpkg, shared OSI, `arm64-osx-dynamic` triplet |
+| macOS 15 (arm64) | Apple Clang | vcpkg                             |
+| macOS 15 (arm64) | Apple Clang | vcpkg, shared OSI, `arm64-osx-dynamic` triplet |
 
 Windows preset difference in CI:
 

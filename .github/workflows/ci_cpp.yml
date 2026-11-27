@@ -230,7 +230,7 @@ jobs:
   # ===========================================================================
   macos-vcpkg-shared:
     name: macOS (vcpkg, shared OSI)
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -416,7 +416,7 @@ jobs:
         include:
           - runner: macos-15
             arch: x64
-          - runner: macos-14
+          - runner: macos-15
             arch: arm64
 
     steps:
