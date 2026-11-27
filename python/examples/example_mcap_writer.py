@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import google.protobuf
@@ -20,7 +20,7 @@ from osi_utilities.tracefile import DEFAULT_CHUNK_SIZE, MAX_CHUNK_SIZE, MIN_CHUN
 
 def _generate_osi_filename(description: str, extension: str, frame_count: int = 10) -> str:
     """Generate filename following OSI naming convention."""
-    now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    now = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     try:
         from osi3.osi_version_pb2 import DESCRIPTOR as VERSION_DESCRIPTOR
         from osi3.osi_version_pb2 import InterfaceVersion

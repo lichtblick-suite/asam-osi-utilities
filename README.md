@@ -103,7 +103,7 @@ See [cpp/examples/README.md](cpp/examples/README.md) and [python/examples/README
 
 ### Python
 
-- Python 3.10+
+- Python 3.11+
 - `pip install asam-osi-utilities`
 
 ## Contributing

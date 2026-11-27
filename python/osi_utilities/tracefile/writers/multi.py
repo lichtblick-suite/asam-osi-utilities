@@ -10,7 +10,7 @@ schema registration via FileDescriptorSet, and OSI metadata validation.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import IO
 
@@ -65,7 +65,7 @@ def prepare_required_file_metadata() -> dict[str, str]:
         "max_osi_version": "",
         "min_protobuf_version": google.protobuf.__version__,
         "max_protobuf_version": google.protobuf.__version__,
-        "creation_time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "creation_time": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
 
