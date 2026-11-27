@@ -81,15 +81,15 @@ Builds the project on multiple platforms and configurations:
 
 | Platform         | Compiler    | Method                            |
 | ---------------- | ----------- | --------------------------------- |
-| Ubuntu 22.04     | GCC         | Manual deps                       |
-| Ubuntu 22.04     | Clang       | Manual deps                       |
 | Ubuntu 24.04     | GCC         | Manual deps                       |
 | Ubuntu 24.04     | Clang       | Manual deps                       |
+| Ubuntu 26.04     | GCC         | Manual deps                       |
+| Ubuntu 26.04     | Clang       | Manual deps                       |
 | Ubuntu Latest    | -           | vcpkg                             |
 | Ubuntu Latest    | -           | vcpkg, shared OSI, `x64-linux-dynamic` triplet |
 | Windows Latest   | MSVC        | vcpkg (default preset)            |
 | Windows Latest   | MSVC        | vcpkg-windows-static-md (packaging-oriented coverage) |
-| macOS 15 (x64)   | Apple Clang | vcpkg                             |
+| macOS 15 Intel (x64) | Apple Clang | vcpkg                         |
 | macOS 15 (arm64) | Apple Clang | vcpkg                             |
 | macOS 15 (arm64) | Apple Clang | vcpkg, shared OSI, `arm64-osx-dynamic` triplet |
 
