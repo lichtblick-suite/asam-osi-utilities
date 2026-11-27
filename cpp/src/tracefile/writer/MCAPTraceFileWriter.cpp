@@ -151,8 +151,8 @@ void MCAPTraceFileWriter::FinalizeFileMetadata() {
 
 auto MCAPTraceFileWriter::PrepareRequiredFileMetadata() -> mcap::Metadata { return MCAPTraceFileChannel::PrepareRequiredFileMetadata(); }
 
-auto MCAPTraceFileWriter::AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor, std::unordered_map<std::string, std::string> channel_metadata)
-    -> uint16_t {
+auto MCAPTraceFileWriter::AddChannel(const std::string& topic, const google::protobuf::Descriptor* descriptor,
+                                     std::unordered_map<std::string, std::string> channel_metadata) -> uint16_t {
     return channel_.AddChannel(topic, descriptor, std::move(channel_metadata));
 }
 
