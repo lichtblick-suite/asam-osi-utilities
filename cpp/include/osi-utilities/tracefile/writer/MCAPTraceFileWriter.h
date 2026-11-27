@@ -131,6 +131,38 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
      */
     mcap::McapWriter* GetMcapWriter() { return &mcap_writer_; }
 
+    /**
+     * @brief Adds a non-OSI raw channel to the MCAP file
+     *
+     * Registers a channel with a custom schema for non-OSI data (e.g. ROS messages,
+     * JSON telemetry). The channel is tracked alongside OSI channels.
+     *
+     * @param topic Name of the channel/topic
+     * @param schema_name Name for the schema (e.g. "sensor_msgs/PointCloud2")
+     * @param schema_encoding Schema encoding (e.g. "ros1msg", "jsonschema")
+     * @param schema_data Serialized schema definition (may be empty)
+     * @param message_encoding Message encoding (e.g. "ros1", "json")
+     * @param channel_metadata Optional metadata for the channel
+     * @return Channel ID for the newly created channel
+     */
+    uint16_t AddRawChannel(const std::string& topic, const std::string& schema_name,
+                           const std::string& schema_encoding, const std::string& schema_data,
+                           const std::string& message_encoding,
+                           std::unordered_map<std::string, std::string> channel_metadata = {});
+
+    /**
+     * @brief Writes raw bytes to a registered channel (OSI or non-OSI)
+     *
+     * @param topic The channel topic (must have been registered)
+     * @param data Pointer to the raw message bytes
+     * @param data_size Size of the data in bytes
+     * @param log_time Message timestamp in nanoseconds
+     * @param publish_time Optional publish timestamp (defaults to log_time if 0)
+     * @return true if successful, false otherwise
+     */
+    bool WriteRawMessage(const std::string& topic, const std::byte* data, size_t data_size,
+                         mcap::Timestamp log_time, mcap::Timestamp publish_time = 0);
+
    private:
     std::ofstream trace_file_;                         /**< Trace file stream */
     mcap::McapWriter mcap_writer_;                     /**< MCAP writer instance */

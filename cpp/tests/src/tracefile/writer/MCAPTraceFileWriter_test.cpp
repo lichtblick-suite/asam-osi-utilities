@@ -342,3 +342,59 @@ TEST_F(MCAPTraceFileWriterTest, AddChannelAutoProtobufVersion) {
 TEST(MultiTraceFileWriterAliasTest, AliasResolvesToCorrectType) {
     static_assert(std::is_same_v<osi3::MultiTraceFileWriter, osi3::MCAPTraceFileWriter>, "MultiTraceFileWriter must alias MCAPTraceFileWriter");
 }
+
+TEST_F(MCAPTraceFileWriterTest, AddRawChannel) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+
+    const uint16_t channel_id = writer_.AddRawChannel(
+        "raw/lidar", "sensor_msgs/PointCloud2", "ros1msg", "", "ros1");
+    EXPECT_GT(channel_id, 0);
+}
+
+TEST_F(MCAPTraceFileWriterTest, WriteRawMessage) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+
+    writer_.AddRawChannel("raw/data", "RawType", "raw", "", "raw");
+
+    const std::string payload = "raw_test_payload";
+    const auto* data = reinterpret_cast<const std::byte*>(payload.data());
+    EXPECT_TRUE(writer_.WriteRawMessage("raw/data", data, payload.size(), 1'000'000'000));
+
+    writer_.Close();
+    EXPECT_TRUE(std::filesystem::exists(test_file_));
+    EXPECT_GT(std::filesystem::file_size(test_file_), 0);
+}
+
+TEST_F(MCAPTraceFileWriterTest, WriteRawMessageUnregisteredTopic) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+
+    const std::string payload = "data";
+    const auto* data = reinterpret_cast<const std::byte*>(payload.data());
+    EXPECT_FALSE(writer_.WriteRawMessage("nonexistent", data, payload.size(), 1));
+}
+
+TEST_F(MCAPTraceFileWriterTest, MixedOSIAndRawChannels) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+    AddRequiredMetadata();
+
+    writer_.AddChannel("osi/gt", osi3::GroundTruth::descriptor());
+    writer_.AddRawChannel("raw/data", "CustomType", "raw", "", "raw");
+
+    osi3::GroundTruth gt;
+    gt.mutable_timestamp()->set_seconds(1);
+    EXPECT_TRUE(writer_.WriteMessage(gt, "osi/gt"));
+
+    const std::string payload = "raw_payload";
+    const auto* data = reinterpret_cast<const std::byte*>(payload.data());
+    EXPECT_TRUE(writer_.WriteRawMessage("raw/data", data, payload.size(), 1'000'000'000));
+
+    writer_.Close();
+
+    // Verify both channels exist
+    std::ifstream file(test_file_, std::ios::binary);
+    mcap::McapReader mcap_reader;
+    ASSERT_TRUE(mcap_reader.open(file).ok());
+    ASSERT_TRUE(mcap_reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan).ok());
+    EXPECT_EQ(mcap_reader.channels().size(), 2);
+    mcap_reader.close();
+}
