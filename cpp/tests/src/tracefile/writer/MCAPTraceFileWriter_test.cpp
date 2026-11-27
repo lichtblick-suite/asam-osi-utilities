@@ -163,11 +163,10 @@ TEST_F(MCAPTraceFileWriterTest, PrepareRequiredFileMetadata) {
     // version is the normalized OSI trace-file FORMAT version (major.minor.patch)
     EXPECT_EQ(metadata.metadata.at("version"), osi3::mcap_utils::NormalizeOsiVersionString(OSI_TRACE_FILE_SPEC_VERSION));
     EXPECT_TRUE(std::regex_match(metadata.metadata.at("version"), std::regex(R"(\d+\.\d+\.\d+)")));
-    // min/max_osi_version are placeholders here; the writer fills them at Close()
-    ASSERT_NE(metadata.metadata.find("min_osi_version"), metadata.metadata.end());
-    ASSERT_NE(metadata.metadata.find("max_osi_version"), metadata.metadata.end());
-    EXPECT_TRUE(metadata.metadata.at("min_osi_version").empty());
-    EXPECT_TRUE(metadata.metadata.at("max_osi_version").empty());
+    // min/max_osi_version default to the linked OSI library version, so the record is valid standalone
+    const auto library_version = osi3::mcap_utils::GetOsiVersionString();
+    EXPECT_EQ(metadata.metadata.at("min_osi_version"), library_version);
+    EXPECT_EQ(metadata.metadata.at("max_osi_version"), library_version);
     EXPECT_NE(metadata.metadata.find("min_protobuf_version"), metadata.metadata.end());
     EXPECT_NE(metadata.metadata.find("max_protobuf_version"), metadata.metadata.end());
 }
@@ -394,31 +393,42 @@ TEST_F(MCAPTraceFileWriterTest, MetadataVersionIsNormalizedFormatVersion) {
     EXPECT_TRUE(std::regex_match(metadata.at("version"), std::regex(R"(\d+\.\d+\.\d+)")));
 }
 
-TEST_F(MCAPTraceFileWriterTest, MinMaxOsiVersionFromWrittenMessages) {
+TEST_F(MCAPTraceFileWriterTest, MinMaxOsiVersionSpansChannelLabels) {
     ASSERT_TRUE(writer_.Open(test_file_));
-    writer_.AddChannel("gt", osi3::GroundTruth::descriptor());
+    writer_.AddChannel("gt_old", osi3::GroundTruth::descriptor(), {{"net.asam.osi.trace.channel.osi_version", "3.5.2"}});
+    writer_.AddChannel("gt_new", osi3::GroundTruth::descriptor(), {{"net.asam.osi.trace.channel.osi_version", "3.7.0"}});
 
-    osi3::GroundTruth low;
-    low.mutable_timestamp()->set_seconds(1);
-    SetOsiVersion(low, 3, 5, 2);
-    ASSERT_TRUE(writer_.WriteMessage(low, "gt"));
-
-    osi3::GroundTruth high;
-    high.mutable_timestamp()->set_seconds(2);
-    SetOsiVersion(high, 3, 7, 0);
-    ASSERT_TRUE(writer_.WriteMessage(high, "gt"));
-
-    // A message without a version must not influence min/max.
-    osi3::GroundTruth no_version;
-    no_version.mutable_timestamp()->set_seconds(3);
-    ASSERT_TRUE(writer_.WriteMessage(no_version, "gt"));
-
+    osi3::GroundTruth ground_truth;
+    ground_truth.mutable_timestamp()->set_seconds(1);
+    ASSERT_TRUE(writer_.WriteMessage(ground_truth, "gt_old"));
+    ASSERT_TRUE(writer_.WriteMessage(ground_truth, "gt_new"));
     writer_.Close();
 
     const auto metadata = ReadOsiTraceMetadata(test_file_);
     ASSERT_FALSE(metadata.empty());
     EXPECT_EQ(metadata.at("min_osi_version"), "3.5.2");
     EXPECT_EQ(metadata.at("max_osi_version"), "3.7.0");
+}
+
+TEST_F(MCAPTraceFileWriterTest, AutoRegisteredChannelLabelledFromMessageVersion) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+    osi3::GroundTruth ground_truth;
+    ground_truth.mutable_timestamp()->set_seconds(1);
+    SetOsiVersion(ground_truth, 3, 6, 1);
+    ASSERT_TRUE(writer_.WriteMessage(static_cast<const google::protobuf::Message&>(ground_truth), "gt"));
+    writer_.Close();
+
+    const auto metadata = ReadOsiTraceMetadata(test_file_);
+    ASSERT_FALSE(metadata.empty());
+    EXPECT_EQ(metadata.at("min_osi_version"), "3.6.1");
+    EXPECT_EQ(metadata.at("max_osi_version"), "3.6.1");
+
+    mcap::McapReader mcap_reader;
+    ASSERT_TRUE(mcap_reader.open(test_file_.string()).ok());
+    ASSERT_TRUE(mcap_reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan).ok());
+    ASSERT_EQ(mcap_reader.channels().size(), 1U);
+    EXPECT_EQ(mcap_reader.channels().begin()->second->metadata.at("net.asam.osi.trace.channel.osi_version"), "3.6.1");
+    mcap_reader.close();
 }
 
 TEST_F(MCAPTraceFileWriterTest, MinMaxOsiVersionFallsBackToLibraryVersion) {
@@ -436,24 +446,63 @@ TEST_F(MCAPTraceFileWriterTest, MinMaxOsiVersionFallsBackToLibraryVersion) {
     EXPECT_EQ(metadata.at("max_osi_version"), library_version);
 }
 
-TEST_F(MCAPTraceFileWriterTest, UserSuppliedMinMaxOsiVersionPreserved) {
+TEST_F(MCAPTraceFileWriterTest, ChannelLabelsOverrideUserSuppliedMinMaxOsiVersion) {
     ASSERT_TRUE(writer_.Open(test_file_));
     auto metadata = osi3::MCAPTraceFileWriter::PrepareRequiredFileMetadata();
     metadata.metadata["min_osi_version"] = "3.0.0";
     metadata.metadata["max_osi_version"] = "3.0.0";
     ASSERT_TRUE(writer_.AddFileMetadata(metadata));
 
-    writer_.AddChannel("gt", osi3::GroundTruth::descriptor());
+    // The file range must cover the channel's osi_version, so it wins over the caller's range.
+    writer_.AddChannel("gt", osi3::GroundTruth::descriptor(), {{"net.asam.osi.trace.channel.osi_version", "3.6.1"}});
     osi3::GroundTruth ground_truth;
     ground_truth.mutable_timestamp()->set_seconds(1);
-    SetOsiVersion(ground_truth, 3, 6, 1);
     ASSERT_TRUE(writer_.WriteMessage(ground_truth, "gt"));
     writer_.Close();
 
     const auto written = ReadOsiTraceMetadata(test_file_);
     ASSERT_FALSE(written.empty());
-    EXPECT_EQ(written.at("min_osi_version"), "3.0.0");
-    EXPECT_EQ(written.at("max_osi_version"), "3.0.0");
+    EXPECT_EQ(written.at("min_osi_version"), "3.6.1");
+    EXPECT_EQ(written.at("max_osi_version"), "3.6.1");
+}
+
+TEST_F(MCAPTraceFileWriterTest, MessageVersionMismatchWarnsOncePerChannel) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+    writer_.AddChannel("gt", osi3::GroundTruth::descriptor(), {{"net.asam.osi.trace.channel.osi_version", "3.5.0"}});
+    osi3::GroundTruth ground_truth;
+    ground_truth.mutable_timestamp()->set_seconds(1);
+    SetOsiVersion(ground_truth, 3, 6, 0);
+
+    testing::internal::CaptureStderr();
+    EXPECT_TRUE(writer_.WriteMessage(ground_truth, "gt"));
+    EXPECT_TRUE(writer_.WriteMessage(ground_truth, "gt"));
+    const auto output = testing::internal::GetCapturedStderr();
+    writer_.Close();
+
+    const auto first = output.find("OSI version 3.6.0");
+    ASSERT_NE(first, std::string::npos) << output;
+    EXPECT_EQ(output.find("OSI version 3.6.0", first + 1), std::string::npos) << output;
+}
+
+TEST_F(MCAPTraceFileWriterTest, ReopenedWriterForgetsPreviousChannels) {
+    ASSERT_TRUE(writer_.Open(test_file_));
+    writer_.AddChannel("gt", osi3::GroundTruth::descriptor(), {{"net.asam.osi.trace.channel.osi_version", "3.5.0"}});
+    osi3::GroundTruth ground_truth;
+    ground_truth.mutable_timestamp()->set_seconds(1);
+    ASSERT_TRUE(writer_.WriteMessage(ground_truth, "gt"));
+    writer_.Close();
+
+    const auto second_file = test_file_.parent_path() / ("second_" + test_file_.filename().string());
+    ASSERT_TRUE(writer_.Open(second_file));
+    writer_.AddChannel("gt", osi3::GroundTruth::descriptor(), {{"net.asam.osi.trace.channel.osi_version", "3.7.0"}});
+    ASSERT_TRUE(writer_.WriteMessage(ground_truth, "gt"));
+    writer_.Close();
+
+    const auto metadata = ReadOsiTraceMetadata(second_file);
+    std::filesystem::remove(second_file);
+    ASSERT_FALSE(metadata.empty());
+    EXPECT_EQ(metadata.at("min_osi_version"), "3.7.0");
+    EXPECT_EQ(metadata.at("max_osi_version"), "3.7.0");
 }
 
 TEST_F(MCAPTraceFileWriterTest, NormalizeOsiVersionStripsPreReleaseSuffix) {
@@ -463,6 +512,7 @@ TEST_F(MCAPTraceFileWriterTest, NormalizeOsiVersionStripsPreReleaseSuffix) {
     EXPECT_EQ(NormalizeOsiVersionString("3.9.0-alpha.2+build.7"), "3.9.0");
     EXPECT_EQ(NormalizeOsiVersionString("10.20.30"), "10.20.30");
     EXPECT_EQ(NormalizeOsiVersionString("not-a-version"), "not-a-version");
+    EXPECT_EQ(NormalizeOsiVersionString("99999999999999999999.0.0"), "99999999999999999999.0.0");
 }
 
 TEST_F(MCAPTraceFileWriterTest, ExplicitMetadataVersionIsNormalized) {

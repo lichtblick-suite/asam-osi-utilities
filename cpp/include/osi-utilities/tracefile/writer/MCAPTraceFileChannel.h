@@ -8,7 +8,13 @@
 
 #include <google/protobuf/message.h>
 
+#include <array>
+#include <cstdint>
+#include <map>
 #include <mcap/mcap.hpp>
+#include <optional>
+#include <string>
+#include <unordered_map>
 
 namespace osi3 {
 
@@ -24,7 +30,12 @@ namespace osi3 {
  * Unlike MCAPTraceFileWriter which owns the file and MCAP writer, this class
  * operates on a caller-provided McapWriter reference. The caller is responsible
  * for the writer's lifecycle (open/close) and for writing the required OSI file
- * metadata (via PrepareRequiredFileMetadata()) before writing any messages.
+ * metadata (via PrepareRequiredFileMetadata()).
+ *
+ * Every OSI channel carries an OSI version label (``net.asam.osi.trace.channel.osi_version``):
+ * the caller-provided value, else the message's ``InterfaceVersion`` for channels
+ * auto-registered by WriteMessage(), else the linked OSI library version. Use
+ * FillOsiVersionRange() to make the file's ``min/max_osi_version`` span exactly these labels.
  *
  * @note Thread Safety: Not thread-safe. External synchronization required for concurrent access.
  * @note Lifetime: The provided McapWriter must outlive this object.
@@ -35,12 +46,14 @@ namespace osi3 {
  * mcap::McapWriter writer;
  * writer.open(file, mcap::McapWriterOptions("protobuf"));
  *
- * // Add OSI file metadata (required by OSI spec)
- * writer.write(osi3::MCAPTraceFileChannel::PrepareRequiredFileMetadata());
- *
- * // Create channel helper
+ * // Create channel helper and register the OSI channels
  * osi3::MCAPTraceFileChannel osi_channels(writer);
  * osi_channels.AddChannel("ground_truth", osi3::GroundTruth::descriptor());
+ *
+ * // Add OSI file metadata (required by OSI spec), with the OSI version range of the channels
+ * auto metadata = osi3::MCAPTraceFileChannel::PrepareRequiredFileMetadata();
+ * osi_channels.FillOsiVersionRange(metadata);
+ * writer.write(metadata);
  *
  * // Write OSI messages
  * osi3::GroundTruth gt;
@@ -75,7 +88,10 @@ class MCAPTraceFileChannel {
      *
      * Uses protobuf reflection to serialize the message and extract its timestamp.
      * If the topic has not been registered via AddChannel(), it is auto-registered
-     * using the message's protobuf descriptor.
+     * using the message's protobuf descriptor, labelled with the message's embedded
+     * OSI ``InterfaceVersion`` (or the linked OSI library version if it carries none).
+     * A warning is logged (once per channel) if a message's ``InterfaceVersion``
+     * differs from its channel's OSI version label.
      *
      * @param message The protobuf message to write
      * @param topic Topic name (must not be empty)
@@ -99,7 +115,9 @@ class MCAPTraceFileChannel {
      * @brief Adds a new OSI channel to the MCAP file
      *
      * Registers the schema (if not already registered) and creates a channel
-     * with OSI-compliant metadata (osi_version, protobuf_version).
+     * with OSI-compliant metadata (osi_version, protobuf_version). Pass
+     * ``net.asam.osi.trace.channel.osi_version`` in @p channel_metadata to declare the OSI
+     * version of the channel's data; it defaults to the linked OSI library version.
      *
      * @param topic Name of the channel/topic
      * @param descriptor Protobuf descriptor for the OSI message type
@@ -112,12 +130,29 @@ class MCAPTraceFileChannel {
     /**
      * @brief Prepares the required (by OSI spec) metadata for the MCAP trace file
      *
-     * Call this and write the result to your McapWriter before writing OSI messages.
+     * Write the result to your McapWriter. ``min/max_osi_version`` default to the linked OSI
+     * library version; call FillOsiVersionRange() to narrow them to the registered channels.
      * This is the same metadata that MCAPTraceFileWriter adds automatically.
      *
      * @return mcap::Metadata Object containing the necessary metadata for OSI compliance
      */
     static mcap::Metadata PrepareRequiredFileMetadata();
+
+    /**
+     * @brief Sets ``min_osi_version``/``max_osi_version`` to the range of the registered channels' OSI versions
+     *
+     * Leaves @p metadata unchanged if no channel has a parseable OSI version label.
+     *
+     * @param metadata File metadata (typically from PrepareRequiredFileMetadata()) to update in-place
+     */
+    void FillOsiVersionRange(mcap::Metadata& metadata) const;
+
+    /**
+     * @brief Forgets all registered schemas and channels
+     *
+     * Call when the attached McapWriter is closed and reopened for a new file.
+     */
+    void Reset();
 
     /**
      * @brief Helper function that returns the current time as a formatted string
@@ -126,11 +161,24 @@ class MCAPTraceFileChannel {
     static std::string GetCurrentTimeAsString();
 
    private:
-    mcap::McapWriter& mcap_writer_;                           /**< Non-owning reference to external writer */
-    std::unordered_map<std::string, mcap::Schema> schemas_;   /**< Registered schemas (keyed by descriptor full name) */
-    std::map<std::string, uint16_t> topic_to_channel_id_;     /**< Topic to channel ID mapping */
-    std::map<std::string, std::string> topic_to_schema_name_; /**< Topic to schema name mapping (for duplicate detection) */
-    std::string serialize_buffer_;                            /**< Reusable serialization buffer */
+    /** @brief Per-topic channel state */
+    struct ChannelInfo {
+        uint16_t id = 0;                                    /**< MCAP channel ID */
+        std::string schema_name;                            /**< Schema name (for duplicate detection) */
+        std::optional<std::array<uint32_t, 3>> osi_version; /**< Parsed channel osi_version label */
+        bool osi_version_mismatch_reported = false;         /**< Whether a label/message mismatch was already logged */
+    };
+
+    /** @brief Logs (once per channel) if the message's InterfaceVersion differs from the channel label */
+    void CheckMessageOsiVersion(ChannelInfo& channel, const google::protobuf::Message& message, const std::string& topic);
+
+    /** @brief Serializes and writes a message with the given log time to an already registered channel */
+    bool WriteToChannel(ChannelInfo& channel, const google::protobuf::Message& message, const std::string& topic, uint64_t log_time);
+
+    mcap::McapWriter& mcap_writer_;                         /**< Non-owning reference to external writer */
+    std::unordered_map<std::string, mcap::Schema> schemas_; /**< Registered schemas (keyed by descriptor full name) */
+    std::map<std::string, ChannelInfo> channels_;           /**< Registered channels, keyed by topic */
+    std::string serialize_buffer_;                          /**< Reusable serialization buffer */
 };
 
 }  // namespace osi3

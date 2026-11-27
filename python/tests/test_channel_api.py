@@ -326,6 +326,22 @@ class TestOpenChannelWriterMCAP:
             assert resolved.topic == "my_topic"
             assert resolved.message_type == MessageType.GROUND_TRUTH
 
+    def test_unversioned_message_gets_library_channel_osi_version(self, tmp_dir: Path):
+        from mcap.reader import make_reader
+
+        from osi_utilities.tracefile._osi_version import get_osi_library_version
+
+        path = tmp_dir / "output.mcap"
+        spec = ChannelSpecification(path=path, topic="gt", message_type=MessageType.GROUND_TRUTH)
+        with open_channel_writer(spec) as ch:
+            assert ch.write_message(_make_ground_truth(0))  # carries no InterfaceVersion
+
+        with open(path, "rb") as f:
+            summary = make_reader(f).get_summary()
+        assert summary is not None
+        (channel,) = summary.channels.values()
+        assert channel.metadata["net.asam.osi.trace.channel.osi_version"] == get_osi_library_version()
+
 
 class TestOpenChannelWriterErrors:
     def test_unsupported_extension(self, tmp_dir: Path):

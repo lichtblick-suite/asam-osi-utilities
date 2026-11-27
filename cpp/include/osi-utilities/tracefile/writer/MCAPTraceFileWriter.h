@@ -52,8 +52,9 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
      * @brief Writes a protobuf message to the file (type-erased, virtual)
      *
      * If the topic has not been registered via AddChannel(), it is auto-registered
-     * using the message's protobuf descriptor. Required file metadata is also
-     * auto-added on first write if not previously set via AddFileMetadata().
+     * using the message's protobuf descriptor and labelled with the message's embedded
+     * OSI ``InterfaceVersion``. Required file metadata is also auto-added on first
+     * successful write if not previously set via AddFileMetadata().
      *
      * @param message The protobuf message to write
      * @param topic Topic/channel name for the message
@@ -73,6 +74,12 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
 
     /**
      * @brief Adds metadata for the trace file
+     *
+     * A ``net.asam.osi.trace`` record is buffered and written at Close(): its
+     * ``min/max_osi_version`` are then set to the range of the channels' OSI versions
+     * (``net.asam.osi.trace.channel.osi_version``) so the file range always covers every channel.
+     * All other records are written immediately.
+     *
      * @param metadata MCAP metadata object
      * @return true if successful, false otherwise
      */
@@ -137,9 +144,7 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
    private:
     /** @brief Buffers the auto-generated net.asam.osi.trace metadata if none is pending yet */
     void EnsurePendingMetadata();
-    /** @brief Updates the running min/max embedded OSI InterfaceVersion from a written message */
-    void TrackOsiVersion(const google::protobuf::Message& message);
-    /** @brief Writes the buffered net.asam.osi.trace record, filling min/max_osi_version */
+    /** @brief Writes the buffered net.asam.osi.trace record, filling min/max_osi_version from the channels */
     void FinalizeFileMetadata();
 
     std::ofstream trace_file_;                         /**< Trace file stream */
@@ -149,8 +154,6 @@ class MCAPTraceFileWriter final : public osi3::TraceFileWriter {
     bool required_metadata_added_ = false;             /**< Flag to track if required metadata has been added */
     /** @brief Buffered net.asam.osi.trace record, written at Close() once OSI versions are known */
     std::optional<mcap::Metadata> pending_osi_metadata_;
-    std::optional<std::array<uint32_t, 3>> osi_version_min_; /**< Min embedded OSI version seen */
-    std::optional<std::array<uint32_t, 3>> osi_version_max_; /**< Max embedded OSI version seen */
 };
 
 /** @brief Alias for MCAPTraceFileWriter matching Python naming convention */

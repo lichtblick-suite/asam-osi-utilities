@@ -198,13 +198,6 @@ def part2_mixed_channel_writer() -> None:
     mcap_writer = McapRawWriter(file)
     mcap_writer.start(library="osi-utilities-python")
 
-    # Best practice: write OSI file metadata before any messages.
-    # When using an external writer you must do this yourself — the
-    # MCAPChannel helper does NOT write metadata automatically.
-    osi_metadata = prepare_required_file_metadata()
-    osi_metadata["description"] = "Mixed-channel example (Part 2) — OSI + custom topics."
-    mcap_writer.add_metadata(name="net.asam.osi.trace", data=osi_metadata)
-
     # --- register a non-OSI channel directly on the writer ------------------
     # Best practice: use a descriptive prefix (e.g. "vehicle/") for non-OSI
     # topics so they are easily distinguishable from "osi/" topics in tooling.
@@ -230,6 +223,14 @@ def part2_mixed_channel_writer() -> None:
     )
     print("  Registered OSI channel: osi/ground_truth (protobuf)")
 
+    # Best practice: write OSI file metadata once the OSI channels are registered.
+    # When using an external writer you must do this yourself — the
+    # MCAPChannel helper does NOT write metadata automatically.
+    # fill_osi_version_range() sets min/max_osi_version to span the channels' OSI versions.
+    osi_metadata = prepare_required_file_metadata()
+    osi_channels.fill_osi_version_range(osi_metadata)
+    osi_metadata["description"] = "Mixed-channel example (Part 2) — OSI + custom topics."
+    mcap_writer.add_metadata(name="net.asam.osi.trace", data=osi_metadata)
     # --- prepare test data --------------------------------------------------
     ground_truth = GroundTruth()
     populate_ground_truth(ground_truth)

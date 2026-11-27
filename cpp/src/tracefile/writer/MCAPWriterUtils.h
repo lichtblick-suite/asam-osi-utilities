@@ -81,6 +81,37 @@ inline auto GetOsiVersionString() -> std::string {
  */
 inline auto GetProtobufVersionString() -> std::string { return google::protobuf::internal::VersionString(GOOGLE_PROTOBUF_VERSION); }
 
+/** @brief OSI version as ``{major, minor, patch}``; compares numerically (``3.10.0 > 3.9.0``). */
+using OsiVersion = std::array<uint32_t, 3>;
+
+/**
+ * @brief Parses the numeric ``major.minor.patch`` core of a version string.
+ *
+ * Any pre-release/build suffix is ignored (``"3.8.0-rc1"`` -> ``{3, 8, 0}``).
+ *
+ * @param version The version string to parse
+ * @return The parsed version, or ``std::nullopt`` if it has no numeric ``major.minor.patch`` core
+ */
+inline auto ParseOsiVersion(const std::string& version) -> std::optional<OsiVersion> {
+    static const std::regex kVersionCoreRegex(R"(^\s*(\d+)\.(\d+)\.(\d+))");
+    std::smatch match;
+    if (!std::regex_search(version, match, kVersionCoreRegex)) {
+        return std::nullopt;
+    }
+    try {
+        return OsiVersion{static_cast<uint32_t>(std::stoul(match[1].str())), static_cast<uint32_t>(std::stoul(match[2].str())), static_cast<uint32_t>(std::stoul(match[3].str()))};
+    } catch (const std::out_of_range&) {
+        return std::nullopt;
+    }
+}
+
+/**
+ * @brief Formats an OSI version triple as a ``major.minor.patch`` string.
+ */
+inline auto OsiVersionToString(const OsiVersion& version) -> std::string {
+    return std::to_string(version[0]) + "." + std::to_string(version[1]) + "." + std::to_string(version[2]);
+}
+
 /**
  * @brief Normalizes a version string to a strict ``major.minor.patch`` core.
  *
@@ -93,19 +124,8 @@ inline auto GetProtobufVersionString() -> std::string { return google::protobuf:
  * @return The ``major.minor.patch`` core, or the original string if it has no numeric core
  */
 inline auto NormalizeOsiVersionString(const std::string& version) -> std::string {
-    static const std::regex kVersionCoreRegex(R"(^\s*(\d+)\.(\d+)\.(\d+))");
-    std::smatch match;
-    if (std::regex_search(version, match, kVersionCoreRegex)) {
-        return match[1].str() + "." + match[2].str() + "." + match[3].str();
-    }
-    return version;
-}
-
-/**
- * @brief Formats an OSI version triple as a ``major.minor.patch`` string.
- */
-inline auto OsiVersionToString(const std::array<uint32_t, 3>& version) -> std::string {
-    return std::to_string(version[0]) + "." + std::to_string(version[1]) + "." + std::to_string(version[2]);
+    const auto parsed = ParseOsiVersion(version);
+    return parsed.has_value() ? OsiVersionToString(*parsed) : version;
 }
 
 /**
@@ -119,7 +139,7 @@ inline auto OsiVersionToString(const std::array<uint32_t, 3>& version) -> std::s
  * @param message The top-level OSI protobuf message
  * @return ``{major, minor, patch}`` if a usable version is present, otherwise ``std::nullopt``
  */
-inline auto GetMessageOsiVersion(const google::protobuf::Message& message) -> std::optional<std::array<uint32_t, 3>> {
+inline auto GetMessageOsiVersion(const google::protobuf::Message& message) -> std::optional<OsiVersion> {
     const auto* descriptor = message.GetDescriptor();
     const auto* version_field = descriptor->FindFieldByName("version");
     if (version_field == nullptr || version_field->is_repeated() || version_field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
@@ -139,7 +159,7 @@ inline auto GetMessageOsiVersion(const google::protobuf::Message& message) -> st
         }
         return version_reflection->GetUInt32(version_message, component_field);
     };
-    const std::array<uint32_t, 3> triple = {read_component("version_major"), read_component("version_minor"), read_component("version_patch")};
+    const OsiVersion triple = {read_component("version_major"), read_component("version_minor"), read_component("version_patch")};
     if (triple[0] == 0U && triple[1] == 0U && triple[2] == 0U) {
         return std::nullopt;
     }
@@ -184,19 +204,22 @@ inline auto PrepareRequiredFileMetadata(const std::string& trace_file_spec_versi
     mcap::Metadata metadata;
     metadata.name = "net.asam.osi.trace";
 
-    // "version" is the OSI trace-file *format* version (normalized to major.minor.patch).
-    // min/max_osi_version are intentionally left empty here: MCAPTraceFileWriter fills them
-    // at Close() from the embedded InterfaceVersion of the messages actually written
-    // (falling back to the linked OSI library version). Callers using an external writer
-    // may populate them themselves.
+    // "version" is the OSI trace-file *format* version. min/max_osi_version default to the
+    // linked OSI library version, which is also the default channel osi_version; once the
+    // channels are known, MCAPTraceFileChannel::FillOsiVersionRange() narrows them to the
+    // channels' actual OSI versions.
+    const auto osi_version_string = GetOsiVersionString();
     metadata.metadata["version"] = NormalizeOsiVersionString(trace_file_spec_version);
-    metadata.metadata["min_osi_version"] = "";
-    metadata.metadata["max_osi_version"] = "";
+    metadata.metadata["min_osi_version"] = osi_version_string;
+    metadata.metadata["max_osi_version"] = osi_version_string;
     metadata.metadata["min_protobuf_version"] = GetProtobufVersionString();
     metadata.metadata["max_protobuf_version"] = GetProtobufVersionString();
 
     return metadata;
 }
+
+/** @brief Channel metadata key holding the OSI version of the channel's data */
+inline constexpr const char* kChannelOsiVersionKey = "net.asam.osi.trace.channel.osi_version";
 
 /**
  * @brief Adds OSI-required metadata to channel metadata map
@@ -207,8 +230,8 @@ inline auto PrepareRequiredFileMetadata(const std::string& trace_file_spec_versi
  * @param channel_metadata The metadata map to populate (modified in place)
  */
 inline void AddOsiChannelMetadata(std::unordered_map<std::string, std::string>& channel_metadata) {
-    if (channel_metadata.find("net.asam.osi.trace.channel.osi_version") == channel_metadata.end()) {
-        channel_metadata["net.asam.osi.trace.channel.osi_version"] = GetOsiVersionString();
+    if (channel_metadata.find(kChannelOsiVersionKey) == channel_metadata.end()) {
+        channel_metadata[kChannelOsiVersionKey] = GetOsiVersionString();
     }
     if (channel_metadata.find("net.asam.osi.trace.channel.protobuf_version") == channel_metadata.end()) {
         channel_metadata["net.asam.osi.trace.channel.protobuf_version"] = GetProtobufVersionString();

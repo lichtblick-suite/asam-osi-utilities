@@ -842,16 +842,25 @@ def _read_osi_trace_metadata(path: Path) -> dict[str, str]:
     return records[0]["data"]
 
 
+def _read_channel_osi_versions(path: Path) -> dict[str, str]:
+    from mcap.reader import make_reader
+
+    with open(path, "rb") as f:
+        summary = make_reader(f).get_summary()
+    assert summary is not None
+    return {ch.topic: ch.metadata.get("net.asam.osi.trace.channel.osi_version", "") for ch in summary.channels.values()}
+
+
 class TestOsiTraceMetadataVersions:
-    """`version` is the trace-file FORMAT version; min/max_osi_version come from the data."""
+    """`version` is the trace-file FORMAT version; min/max_osi_version span the channels' OSI versions."""
 
     def test_prepare_metadata_version_is_spec_constant(self):
         meta = prepare_required_file_metadata()
         assert meta["version"] == _normalize_osi_version_string(OSI_TRACE_FILE_SPEC_VERSION)
         assert re.fullmatch(r"\d+\.\d+\.\d+", meta["version"])
-        # min/max are placeholders until finalized at close()
-        assert meta["min_osi_version"] == ""
-        assert meta["max_osi_version"] == ""
+        # valid standalone (e.g. for external writers): defaults to the OSI library version
+        assert meta["min_osi_version"] == _get_osi_library_version()
+        assert meta["max_osi_version"] == _get_osi_library_version()
 
     @pytest.mark.parametrize(
         ("raw", "expected"),
@@ -901,23 +910,29 @@ class TestOsiTraceMetadataVersions:
 
         assert _get_message_osi_version(scalar_message) is None
 
-    def test_min_max_from_written_messages(self, tmp_dir: Path):
+    def test_min_max_spans_channel_labels(self, tmp_dir: Path):
         path = tmp_dir / "versions.mcap"
         with MultiTraceWriter() as w:
             w.open(path)
-            w.add_channel("/sv", SensorView)
-            w.add_channel("/gt", GroundTruth)
+            w.add_channel("/sv", SensorView, {"net.asam.osi.trace.channel.osi_version": "3.5.2"})
+            w.add_channel("/gt", GroundTruth, {"net.asam.osi.trace.channel.osi_version": "3.7.0"})
             w.write_message(_sv_with_version(3, 5, 2, index=1), "/sv")
-            gt = GroundTruth()
-            gt.timestamp.seconds = 2
-            gt.version.version_major, gt.version.version_minor, gt.version.version_patch = 3, 7, 0
-            w.write_message(gt, "/gt")
-            # message without a version must not influence min/max
-            w.write_message(_make_ground_truth(3), "/gt")
+            w.write_message(_make_ground_truth(2), "/gt")
         data = _read_osi_trace_metadata(path)
         assert data["version"] == _normalize_osi_version_string(OSI_TRACE_FILE_SPEC_VERSION)
         assert data["min_osi_version"] == "3.5.2"
         assert data["max_osi_version"] == "3.7.0"
+        assert _read_channel_osi_versions(path) == {"/sv": "3.5.2", "/gt": "3.7.0"}
+
+    def test_auto_created_channel_labelled_from_message(self, tmp_dir: Path):
+        path = tmp_dir / "auto.mcap"
+        with MultiTraceWriter() as w:
+            w.open(path)
+            w.write_message(_sv_with_version(3, 6, 1, index=1), "/sv")
+        data = _read_osi_trace_metadata(path)
+        assert data["min_osi_version"] == "3.6.1"
+        assert data["max_osi_version"] == "3.6.1"
+        assert _read_channel_osi_versions(path) == {"/sv": "3.6.1"}
 
     def test_unset_version_falls_back_to_library(self, tmp_dir: Path):
         path = tmp_dir / "fallback.mcap"
@@ -929,8 +944,9 @@ class TestOsiTraceMetadataVersions:
         assert library_version is not None
         assert data["min_osi_version"] == library_version
         assert data["max_osi_version"] == library_version
+        assert set(_read_channel_osi_versions(path).values()) == {library_version}
 
-    def test_user_supplied_min_max_preserved(self, tmp_dir: Path):
+    def test_channel_labels_override_user_min_max(self, tmp_dir: Path):
         path = tmp_dir / "user_meta.mcap"
         meta = prepare_required_file_metadata()
         meta["min_osi_version"] = "3.0.0"
@@ -938,9 +954,34 @@ class TestOsiTraceMetadataVersions:
         with MultiTraceWriter() as w:
             w.open(path, meta)
             w.write_message(_sv_with_version(3, 6, 1, index=1))
+        # The file range must cover the channel's osi_version, so it wins over the caller's range.
         data = _read_osi_trace_metadata(path)
-        assert data["min_osi_version"] == "3.0.0"
-        assert data["max_osi_version"] == "3.0.0"
+        assert data["min_osi_version"] == "3.6.1"
+        assert data["max_osi_version"] == "3.6.1"
+
+    def test_message_version_mismatch_warns_once(self, tmp_dir: Path, caplog: pytest.LogCaptureFixture):
+        path = tmp_dir / "mismatch.mcap"
+        with MultiTraceWriter() as w:
+            w.open(path)
+            w.add_channel("/sv", SensorView, {"net.asam.osi.trace.channel.osi_version": "3.5.0"})
+            with caplog.at_level("WARNING"):
+                assert w.write_message(_sv_with_version(3, 6, 0, index=1), "/sv")
+                assert w.write_message(_sv_with_version(3, 6, 0, index=2), "/sv")
+        mismatches = [r for r in caplog.records if "OSI version 3.6.0" in r.getMessage()]
+        assert len(mismatches) == 1
+
+    def test_mcap_channel_fill_osi_version_range(self, tmp_dir: Path):
+        with open(tmp_dir / "external.mcap", "wb") as f:
+            writer = McapRawWriter(f)
+            writer.start()
+            channel = MCAPChannel(writer)
+            channel.add_channel("/sv_old", SensorView, {"net.asam.osi.trace.channel.osi_version": "3.4.0"})
+            channel.add_channel("/sv_new", SensorView)
+            meta = MCAPChannel.prepare_required_file_metadata()
+            channel.fill_osi_version_range(meta)
+            writer.finish()
+        assert meta["min_osi_version"] == "3.4.0"
+        assert meta["max_osi_version"] == _get_osi_library_version()
 
     def test_user_supplied_version_is_normalized(self, tmp_dir: Path):
         path = tmp_dir / "user_version.mcap"
