@@ -43,11 +43,27 @@ OSI defines a specialization of the MCAP format with additional constraints. See
 
 The `net.asam.osi.trace` metadata record must include:
 
-- `version` - OSI release version (e.g., `3.8.0`)
-- `min_osi_version` - Minimum OSI schema version used
-- `max_osi_version` - Maximum OSI schema version used
+- `version` - OSI **trace-file format** version the file conforms to (e.g. `3.8.0`). This is
+  *not* the OSI schema version of the data; it is normalized to `major.minor.patch`.
+- `min_osi_version` - Minimum OSI schema version used in the file's OSI channels
+- `max_osi_version` - Maximum OSI schema version used in the file's OSI channels
 - `min_protobuf_version` - Minimum protobuf version used
 - `max_protobuf_version` - Maximum protobuf version used
+
+Every OSI channel carries `net.asam.osi.trace.channel.osi_version`, the OSI version its data
+was created with. It is taken from the channel metadata you pass when adding the channel;
+for a channel auto-created by the first written message, from that message's embedded
+`InterfaceVersion`; otherwise it defaults to the linked OSI library version. A warning is
+logged if a written message's `InterfaceVersion` differs from its channel's label.
+
+The MCAP writers set `min_osi_version` / `max_osi_version` to the range of these channel labels
+when the file is closed (the `net.asam.osi.trace` record is written then), so every channel
+lies within the file range; this overrides values supplied for these two fields. Without
+channels, supplied values are kept, falling back to the linked OSI library version.
+`PrepareRequiredFileMetadata()` / `prepare_required_file_metadata()` default both fields to
+the linked OSI library version. With an external MCAP writer, call
+`MCAPTraceFileChannel::FillOsiVersionRange()` / `MCAPChannel.fill_osi_version_range()` after
+registering the OSI channels.
 
 ### Single-Channel Binary
 

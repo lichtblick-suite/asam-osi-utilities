@@ -91,8 +91,12 @@ if (NOT OSIUTILITIES_DOCS_ONLY)
 
 endif ()
 
-# Trace file spec version implemented by this library (default matches OSI 3.8.0-rc1 tag used in submodule)
-set(OSI_TRACE_FILE_SPEC_VERSION "3.8.0-rc1" CACHE STRING "Trace file specification version implemented by OSIUtilities")
+# Trace file spec version implemented by this library (matches the released OSI 3.8.0 tag
+# pinned by the submodule). This is the OSI trace-file *format* version (net.asam.osi.trace
+# "version" field), NOT the linked OSI library version. Any pre-release/build suffix is
+# normalized to major.minor.patch when written into metadata. Keep in sync with the Python
+# OSI_TRACE_FILE_SPEC_VERSION (python/osi_utilities/tracefile/_config.py); see doc/releasing.md.
+set(OSI_TRACE_FILE_SPEC_VERSION "3.8.0" CACHE STRING "Trace file specification version implemented by OSIUtilities")
 if (OSI_VERSION AND NOT OSI_VERSION STREQUAL OSI_TRACE_FILE_SPEC_VERSION)
     message(STATUS "OSI version detected: ${OSI_VERSION} (trace file spec: ${OSI_TRACE_FILE_SPEC_VERSION})")
 endif ()

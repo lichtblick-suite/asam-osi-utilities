@@ -22,6 +22,11 @@ from osi_utilities._types import MessageType, TraceFileFormat
 from osi_utilities.api.types import ChannelSpecification
 from osi_utilities.message_types import require_message_type
 from osi_utilities.tracefile._config import OSI_CHANNEL_OSI_VERSION_KEY, OSI_CHANNEL_PROTOBUF_VERSION_KEY
+from osi_utilities.tracefile._osi_version import (
+    format_osi_version,
+    get_message_osi_version,
+    normalize_osi_version_string,
+)
 from osi_utilities.tracefile.writers.multi import (
     MultiTraceWriter,
     prepare_required_file_metadata,
@@ -88,14 +93,13 @@ class _TraceFileChannelWriter(ChannelWriter):
         if self._channel_spec.topic is None:
             raise RuntimeError("Resolved MCAP channel specification has no topic.")
 
-        if hasattr(message, "version"):
-            message_version = (
-                f"{message.version.version_major}.{message.version.version_minor}.{message.version.version_patch}"
-            )
+        message_osi_version = get_message_osi_version(message)
+        if message_osi_version is not None:
+            message_version = format_osi_version(message_osi_version)
             configured_version = self._channel_metadata.get(OSI_CHANNEL_OSI_VERSION_KEY)
             if configured_version is None:
                 self._channel_metadata[OSI_CHANNEL_OSI_VERSION_KEY] = message_version
-            elif configured_version != message_version:
+            elif normalize_osi_version_string(configured_version) != message_version:
                 raise ValueError(
                     f"Configured OSI version '{configured_version}' does not match message version '{message_version}'."
                 )

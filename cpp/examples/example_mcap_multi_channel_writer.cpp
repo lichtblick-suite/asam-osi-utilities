@@ -265,18 +265,6 @@ void Part2_MixedChannelWriter() {
     options.chunkSize = osi3::tracefile::config::kDefaultChunkSize;
     mcap_writer.open(file, options);
 
-    // Best practice: write OSI file metadata before any messages.
-    // When using an external writer you must do this yourself — the
-    // MCAPTraceFileChannel helper does NOT write metadata automatically.
-    auto osi_metadata = osi3::MCAPTraceFileChannel::PrepareRequiredFileMetadata();
-    osi_metadata.metadata["description"] = "Mixed-channel example (Part 2) — OSI + custom topics.";
-    osi_metadata.metadata["creation_time"] = osi3::MCAPTraceFileChannel::GetCurrentTimeAsString();
-    if (const auto status = mcap_writer.write(osi_metadata); status.code != mcap::StatusCode::Success) {
-        std::cerr << "  ERROR: could not write metadata: " << status.message << "\n";
-        mcap_writer.close();
-        return;
-    }
-
     // --- register a non-OSI channel directly on the writer ------------------
     // Best practice: use a descriptive prefix (e.g. "vehicle/") for non-OSI
     // topics so they are easily distinguishable from "osi/" topics in tooling.
@@ -295,6 +283,19 @@ void Part2_MixedChannelWriter() {
     osi_channels.AddChannel("osi/ground_truth", osi3::GroundTruth::descriptor(), {{"net.asam.osi.trace.channel.description", "Environment ground truth (via external writer)"}});
     std::cout << "  Registered OSI channel: osi/ground_truth (protobuf)\n";
 
+    // Best practice: write OSI file metadata once the OSI channels are registered.
+    // When using an external writer you must do this yourself — the
+    // MCAPTraceFileChannel helper does NOT write metadata automatically.
+    // FillOsiVersionRange() sets min/max_osi_version to span the channels' OSI versions.
+    auto osi_metadata = osi3::MCAPTraceFileChannel::PrepareRequiredFileMetadata();
+    osi_channels.FillOsiVersionRange(osi_metadata);
+    osi_metadata.metadata["description"] = "Mixed-channel example (Part 2) — OSI + custom topics.";
+    osi_metadata.metadata["creation_time"] = osi3::MCAPTraceFileChannel::GetCurrentTimeAsString();
+    if (const auto status = mcap_writer.write(osi_metadata); status.code != mcap::StatusCode::Success) {
+        std::cerr << "  ERROR: could not write metadata: " << status.message << "\n";
+        mcap_writer.close();
+        return;
+    }
     // --- prepare test data --------------------------------------------------
     const auto osi_version = osi3::InterfaceVersion::descriptor()->file()->options().GetExtension(osi3::current_interface_version);
     osi3::GroundTruth ground_truth;
