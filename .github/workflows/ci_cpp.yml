@@ -115,7 +115,7 @@ jobs:
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+          vcpkgGitCommitId: '5d4a3dc90c0b3773f3bac81bf41297b54328f471' # 2026.10.16
 
       - name: Configure CMake
         run: |
@@ -183,7 +183,7 @@ jobs:
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+          vcpkgGitCommitId: '5d4a3dc90c0b3773f3bac81bf41297b54328f471' # 2026.10.16
 
       # A dynamic vcpkg triplet is required so that protobuf (and abseil) are
       # also built as shared libraries.  Without this, static protobuf is linked
@@ -230,7 +230,7 @@ jobs:
   # ===========================================================================
   macos-vcpkg-shared:
     name: macOS (vcpkg, shared OSI)
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -248,7 +248,7 @@ jobs:
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+          vcpkgGitCommitId: '5d4a3dc90c0b3773f3bac81bf41297b54328f471' # 2026.10.16
 
       # Dynamic triplet required — see Ubuntu shared job comment for rationale.
       - name: Configure CMake (shared OSI, dynamic triplet)
@@ -310,7 +310,7 @@ jobs:
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+          vcpkgGitCommitId: '5d4a3dc90c0b3773f3bac81bf41297b54328f471' # 2026.10.16
 
       - name: Configure CMake
         run: cmake --preset vcpkg -DBUILD_DOCS=OFF -DBUILD_TESTING=ON -DVCPKG_MANIFEST_FEATURES=tests
@@ -356,7 +356,7 @@ jobs:
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+          vcpkgGitCommitId: '5d4a3dc90c0b3773f3bac81bf41297b54328f471' # 2026.10.16
 
       - name: Configure CMake
         shell: pwsh
@@ -416,7 +416,7 @@ jobs:
         include:
           - runner: macos-15
             arch: x64
-          - runner: macos-14
+          - runner: macos-15
             arch: arm64
 
     steps:
@@ -435,7 +435,7 @@ jobs:
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: '4f8fe05871555c1798dbcb1957d0d595e94f7b57'
+          vcpkgGitCommitId: '5d4a3dc90c0b3773f3bac81bf41297b54328f471' # 2026.10.16
 
       - name: Configure CMake
         run: |
